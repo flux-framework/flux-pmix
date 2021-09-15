@@ -49,9 +49,17 @@ AC_HEADER_STDC
 
 PKG_CHECK_MODULES([ZMQ], [libczmq >= 3.0.0 libzmq >= 4.0.4])
 PKG_CHECK_MODULES([PMIX], [pmix >= 4.0.0])
-PKG_CHECK_MODULES([OMPI], [ompi >= 5.0.0])
 PKG_CHECK_MODULES([HWLOC], [hwloc >= 1.11.1], [], [])
 PKG_CHECK_MODULES([JANSSON], [jansson >= 2.10], [], [])
+
+PKG_CHECK_MODULES([OMPI], [ompi >= 5.0.0], [
+  OMPI_PREFIX=`pkg-config --variable=prefix ompi`
+  if test -z "${OMPI_PREFIX}"; then
+    AC_MSG_ERROR([failed to determine ompi prefix from pkg-config])
+  fi
+  AC_SUBST(OMPI_PREFIX)
+])
+
 
 AX_FLUX_CORE
 
@@ -67,6 +75,7 @@ AC_SUBST(fluxplugin_ldflags)
 AC_CONFIG_FILES( \
   Makefile \
   t/Makefile \
+  t/sharness.d/00-setup.sh \
 )
 
 AC_OUTPUT

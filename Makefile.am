@@ -1,4 +1,4 @@
-SUBDIRS = t
+SUBDIRS = src/shell/plugins t
 
 EXTRA_DIST = \
 	NEWS.md \

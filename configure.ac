@@ -66,6 +66,7 @@ AC_SUBST(fluxplugin_ldflags)
 ##
 AC_CONFIG_FILES( \
   Makefile \
+  t/Makefile \
 )
 
 AC_OUTPUT

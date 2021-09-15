@@ -1,0 +1,4 @@
+EXTRA_DIST = \
+	NEWS.md \
+	README.md \
+	NOTICE.LLNS

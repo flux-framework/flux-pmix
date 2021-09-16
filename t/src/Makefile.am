@@ -11,6 +11,7 @@ AM_CPPFLAGS = \
 check_PROGRAMS = \
 	barrier \
 	bizcard \
+	version \
 	mpi_hello \
 	mpi_version \
 	mpi_abort
@@ -33,6 +34,10 @@ barrier_LDADD = $(test_ldadd) $(PMIX_LIBS)
 bizcard_SOURCES = bizcard.c
 bizcard_CPPFLAGS = $(AM_CPPFLAGS) $(PMIX_CFLAGS)
 bizcard_LDADD = $(test_ldadd) $(PMIX_LIBS)
+
+version_SOURCES = version.c
+version_CPPFLAGS = $(AM_CPPFLAGS) $(PMIX_CFLAGS)
+version_LDADD = $(test_ldadd) $(PMIX_LIBS)
 
 mpi_hello_SOURCES = mpi_hello.c
 mpi_hello_CPPFLAGS = $(AM_CPPFLAGS) $(OMPI_CFLAGS)

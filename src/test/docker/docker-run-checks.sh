@@ -25,7 +25,7 @@ declare -r prog=${0##*/}
 die() { echo -e "$prog: $@"; exit 1; }
 
 #
-declare -r long_opts="help,quiet,interactive,image:,flux-security-version:,jobs:,no-cache,no-home,distcheck,tag:,build-directory:,install-only,no-poison,recheck,unit-test-only,inception,platform:,workdir:"
+declare -r long_opts="help,quiet,interactive,image:,flux-security-version:,jobs:,no-cache,no-home,distcheck,tag:,build-directory:,install-only,no-poison,recheck,unit-test-only,inception,platform:,workdir:,build-arg:"
 declare -r short_opts="hqIdi:S:j:t:D:Prup:"
 declare -r usage="
 Usage: $prog [OPTIONS] -- [CONFIGURE_ARGS...]\n\
@@ -40,6 +40,7 @@ Options:\n\
      --no-home                 Skip mounting the host home directory\n\
      --install-only            Skip make check, only make install\n\
      --inception               Run tests as flux jobs\n\
+     --build-arg ARG=VAL       Add extra --buil-args to to docker build\n\
  -q, --quiet                   Add --quiet to docker-build\n\
  -t, --tag=TAG                 If checks succeed, tag image as NAME\n\
  -i, --image=NAME              Use base docker image NAME (default=$IMAGE)\n\
@@ -88,6 +89,8 @@ while true; do
       --inception)                 INCEPTION=t;                shift   ;;
       -P|--no-poison)              POISON=0;                   shift   ;;
       -t|--tag)                    TAG="$2";                   shift 2 ;;
+      --build-arg)                 BUILD_ARG="$BUILD_ARG --build-arg $2"
+                                                               shift 2 ;;
       --)                          shift; break;                       ;;
       *)                           die "Invalid option '$1'\n$usage"   ;;
     esac
@@ -139,6 +142,7 @@ checks_group "Building image $IMAGE for user $USER $(id -u) group=$(id -g)" \
     --build-arg UID=$(id -u) \
     --build-arg GID=$(id -g) \
     --build-arg FLUX_SECURITY_VERSION=$FLUX_SECURITY_VERSION \
+    ${BUILD_ARG} \
     -t ${BUILD_IMAGE} \
     ${DOCKERFILE} \
     || die "docker build failed"

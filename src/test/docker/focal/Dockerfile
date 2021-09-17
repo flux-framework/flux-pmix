@@ -13,7 +13,8 @@ RUN \
  fi
 
 # ompi can't coexist with mpich
-RUN sudo apt remove -yy mpich libmpich-dev libmpich12
+RUN sudo apt remove -yy mpich libmpich-dev libmpich12 \
+ && sudo apt clean
 
 # install ompi prereqs
 RUN sudo apt-get update \
@@ -21,13 +22,15 @@ RUN sudo apt-get update \
     libevent-dev \
     flex \
     openssh-client \
+ && sudo apt clean \
  && sudo rm -rf /var/lib/apt/lists/*
 
 # build/install ompi
 RUN cd /tmp \
  && git clone -b ${OMPI_BRANCH} \
-       --recursive --depth=1 https://github.com/open-mpi/ompi \
+      --recursive --depth=1 https://github.com/open-mpi/ompi \
  && cd ompi \
+ && git branch \
  && ./autogen.pl \
  && ./configure --prefix=/usr \
       --disable-man-pages --enable-debug --enable-mem-debug \

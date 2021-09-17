@@ -24,7 +24,8 @@ clean-local:
 # This list is included in both TESTS and dist_check_SCRIPTS.
 TESTSCRIPTS = \
 	t0000-sharness.t \
-	t0001-ompi-sanity.t
+	t0001-ompi-sanity.t \
+	t0002-basic.t
 
 # make check runs these TAP tests directly (both scripts and programs)
 TESTS = \

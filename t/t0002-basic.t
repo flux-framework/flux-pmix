@@ -80,6 +80,11 @@ test_expect_success 'pmix.local.size 2 procs 1 shell is 2' '
 		${GETKEY} --proc=* pmix.local.size >localsize.out &&
 	test_cmp localsize.exp localsize.out
 '
+test_expect_success 'pmix.tmpdir is set' '
+	run_timeout 30 flux mini run -n1 \
+		-ouserrc=$(pwd)/ompi_rc.lua \
+		${GETKEY} --proc=* pmix.tmpdir
+'
 
 test_expect_success 'pmix barrier works' '
 	run_timeout 30 flux mini run -n2 \

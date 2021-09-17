@@ -93,6 +93,11 @@ test_expect_success 'pmix.job.napps is set to 1' '
 		-ouserrc=$(pwd)/ompi_rc.lua \
 		${GETKEY} --proc=* pmix.job.napps >napps.out
 '
+test_expect_success 'pmix.nsdir is set' '
+	run_timeout 30 flux mini run -n1 \
+		-ouserrc=$(pwd)/ompi_rc.lua \
+		${GETKEY} --proc=* pmix.nsdir
+'
 
 test_expect_success 'pmix barrier works' '
 	run_timeout 30 flux mini run -n2 \

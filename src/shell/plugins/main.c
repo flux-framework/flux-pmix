@@ -93,6 +93,7 @@ static int px_init (flux_plugin_t *p,
     }
 
     if (!(iv = infovec_create ())
+        || infovec_set_str (iv, PMIX_NSDIR, px->job_tmpdir) < 0
         || infovec_set_u32 (iv, PMIX_JOB_NUM_APPS, 1) < 0
         || infovec_set_str (iv, PMIX_TMPDIR, px->job_tmpdir) < 0
         || infovec_set_u32 (iv, PMIX_LOCAL_SIZE, px->local_nprocs) < 0

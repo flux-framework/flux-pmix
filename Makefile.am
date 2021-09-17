@@ -1,4 +1,7 @@
-SUBDIRS = src/shell/plugins t
+SUBDIRS = \
+	src/common/libtap \
+	src/shell/plugins \
+	t
 
 EXTRA_DIST = \
 	NEWS.md \

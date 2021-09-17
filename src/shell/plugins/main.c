@@ -26,6 +26,7 @@ struct px {
     int shell_rank;
     int local_nprocs;
     int total_nprocs;
+    const char *job_tmpdir;
 };
 
 static void px_destroy (struct px *px)
@@ -76,8 +77,14 @@ static int px_init (flux_plugin_t *p,
                                         "ntasks",
                                         &px->total_nprocs) < 0)
         return -1;
+    if (!(px->job_tmpdir = flux_shell_getenv (shell, "FLUX_JOB_TMPDIR")))
+        return -1;
 
-    if ((rc = PMIx_server_init (NULL, NULL, 0)) != PMIX_SUCCESS) {
+    strncpy (info.key, PMIX_SERVER_TMPDIR, PMIX_MAX_KEYLEN);
+    info.value.type = PMIX_STRING;
+    info.value.data.string = (char *)px->job_tmpdir;
+
+    if ((rc = PMIx_server_init (NULL, &info, 1)) != PMIX_SUCCESS) {
         shell_warn ("PMIx_server_init: %s", PMIx_Error_string (rc));
         return -1;
     }

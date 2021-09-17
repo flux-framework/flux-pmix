@@ -40,6 +40,13 @@ test_expect_success 'server is listening on localhost' '
 	grep tcp4://127.0.0.1: uri.out
 '
 
+test_expect_success 'PMIX_SERVER_TMPDIR == FLUX_JOB_TMPDIR' '
+	grep FLUX_JOB_TMPDIR <env.out|cut -d= -f2 >jobtmp.out &&
+	grep PMIX_SERVER_TMPDIR <env.out|cut -d= -f2 >srvtmp.out &&
+	test -s jobtmp.out &&
+	test_cmp jobtmp.out srvtmp.out
+'
+
 test_expect_success 'pmix.job.size is set correctly on rank 0' '
 	cat >size.exp <<-EOT
 	2

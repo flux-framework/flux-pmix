@@ -19,6 +19,8 @@
 #include <pmix_server.h>
 #include <pmix.h>
 
+#include "infovec.h"
+
 struct px {
     flux_shell_t *shell;
     flux_jobid_t id;
@@ -51,6 +53,7 @@ static int px_init (flux_plugin_t *p,
     int rc;
     pmix_info_t info = { 0 };
     const char *s;
+    struct infovec *iv;
 
     if (!(px = calloc (1, sizeof (*px)))
         || flux_plugin_aux_set (p, "px", px, (flux_free_f)px_destroy) < 0) {
@@ -89,21 +92,24 @@ static int px_init (flux_plugin_t *p,
         return -1;
     }
 
-    strncpy (info.key, PMIX_JOB_SIZE, PMIX_MAX_KEYLEN);
-    info.value.type = PMIX_UINT32;
-    info.value.data.uint32 = px->total_nprocs;
+    if (!(iv = infovec_create ())
+        || infovec_set_u32 (iv, PMIX_JOB_SIZE, px->total_nprocs) < 0)
+        goto error;
 
     if ((rc = PMIx_server_register_nspace (px->nspace,
                                            px->local_nprocs,
-                                           &info,
-                                           1,
+                                           infovec_info (iv),
+                                           infovec_count (iv),
                                            NULL,
                                            NULL)) != PMIX_OPERATION_SUCCEEDED) {
         shell_warn ("PMIx_server_register_nspace: %s", PMIx_Error_string (rc));
-        return -1;
+        goto error;
     }
-
+    infovec_destroy (iv);
     return 0;
+error:
+    infovec_destroy (iv);
+    return -1;
 }
 
 static int px_task_init (flux_plugin_t *p,

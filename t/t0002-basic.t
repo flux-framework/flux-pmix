@@ -71,6 +71,15 @@ test_expect_success 'pmix.univ.size 2 procs is 3' '
 		${GETKEY} --proc=* pmix.univ.size >univ.out &&
 	test_cmp univ.exp univ.out
 '
+test_expect_success 'pmix.local.size 2 procs 1 shell is 2' '
+	cat >localsize.exp <<-EOT
+	2
+	EOT
+	run_timeout 30 flux mini run -n2 \
+		-ouserrc=$(pwd)/ompi_rc.lua \
+		${GETKEY} --proc=* pmix.local.size >localsize.out &&
+	test_cmp localsize.exp localsize.out
+'
 
 test_expect_success 'pmix barrier works' '
 	run_timeout 30 flux mini run -n2 \

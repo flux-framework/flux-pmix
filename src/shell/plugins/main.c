@@ -93,6 +93,7 @@ static int px_init (flux_plugin_t *p,
     }
 
     if (!(iv = infovec_create ())
+        || infovec_set_u32 (iv, PMIX_LOCAL_SIZE, px->local_nprocs) < 0
         || infovec_set_u32 (iv, PMIX_UNIV_SIZE, px->total_nprocs) < 0
         || infovec_set_u32 (iv, PMIX_JOB_SIZE, px->total_nprocs) < 0)
         goto error;

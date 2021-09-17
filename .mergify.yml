@@ -1,7 +1,7 @@
-ull_request_rules:
+pull_request_rules:
   - name: rebase and merge when passing all checks
     conditions:
-      - base=master
+      - base=main
       - status-success="validate commits"
       - status-success="focal - ompi v5.0.x"
       - label="merge-when-passing"

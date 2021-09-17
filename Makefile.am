@@ -5,3 +5,5 @@ EXTRA_DIST = \
 	README.md \
 	NOTICE.LLNS \
 	config/tap-driver.sh
+
+ACLOCAL_AMFLAGS = -I config

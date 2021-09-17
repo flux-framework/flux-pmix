@@ -98,6 +98,36 @@ test_expect_success 'pmix.nsdir is set' '
 		-ouserrc=$(pwd)/ompi_rc.lua \
 		${GETKEY} --proc=* pmix.nsdir
 '
+test_expect_success 'pmix.hname is set' '
+	run_timeout 30 flux mini run -n1 \
+		-ouserrc=$(pwd)/ompi_rc.lua \
+		${GETKEY} pmix.hname
+'
+test_expect_success 'pmix.lpeers is set' '
+	run_timeout 30 flux mini run -n1 \
+		-ouserrc=$(pwd)/ompi_rc.lua \
+		${GETKEY} --proc=* pmix.lpeers
+'
+test_expect_success 'pmix.nlist is set' '
+	run_timeout 30 flux mini run -n1 \
+		-ouserrc=$(pwd)/ompi_rc.lua \
+		${GETKEY} --proc=* pmix.nlist
+'
+test_expect_success 'pmix.num.nodes is set' '
+	run_timeout 30 flux mini run -n1 \
+		-ouserrc=$(pwd)/ompi_rc.lua \
+		${GETKEY} --proc=* pmix.num.nodes
+'
+test_expect_success 'pmix.nodeid is set' '
+	run_timeout 30 flux mini run -n1 \
+		-ouserrc=$(pwd)/ompi_rc.lua \
+		${GETKEY} pmix.nodeid
+'
+test_expect_success 'pmix.lrank is set' '
+	run_timeout 30 flux mini run -n1 \
+		-ouserrc=$(pwd)/ompi_rc.lua \
+		${GETKEY} pmix.lrank
+'
 
 test_expect_success 'pmix barrier works' '
 	run_timeout 30 flux mini run -n2 \

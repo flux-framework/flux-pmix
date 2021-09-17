@@ -20,6 +20,7 @@
 #include <pmix.h>
 
 #include "infovec.h"
+#include "maps.h"
 
 struct px {
     flux_shell_t *shell;
@@ -41,6 +42,54 @@ static void px_destroy (struct px *px)
         free (px);
         errno = saved_errno;
     }
+}
+
+static int set_node_map (struct infovec *iv,
+                         const char *key,
+                         flux_shell_t *shell)
+{
+    char *raw;
+    char *cooked;
+    int rc;
+
+    if (!(raw = maps_node_create (shell)))
+        return -1;
+    if ((rc = PMIx_generate_regex (raw, &cooked) != PMIX_SUCCESS)) {
+        free (raw);
+        shell_warn ("PMIx_generate_regex: %s", PMIx_Error_string (rc));
+        return -1;
+    }
+    if (infovec_set_str_new (iv, key, cooked) < 0) { // steals cooked
+        free (cooked);
+        free (raw);
+        return -1;
+    }
+    free (raw);
+    return 0;
+}
+
+static int set_proc_map (struct infovec *iv,
+                         const char *key,
+                         flux_shell_t *shell)
+{
+    char *raw;
+    char *cooked;
+    int rc;
+
+    if (!(raw = maps_proc_create (shell)))
+        return -1;
+    if ((rc = PMIx_generate_ppn (raw, &cooked) != PMIX_SUCCESS)) {
+        free (raw);
+        shell_warn ("PMIx_generate_ppn: %s", PMIx_Error_string (rc));
+        return -1;
+    }
+    if (infovec_set_str_new (iv, key, cooked) < 0) { // steals cooked
+        free (cooked);
+        free (raw);
+        return -1;
+    }
+    free (raw);
+    return 0;
 }
 
 static int px_init (flux_plugin_t *p,
@@ -93,6 +142,8 @@ static int px_init (flux_plugin_t *p,
     }
 
     if (!(iv = infovec_create ())
+        || set_node_map (iv, PMIX_NODE_MAP, shell) < 0
+        || set_proc_map (iv, PMIX_PROC_MAP, shell) < 0
         || infovec_set_str (iv, PMIX_NSDIR, px->job_tmpdir) < 0
         || infovec_set_u32 (iv, PMIX_JOB_NUM_APPS, 1) < 0
         || infovec_set_str (iv, PMIX_TMPDIR, px->job_tmpdir) < 0

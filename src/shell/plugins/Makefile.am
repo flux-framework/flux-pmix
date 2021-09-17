@@ -12,7 +12,9 @@ shell_plugin_LTLIBRARIES = \
 pmix_la_SOURCES = \
 	main.c \
 	infovec.h \
-	infovec.c
+	infovec.c \
+	maps.h \
+	maps.c
 pmix_la_CPPFLAGS = \
 	$(AM_CPPFLAGS) \
 	$(FLUX_CORE_CFLAGS) \

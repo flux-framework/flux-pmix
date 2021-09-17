@@ -62,6 +62,15 @@ test_expect_success 'pmix.job.size is set correctly on rank 1' '
 		${GETKEY} --proc=* --rank=1 pmix.job.size >size1.out &&
 	test_cmp size.exp size1.out
 '
+test_expect_success 'pmix.univ.size 2 procs is 3' '
+	cat >univ.exp <<-EOT
+	2
+	EOT
+	run_timeout 30 flux mini run -n2 \
+		-ouserrc=$(pwd)/ompi_rc.lua \
+		${GETKEY} --proc=* pmix.univ.size >univ.out &&
+	test_cmp univ.exp univ.out
+'
 
 test_expect_success 'pmix barrier works' '
 	run_timeout 30 flux mini run -n2 \

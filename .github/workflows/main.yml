@@ -1,0 +1,45 @@
+on: [ pull_request, push ]
+name: ci
+jobs:
+  check-pr:
+    name: validate commits
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        ref: ${{ github.event.pull_request.head.sha }}
+        fetch-depth: 0
+    - run: git fetch origin master
+    - uses: flux-framework/pr-validator@master
+
+  ci-checks:
+    runs-on: ubuntu-latest
+    env:
+      TAP_DRIVER_QUIET: 1
+      FLUX_TEST_TIMEOUT: 300
+    timeout-minutes: 20
+    strategy:
+      matrix:
+        image: ["focal"]
+        ompi_branch: ["v5.0.x"]
+      fail-fast: false
+    name: ${{ matrix.image }} - ompi ${{ matrix.ompi_branch }}
+    steps:
+    - name: checkout
+      uses: actions/checkout@v2
+      with:
+       ref: ${{ github.event.pull_request.head.sha }}
+       fetch-depth: 0
+
+    - name: docker-run-checks
+      run: >
+        ./src/test/docker/docker-run-checks.sh
+        -j $(nproc)
+        -i ${{ matrix.image }}
+        --build-arg OMPI_BRANCH=${{ matrix.ompi_branch }}
+        --
+
+    - name: annotate errors
+      if: failure() || cancelled()
+      run: src/test/checks-annotate.sh

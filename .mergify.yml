@@ -1,4 +1,4 @@
-ull_request_rules:
+pull_request_rules:
   - name: rebase and merge when passing all checks
     conditions:
       - base=main

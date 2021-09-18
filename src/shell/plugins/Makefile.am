@@ -14,7 +14,9 @@ pmix_la_SOURCES = \
 	infovec.h \
 	infovec.c \
 	maps.h \
-	maps.c
+	maps.c \
+	codec.h \
+	codec.c
 pmix_la_CPPFLAGS = \
 	$(AM_CPPFLAGS) \
 	$(FLUX_CORE_CFLAGS) \
@@ -27,17 +29,20 @@ pmix_la_LIBADD = \
 	$(PMIX_LIBS) \
 	$(FLUX_IDSET_LIBS) \
 	$(FLUX_HOSTLIST_LIBS) \
-	$(JANSSON_LIBS)
+	$(JANSSON_LIBS) \
+	$(top_builddir)/src/common/libccan/libccan.la
 pmix_la_LDFLAGS = \
 	$(AM_LDFLAGS) \
 	$(fluxplugin_ldflags) \
 	-module
 
 TESTS = \
-	test_infovec.t
+	test_infovec.t \
+	test_codec.t
 
 test_ldadd = \
-	$(top_builddir)/src/common/libtap/libtap.la
+	$(top_builddir)/src/common/libtap/libtap.la \
+	$(top_builddir)/src/common/libccan/libccan.la
 
 test_ldflags = \
         -no-install
@@ -58,4 +63,18 @@ test_infovec_t_CPPFLAGS = \
 test_infovec_t_LDADD = \
         $(test_ldadd)
 test_infovec_t_LDFLAGS = \
+        $(test_ldflags)
+
+test_codec_t_SOURCES = \
+        codec.c \
+        codec.h \
+        test/codec.c
+test_codec_t_CPPFLAGS = \
+        $(PMIX_CFLAGS) \
+        $(JANSSON_CFLAGS) \
+        $(test_cppflags)
+test_codec_t_LDADD = \
+        $(test_ldadd) \
+	$(JANSSON_LIBS)
+test_codec_t_LDFLAGS = \
         $(test_ldflags)

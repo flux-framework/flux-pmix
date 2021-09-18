@@ -1,5 +1,6 @@
 SUBDIRS = \
 	src/common/libtap \
+	src/common/libccan \
 	src/shell/plugins \
 	t
 

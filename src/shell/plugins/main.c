@@ -19,6 +19,9 @@
 #include <pmix_server.h>
 #include <pmix.h>
 
+#include "infovec.h"
+#include "maps.h"
+
 struct px {
     flux_shell_t *shell;
     flux_jobid_t id;
@@ -26,6 +29,7 @@ struct px {
     int shell_rank;
     int local_nprocs;
     int total_nprocs;
+    const char *job_tmpdir;
 };
 
 static void px_destroy (struct px *px)
@@ -40,6 +44,54 @@ static void px_destroy (struct px *px)
     }
 }
 
+static int set_node_map (struct infovec *iv,
+                         const char *key,
+                         flux_shell_t *shell)
+{
+    char *raw;
+    char *cooked;
+    int rc;
+
+    if (!(raw = maps_node_create (shell)))
+        return -1;
+    if ((rc = PMIx_generate_regex (raw, &cooked) != PMIX_SUCCESS)) {
+        free (raw);
+        shell_warn ("PMIx_generate_regex: %s", PMIx_Error_string (rc));
+        return -1;
+    }
+    if (infovec_set_str_new (iv, key, cooked) < 0) { // steals cooked
+        free (cooked);
+        free (raw);
+        return -1;
+    }
+    free (raw);
+    return 0;
+}
+
+static int set_proc_map (struct infovec *iv,
+                         const char *key,
+                         flux_shell_t *shell)
+{
+    char *raw;
+    char *cooked;
+    int rc;
+
+    if (!(raw = maps_proc_create (shell)))
+        return -1;
+    if ((rc = PMIx_generate_ppn (raw, &cooked) != PMIX_SUCCESS)) {
+        free (raw);
+        shell_warn ("PMIx_generate_ppn: %s", PMIx_Error_string (rc));
+        return -1;
+    }
+    if (infovec_set_str_new (iv, key, cooked) < 0) { // steals cooked
+        free (cooked);
+        free (raw);
+        return -1;
+    }
+    free (raw);
+    return 0;
+}
+
 static int px_init (flux_plugin_t *p,
                     const char *topic,
                     flux_plugin_arg_t *arg,
@@ -48,8 +100,9 @@ static int px_init (flux_plugin_t *p,
     flux_shell_t *shell = flux_plugin_get_shell (p);
     struct px *px;
     int rc;
-    pmix_info_t info = { 0 };
+    pmix_info_t info[2] = { 0 };
     const char *s;
+    struct infovec *iv;
 
     if (!(px = calloc (1, sizeof (*px)))
         || flux_plugin_aux_set (p, "px", px, (flux_free_f)px_destroy) < 0) {
@@ -76,27 +129,47 @@ static int px_init (flux_plugin_t *p,
                                         "ntasks",
                                         &px->total_nprocs) < 0)
         return -1;
+    if (!(px->job_tmpdir = flux_shell_getenv (shell, "FLUX_JOB_TMPDIR")))
+        return -1;
 
-    if ((rc = PMIx_server_init (NULL, NULL, 0)) != PMIX_SUCCESS) {
+    strncpy (info[0].key, PMIX_SERVER_TMPDIR, PMIX_MAX_KEYLEN);
+    info[0].value.type = PMIX_STRING;
+    info[0].value.data.string = (char *)px->job_tmpdir;
+
+    strncpy (info[1].key, PMIX_SERVER_RANK, PMIX_MAX_KEYLEN);
+    info[1].value.type = PMIX_PROC_RANK;
+    info[1].value.data.rank = px->shell_rank;
+
+    if ((rc = PMIx_server_init (NULL, info, 2)) != PMIX_SUCCESS) {
         shell_warn ("PMIx_server_init: %s", PMIx_Error_string (rc));
         return -1;
     }
 
-    strncpy (info.key, PMIX_JOB_SIZE, PMIX_MAX_KEYLEN);
-    info.value.type = PMIX_UINT32;
-    info.value.data.uint32 = px->total_nprocs;
+    if (!(iv = infovec_create ())
+        || set_node_map (iv, PMIX_NODE_MAP, shell) < 0
+        || set_proc_map (iv, PMIX_PROC_MAP, shell) < 0
+        || infovec_set_str (iv, PMIX_NSDIR, px->job_tmpdir) < 0
+        || infovec_set_u32 (iv, PMIX_JOB_NUM_APPS, 1) < 0
+        || infovec_set_str (iv, PMIX_TMPDIR, px->job_tmpdir) < 0
+        || infovec_set_u32 (iv, PMIX_LOCAL_SIZE, px->local_nprocs) < 0
+        || infovec_set_u32 (iv, PMIX_UNIV_SIZE, px->total_nprocs) < 0
+        || infovec_set_u32 (iv, PMIX_JOB_SIZE, px->total_nprocs) < 0)
+        goto error;
 
     if ((rc = PMIx_server_register_nspace (px->nspace,
                                            px->local_nprocs,
-                                           &info,
-                                           1,
+                                           infovec_info (iv),
+                                           infovec_count (iv),
                                            NULL,
                                            NULL)) != PMIX_OPERATION_SUCCEEDED) {
         shell_warn ("PMIx_server_register_nspace: %s", PMIx_Error_string (rc));
-        return -1;
+        goto error;
     }
-
+    infovec_destroy (iv);
     return 0;
+error:
+    infovec_destroy (iv);
+    return -1;
 }
 
 static int px_task_init (flux_plugin_t *p,

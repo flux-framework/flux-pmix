@@ -48,6 +48,12 @@ static void getkey (pmix_proc_t *proc, const char *key, optparse_t *p)
         case PMIX_UINT32:
             printf ("%lu\n", (unsigned long)val->data.uint32);
             break;
+        case PMIX_UINT16:
+            printf ("%hu\n", (unsigned short)val->data.uint16);
+            break;
+        case PMIX_PROC_RANK:
+            printf ("%lu\n", (unsigned long)val->data.rank);
+            break;
         case PMIX_STRING:
             printf ("%s\n", val->data.string);
             break;

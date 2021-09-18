@@ -10,7 +10,11 @@ shell_plugin_LTLIBRARIES = \
 	pmix.la
 
 pmix_la_SOURCES = \
-	main.c
+	main.c \
+	infovec.h \
+	infovec.c \
+	maps.h \
+	maps.c
 pmix_la_CPPFLAGS = \
 	$(AM_CPPFLAGS) \
 	$(FLUX_CORE_CFLAGS) \
@@ -28,3 +32,30 @@ pmix_la_LDFLAGS = \
 	$(AM_LDFLAGS) \
 	$(fluxplugin_ldflags) \
 	-module
+
+TESTS = \
+	test_infovec.t
+
+test_ldadd = \
+	$(top_builddir)/src/common/libtap/libtap.la
+
+test_ldflags = \
+        -no-install
+
+test_cppflags = \
+        -I$(top_srcdir)/src/common/libtap \
+        $(AM_CPPFLAGS)
+
+check_PROGRAMS = $(TESTS)
+
+test_infovec_t_SOURCES = \
+        infovec.c \
+        infovec.h \
+        test/infovec.c
+test_infovec_t_CPPFLAGS = \
+        $(PMIX_CFLAGS) \
+        $(test_cppflags)
+test_infovec_t_LDADD = \
+        $(test_ldadd)
+test_infovec_t_LDFLAGS = \
+        $(test_ldflags)

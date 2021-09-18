@@ -62,7 +62,7 @@ test_expect_success 'pmix.job.size is set correctly on rank 1' '
 		${GETKEY} --proc=* --rank=1 pmix.job.size >size1.out &&
 	test_cmp size.exp size1.out
 '
-test_expect_success 'pmix.univ.size 2 procs is 3' '
+test_expect_success 'pmix.univ.size 2 procs is 2' '
 	cat >univ.exp <<-EOT
 	2
 	EOT

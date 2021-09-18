@@ -128,6 +128,15 @@ test_expect_success 'pmix.lrank is set' '
 		-ouserrc=$(pwd)/ompi_rc.lua \
 		${GETKEY} pmix.lrank
 '
+test_expect_success 'pmix.srv.rank is set to 0' '
+	cat >srvrank.exp <<-EOT &&
+	0
+	EOT
+	run_timeout 30 flux mini run -n1 \
+		-ouserrc=$(pwd)/ompi_rc.lua \
+		${GETKEY} pmix.srv.rank >srvrank.out &&
+	test_cmp srvrank.exp srvrank.out
+'
 
 test_expect_success 'pmix barrier works' '
 	run_timeout 30 flux mini run -n2 \

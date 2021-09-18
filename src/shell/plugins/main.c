@@ -100,7 +100,7 @@ static int px_init (flux_plugin_t *p,
     flux_shell_t *shell = flux_plugin_get_shell (p);
     struct px *px;
     int rc;
-    pmix_info_t info = { 0 };
+    pmix_info_t info[2] = { 0 };
     const char *s;
     struct infovec *iv;
 
@@ -132,11 +132,15 @@ static int px_init (flux_plugin_t *p,
     if (!(px->job_tmpdir = flux_shell_getenv (shell, "FLUX_JOB_TMPDIR")))
         return -1;
 
-    strncpy (info.key, PMIX_SERVER_TMPDIR, PMIX_MAX_KEYLEN);
-    info.value.type = PMIX_STRING;
-    info.value.data.string = (char *)px->job_tmpdir;
+    strncpy (info[0].key, PMIX_SERVER_TMPDIR, PMIX_MAX_KEYLEN);
+    info[0].value.type = PMIX_STRING;
+    info[0].value.data.string = (char *)px->job_tmpdir;
 
-    if ((rc = PMIx_server_init (NULL, &info, 1)) != PMIX_SUCCESS) {
+    strncpy (info[1].key, PMIX_SERVER_RANK, PMIX_MAX_KEYLEN);
+    info[1].value.type = PMIX_PROC_RANK;
+    info[1].value.data.rank = px->shell_rank;
+
+    if ((rc = PMIx_server_init (NULL, info, 2)) != PMIX_SUCCESS) {
         shell_warn ("PMIx_server_init: %s", PMIx_Error_string (rc));
         return -1;
     }

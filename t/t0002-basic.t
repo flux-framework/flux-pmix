@@ -144,4 +144,10 @@ test_expect_success 'pmix barrier works' '
 		${BARRIER}
 '
 
+test_expect_success 'pmix bizcard works' '
+	run_timeout 30 flux mini run -n2 \
+		-ouserrc=$(pwd)/ompi_rc.lua \
+		${BIZCARD} 1
+'
+
 test_done

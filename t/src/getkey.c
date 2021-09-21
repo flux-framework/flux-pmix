@@ -28,34 +28,44 @@ static struct optparse_option opts[] = {
       .usage = "Get key from RANK (default=self)",
     },
     { .name = "rank", .has_arg = 1, .arginfo = "RANK",
-      .usage = "Perform the getkey on RANK (default=0)",
+      .usage = "Perform the getkey only on RANK (default=all)",
+    },
+    { .name = "label-io", .has_arg = 0,
+      .usage = "Add rank labels",
     },
     OPTPARSE_TABLE_END,
 };
 
-static void getkey (pmix_proc_t *proc, const char *key, optparse_t *p)
+static void getkey (pmix_proc_t *self,
+                    pmix_proc_t *proc,
+                    const char *key,
+                    optparse_t *p)
 {
     pmix_value_t *val;
     int rc;
+    char prefix[16] = { 0 };
+
+    if (optparse_hasopt (p, "label-io"))
+        snprintf (prefix, sizeof (prefix), "%d: ", self->rank);
 
     if ((rc = PMIx_Get (proc, key, NULL, 0, &val)) != PMIX_SUCCESS)
         log_msg_exit ("PMIx_Get %s: %s", key, PMIx_Error_string (rc));
 
     switch (val->type) {
         case PMIX_BOOL:
-            printf ("%s\n", val->data.flag ? "true" : "false");
+            printf ("%s%s\n", prefix, val->data.flag ? "true" : "false");
             break;
         case PMIX_UINT32:
-            printf ("%lu\n", (unsigned long)val->data.uint32);
+            printf ("%s%lu\n", prefix, (unsigned long)val->data.uint32);
             break;
         case PMIX_UINT16:
-            printf ("%hu\n", (unsigned short)val->data.uint16);
+            printf ("%s%hu\n", prefix, (unsigned short)val->data.uint16);
             break;
         case PMIX_PROC_RANK:
-            printf ("%lu\n", (unsigned long)val->data.rank);
+            printf ("%s%lu\n", prefix, (unsigned long)val->data.rank);
             break;
         case PMIX_STRING:
-            printf ("%s\n", val->data.string);
+            printf ("%s%s\n", prefix, val->data.string);
             break;
         default:
             log_msg_exit ("Error: I don't know this type yet: %d", val->type);
@@ -107,12 +117,12 @@ int main (int argc, char **argv)
         else
             proc.rank = strtoul (s, NULL, 10);
     }
-    rank = optparse_get_int (p, "rank", 0);
+    rank = optparse_get_int (p, "rank", -1);
 
     /* Get key
      */
-    if (rank == self.rank)
-        getkey (&proc, key, p);
+    if (rank == -1 || rank == self.rank)
+        getkey (&self, &proc, key, p);
 
     /* Finalize
      */

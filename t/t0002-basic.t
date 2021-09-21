@@ -45,38 +45,45 @@ test_expect_success 'PMIX_SERVER_TMPDIR == FLUX_JOB_TMPDIR' '
 	test_cmp jobtmp.out srvtmp.out
 '
 
-test_expect_success 'pmix.job.size is set correctly on rank 0' '
-	cat >size.exp <<-EOT
-	2
+test_expect_success '2n4p pmix.job.size is set correctly' '
+	cat >pmix.job.size.exp <<-EOT &&
+	0: 4
+	1: 4
+	2: 4
+	3: 4
 	EOT
-	run_timeout 30 flux mini run -n2 \
+	run_timeout 30 flux mini run -N2 -n4 \
 		-ouserrc=$(pwd)/rc.lua \
-		${GETKEY} --proc=* --rank=0 pmix.job.size >size0.out &&
-	test_cmp size.exp size0.out
+		${GETKEY} --proc=* --label-io pmix.job.size \
+			| sort -n >pmix.job.size.out &&
+	test_cmp pmix.job.size.exp pmix.job.size.out
 '
-test_expect_success 'pmix.job.size is set correctly on rank 1' '
-	run_timeout 30 flux mini run -n2 \
-		-ouserrc=$(pwd)/rc.lua \
-		${GETKEY} --proc=* --rank=1 pmix.job.size >size1.out &&
-	test_cmp size.exp size1.out
-'
-test_expect_success 'pmix.univ.size 2 procs is 2' '
-	cat >univ.exp <<-EOT
-	2
+
+test_expect_success '2n4p pmix.univ.size is set correctly' '
+	cat >pmix.univ.size.exp <<-EOT &&
+	0: 4
+	1: 4
+	2: 4
+	3: 4
 	EOT
-	run_timeout 30 flux mini run -n2 \
+	run_timeout 30 flux mini run -N2 -n4 \
 		-ouserrc=$(pwd)/rc.lua \
-		${GETKEY} --proc=* --rank=0 pmix.univ.size >univ.out &&
-	test_cmp univ.exp univ.out
+		${GETKEY} --proc=* --label-io pmix.univ.size \
+			| sort -n >pmix.univ.size.out &&
+	test_cmp pmix.univ.size.exp pmix.univ.size.out
 '
-test_expect_success 'pmix.local.size 2 procs 1 shell is 2' '
-	cat >localsize.exp <<-EOT
-	2
+test_expect_success '2n4p pmix.local.size is set correctly' '
+	cat >pmix.local.size.exp <<-EOT &&
+	0: 2
+	1: 2
+	2: 2
+	3: 2
 	EOT
-	run_timeout 30 flux mini run -n2 \
+	run_timeout 30 flux mini run -N2 -n4 \
 		-ouserrc=$(pwd)/rc.lua \
-		${GETKEY} --proc=* --rank=0 pmix.local.size >localsize.out &&
-	test_cmp localsize.exp localsize.out
+		${GETKEY} --proc=* --label-io pmix.local.size \
+			| sort -n >pmix.local.size.out &&
+	test_cmp pmix.local.size.exp pmix.local.size.out
 '
 test_expect_success 'pmix.tmpdir is set' '
 	run_timeout 30 flux mini run -n1 \
@@ -84,56 +91,95 @@ test_expect_success 'pmix.tmpdir is set' '
 		${GETKEY} --proc=* pmix.tmpdir
 '
 test_expect_success 'pmix.job.napps is set to 1' '
-	cat >napps.exp <<-EOT
+	cat >pmix.job.napps.exp <<-EOT &&
 	1
 	EOT
 	run_timeout 30 flux mini run -n1 \
 		-ouserrc=$(pwd)/rc.lua \
-		${GETKEY} --proc=* pmix.job.napps >napps.out
+		${GETKEY} --proc=* pmix.job.napps >pmix.job.napps.out &&
+	test_cmp pmix.job.napps.exp pmix.job.napps.out
 '
 test_expect_success 'pmix.nsdir is set' '
 	run_timeout 30 flux mini run -n1 \
 		-ouserrc=$(pwd)/rc.lua \
 		${GETKEY} --proc=* pmix.nsdir
 '
-test_expect_success 'pmix.hname is set' '
-	run_timeout 30 flux mini run -n1 \
+test_expect_success '2n4p pmix.hname is set' '
+	run_timeout 30 flux mini run -N2 -n4 \
 		-ouserrc=$(pwd)/rc.lua \
-		${GETKEY} pmix.hname
+		${GETKEY} --label-io pmix.hname
 '
-test_expect_success 'pmix.lpeers is set' '
-	run_timeout 30 flux mini run -n1 \
-		-ouserrc=$(pwd)/rc.lua \
-		${GETKEY} --proc=* pmix.lpeers
-'
-test_expect_success 'pmix.nlist is set' '
-	run_timeout 30 flux mini run -n1 \
-		-ouserrc=$(pwd)/rc.lua \
-		${GETKEY} --proc=* pmix.nlist
-'
-test_expect_success 'pmix.num.nodes is set' '
-	run_timeout 30 flux mini run -n1 \
-		-ouserrc=$(pwd)/rc.lua \
-		${GETKEY} --proc=* pmix.num.nodes
-'
-test_expect_success 'pmix.nodeid is set' '
-	run_timeout 30 flux mini run -n1 \
-		-ouserrc=$(pwd)/rc.lua \
-		${GETKEY} pmix.nodeid
-'
-test_expect_success 'pmix.lrank is set' '
-	run_timeout 30 flux mini run -n1 \
-		-ouserrc=$(pwd)/rc.lua \
-		${GETKEY} pmix.lrank
-'
-test_expect_success 'pmix.srv.rank is set to 0' '
-	cat >srvrank.exp <<-EOT &&
-	0
+
+# This does not produce the expected results and needs investigation.
+test_expect_success XFAIL '2n4p pmix.lpeers is set correctly' '
+	cat >pmix.lpeers.exp <<-EOT &&
+	0: 0,1
+	1: 0,1
+	2: 2,3
+	3: 2,3
 	EOT
-	run_timeout 30 flux mini run -n1 \
+	run_timeout 30 flux mini run -N2 -n4 \
 		-ouserrc=$(pwd)/rc.lua \
-		${GETKEY} pmix.srv.rank >srvrank.out &&
-	test_cmp srvrank.exp srvrank.out
+		${GETKEY} --proc=* --label-io pmix.lpeers \
+			| sort -n >pmix.lpeers.out &&
+	test_cmp pmix.lpeers.exp pmix.lpeers.out
+'
+test_expect_success '2n4p pmix.nlist is set' '
+	run_timeout 30 flux mini run -N2 -n4 \
+		-ouserrc=$(pwd)/rc.lua \
+		${GETKEY} --proc=* --label-io pmix.nlist
+'
+test_expect_success '2n4p pmix.num.nodes is set correctly' '
+	cat >pmix.num.nodes.exp <<-EOT &&
+	0: 2
+	1: 2
+	2: 2
+	3: 2
+	EOT
+	run_timeout 30 flux mini run -N2 -n4 \
+		-ouserrc=$(pwd)/rc.lua \
+		${GETKEY} --proc=* --label-io pmix.num.nodes \
+			| sort -n >pmix.num.nodes.out &&
+	test_cmp pmix.num.nodes.exp pmix.num.nodes.out
+'
+test_expect_success '2n4p pmix.nodeid is set correctly' '
+	cat >pmix.nodeid.exp <<-EOT &&
+	0: 0
+	1: 0
+	2: 1
+	3: 1
+	EOT
+	run_timeout 30 flux mini run -N2 -n4 \
+		-ouserrc=$(pwd)/rc.lua \
+		${GETKEY} --label-io pmix.nodeid \
+			| sort -n >pmix.nodeid.out
+	test_cmp pmix.nodeid.exp pmix.nodeid.out
+'
+test_expect_success '2n4p pmix.lrank is set correctly' '
+	cat >pmix.lrank.exp <<-EOT &&
+	0: 0
+	1: 1
+	2: 0
+	3: 1
+	EOT
+	run_timeout 30 flux mini run -N2 -n4 \
+		-ouserrc=$(pwd)/rc.lua \
+		${GETKEY} --label-io pmix.lrank \
+			| sort -n >pmix.lrank.out &&
+	test_cmp pmix.lrank.exp pmix.lrank.out
+'
+test_expect_success '2n4p pmix.srv.rank is set correctly' '
+	cat >pmix.srv.rank.exp <<-EOT &&
+	0: 0
+	1: 0
+	2: 1
+	3: 1
+	EOT
+	run_timeout 30 flux mini run -N2 -n4 \
+		-ouserrc=$(pwd)/rc.lua \
+		${GETKEY} --label-io pmix.srv.rank \
+			| sort -n >pmix.srv.rank.out &&
+	test_cmp pmix.srv.rank.exp pmix.srv.rank.out
 '
 
 test_done

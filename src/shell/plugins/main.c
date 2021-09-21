@@ -21,6 +21,7 @@
 
 #include "infovec.h"
 #include "maps.h"
+#include "interthread.h"
 
 struct px {
     flux_shell_t *shell;
@@ -30,6 +31,7 @@ struct px {
     int local_nprocs;
     int total_nprocs;
     const char *job_tmpdir;
+    struct interthread *it;
 };
 
 static void px_destroy (struct px *px)
@@ -39,6 +41,7 @@ static void px_destroy (struct px *px)
         int saved_errno = errno;
         if ((rc = PMIx_server_finalize ()))
             shell_warn ("PMIx_server_finalize: %s", PMIx_Error_string (rc));
+        interthread_destroy (px->it);
         free (px);
         errno = saved_errno;
     }
@@ -130,6 +133,9 @@ static int px_init (flux_plugin_t *p,
                                         &px->total_nprocs) < 0)
         return -1;
     if (!(px->job_tmpdir = flux_shell_getenv (shell, "FLUX_JOB_TMPDIR")))
+        return -1;
+
+    if (!(px->it = interthread_create (shell)))
         return -1;
 
     strncpy (info[0].key, PMIX_SERVER_TMPDIR, PMIX_MAX_KEYLEN);

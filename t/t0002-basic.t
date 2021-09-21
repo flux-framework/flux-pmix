@@ -17,18 +17,18 @@ test_expect_success 'print pmix library version' '
 	${VERSION}
 '
 
-test_expect_success 'create ompi_rc.lua script' "
-	cat >ompi_rc.lua <<-EOT
+test_expect_success 'create rc.lua script' "
+	cat >rc.lua <<-EOT
 	plugin.load (\"$PLUGINPATH/pmix.so\")
 	EOT
 "
 
-test_expect_success 'verify that plugin is loaded by ompi_rc.lua' '
-	flux mini run -o userrc=$(pwd)/ompi_rc.lua /bin/true
+test_expect_success 'verify that plugin is loaded by rc.lua' '
+	flux mini run -o userrc=$(pwd)/rc.lua /bin/true
 '
 
 test_expect_success 'capture environment with plugin loaded' '
-	flux mini run -o userrc=$(pwd)/ompi_rc.lua printenv >env.out
+	flux mini run -o userrc=$(pwd)/rc.lua printenv >env.out
 '
 
 test_expect_success 'PMIX_SERVER_URI* variables all have the same value' '
@@ -52,13 +52,13 @@ test_expect_success 'pmix.job.size is set correctly on rank 0' '
 	2
 	EOT
 	run_timeout 30 flux mini run -n2 \
-		-ouserrc=$(pwd)/ompi_rc.lua \
+		-ouserrc=$(pwd)/rc.lua \
 		${GETKEY} --proc=* --rank=0 pmix.job.size >size0.out &&
 	test_cmp size.exp size0.out
 '
 test_expect_success 'pmix.job.size is set correctly on rank 1' '
 	run_timeout 30 flux mini run -n2 \
-		-ouserrc=$(pwd)/ompi_rc.lua \
+		-ouserrc=$(pwd)/rc.lua \
 		${GETKEY} --proc=* --rank=1 pmix.job.size >size1.out &&
 	test_cmp size.exp size1.out
 '
@@ -67,7 +67,7 @@ test_expect_success 'pmix.univ.size 2 procs is 2' '
 	2
 	EOT
 	run_timeout 30 flux mini run -n2 \
-		-ouserrc=$(pwd)/ompi_rc.lua \
+		-ouserrc=$(pwd)/rc.lua \
 		${GETKEY} --proc=* pmix.univ.size >univ.out &&
 	test_cmp univ.exp univ.out
 '
@@ -76,13 +76,13 @@ test_expect_success 'pmix.local.size 2 procs 1 shell is 2' '
 	2
 	EOT
 	run_timeout 30 flux mini run -n2 \
-		-ouserrc=$(pwd)/ompi_rc.lua \
+		-ouserrc=$(pwd)/rc.lua \
 		${GETKEY} --proc=* pmix.local.size >localsize.out &&
 	test_cmp localsize.exp localsize.out
 '
 test_expect_success 'pmix.tmpdir is set' '
 	run_timeout 30 flux mini run -n1 \
-		-ouserrc=$(pwd)/ompi_rc.lua \
+		-ouserrc=$(pwd)/rc.lua \
 		${GETKEY} --proc=* pmix.tmpdir
 '
 test_expect_success 'pmix.job.napps is set to 1' '
@@ -90,42 +90,42 @@ test_expect_success 'pmix.job.napps is set to 1' '
 	1
 	EOT
 	run_timeout 30 flux mini run -n2 \
-		-ouserrc=$(pwd)/ompi_rc.lua \
+		-ouserrc=$(pwd)/rc.lua \
 		${GETKEY} --proc=* pmix.job.napps >napps.out
 '
 test_expect_success 'pmix.nsdir is set' '
 	run_timeout 30 flux mini run -n1 \
-		-ouserrc=$(pwd)/ompi_rc.lua \
+		-ouserrc=$(pwd)/rc.lua \
 		${GETKEY} --proc=* pmix.nsdir
 '
 test_expect_success 'pmix.hname is set' '
 	run_timeout 30 flux mini run -n1 \
-		-ouserrc=$(pwd)/ompi_rc.lua \
+		-ouserrc=$(pwd)/rc.lua \
 		${GETKEY} pmix.hname
 '
 test_expect_success 'pmix.lpeers is set' '
 	run_timeout 30 flux mini run -n1 \
-		-ouserrc=$(pwd)/ompi_rc.lua \
+		-ouserrc=$(pwd)/rc.lua \
 		${GETKEY} --proc=* pmix.lpeers
 '
 test_expect_success 'pmix.nlist is set' '
 	run_timeout 30 flux mini run -n1 \
-		-ouserrc=$(pwd)/ompi_rc.lua \
+		-ouserrc=$(pwd)/rc.lua \
 		${GETKEY} --proc=* pmix.nlist
 '
 test_expect_success 'pmix.num.nodes is set' '
 	run_timeout 30 flux mini run -n1 \
-		-ouserrc=$(pwd)/ompi_rc.lua \
+		-ouserrc=$(pwd)/rc.lua \
 		${GETKEY} --proc=* pmix.num.nodes
 '
 test_expect_success 'pmix.nodeid is set' '
 	run_timeout 30 flux mini run -n1 \
-		-ouserrc=$(pwd)/ompi_rc.lua \
+		-ouserrc=$(pwd)/rc.lua \
 		${GETKEY} pmix.nodeid
 '
 test_expect_success 'pmix.lrank is set' '
 	run_timeout 30 flux mini run -n1 \
-		-ouserrc=$(pwd)/ompi_rc.lua \
+		-ouserrc=$(pwd)/rc.lua \
 		${GETKEY} pmix.lrank
 '
 test_expect_success 'pmix.srv.rank is set to 0' '
@@ -133,20 +133,20 @@ test_expect_success 'pmix.srv.rank is set to 0' '
 	0
 	EOT
 	run_timeout 30 flux mini run -n1 \
-		-ouserrc=$(pwd)/ompi_rc.lua \
+		-ouserrc=$(pwd)/rc.lua \
 		${GETKEY} pmix.srv.rank >srvrank.out &&
 	test_cmp srvrank.exp srvrank.out
 '
 
 test_expect_success 'pmix barrier works' '
 	run_timeout 30 flux mini run -n2 \
-		-ouserrc=$(pwd)/ompi_rc.lua \
+		-ouserrc=$(pwd)/rc.lua \
 		${BARRIER}
 '
 
 test_expect_success 'pmix bizcard works' '
 	run_timeout 30 flux mini run -n2 \
-		-ouserrc=$(pwd)/ompi_rc.lua \
+		-ouserrc=$(pwd)/rc.lua \
 		${BIZCARD} 1
 '
 

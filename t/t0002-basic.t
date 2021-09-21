@@ -1,6 +1,6 @@
 #!/bin/sh
 
-test_description='Basic plugin tests on a single shell'
+test_description='Basic plugin tests'
 
 PLUGINPATH=${FLUX_BUILD_DIR}/src/shell/plugins/.libs
 
@@ -11,7 +11,7 @@ BIZCARD=${FLUX_BUILD_DIR}/t/src/bizcard
 VERSION=${FLUX_BUILD_DIR}/t/src/version
 GETKEY=${FLUX_BUILD_DIR}/t/src/getkey
 
-test_under_flux 1
+test_under_flux 2
 
 test_expect_success 'print pmix library version' '
 	${VERSION}

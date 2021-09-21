@@ -11,6 +11,12 @@
 /* exchange.c - sync local dict across shells
  *
  * Derived from shell/pmi/pmi_exchange.c in flux-core.
+ *
+ * This version concatenates json arrays of base64 strings (in random order)
+ * instead of merging json dictionaries, to fit the pmix fence data model.
+ * In addition, the interfaces are made more convenient for use by pmix
+ * callbacks: entry function takes a json base64 string, while exit callback
+ * accessor gets the fully decoded, concatenated blob.
  */
 
 #if HAVE_CONFIG_H
@@ -21,14 +27,17 @@
 #include <flux/core.h>
 #include <flux/shell.h>
 
+#include "codec.h"
+
 #include "exchange.h"
 
 #define DEFAULT_TREE_K 2
 
 struct session {
-    json_t *dict;                   // container for gathered dictionary
-    exchange_f cb;                  // callback for exchange completion
-    void *cb_arg;
+    json_t *data_in;                // arrays of gathered base64 strings
+    json_t *data_out;
+    exchange_exit_f exit_cb;        // callback for exchange completion
+    void *exit_cb_arg;
 
     struct flux_msglist *requests;  // pending requests from children
     flux_future_t *f;               // pending request to parent
@@ -81,7 +90,8 @@ static void session_destroy (struct session *ses)
         int saved_errno = errno;
         flux_msglist_destroy (ses->requests);
         flux_future_destroy (ses->f);
-        json_decref (ses->dict);
+        json_decref (ses->data_in);
+        json_decref (ses->data_out);
         free (ses);
         errno = saved_errno;
     }
@@ -96,7 +106,7 @@ static struct session *session_create (struct exchange *xcg)
     ses->xcg = xcg;
     if (!(ses->requests = flux_msglist_create ()))
         goto error;
-    if (!(ses->dict = json_object ())) {
+    if (!(ses->data_in = json_array ())) {
         errno = ENOMEM;
         goto error;
     }
@@ -129,14 +139,14 @@ static void session_process (struct session *ses)
                                        "pmix-exchange",
                                        xcg->parent_rank,
                                        0,
-                                       "O",
-                                       ses->dict))
+                                       "{s:O}",
+                                       "data", ses->data_in))
                 || flux_future_then (f,
                                      -1,
                                      exchange_response_completion,
                                      xcg) < 0) {
             flux_future_destroy (f);
-            shell_warn ("error sending pmi-exchange request");
+            shell_warn ("error sending pmix-exchange request");
             ses->has_error = 1;
             goto done;
         }
@@ -148,11 +158,14 @@ static void session_process (struct session *ses)
     if (ses->f && !flux_future_is_ready (ses->f))
         return;
 
+    if (xcg->rank == 0);
+        ses->data_out = json_incref (ses->data_in);
+
     /* Send exchange response(s), if needed.
      */
     while ((msg = flux_msglist_pop (ses->requests))) {
-        if (flux_respond_pack (h, msg, "O", ses->dict) < 0) {
-            shell_warn ("error responding to pmi-exchange request");
+        if (flux_respond_pack (h, msg, "{s:O}", "data", ses->data_out) < 0) {
+            shell_warn ("error responding to pmix-exchange request");
             flux_msg_decref (msg);
             ses->has_error = 1;
             goto done;
@@ -160,33 +173,25 @@ static void session_process (struct session *ses)
         flux_msg_decref (msg);
     }
 done:
-    ses->cb (xcg, ses->cb_arg);
+    ses->exit_cb (xcg, ses->exit_cb_arg);
     session_destroy (ses);
     xcg->session = NULL;
 }
 
-/* parent shell has responded to pmi-exchange request.
+/* parent shell has responded to pmix-exchange request.
  */
 static void exchange_response_completion (flux_future_t *f, void *arg)
 {
     struct exchange *xcg = arg;
-    json_t *dict;
 
-    if (flux_rpc_get_unpack (f, "o", &dict) < 0) {
-        shell_warn ("pmi-exchange request: %s", future_strerror (f, errno));
+    if (flux_rpc_get_unpack (f, "{s:O}", "data", &xcg->session->data_out) < 0) {
+        shell_warn ("pmix-exchange request: %s", future_strerror (f, errno));
         xcg->session->has_error = 1;
-        goto done;
     }
-    if (json_object_update (xcg->session->dict, dict) < 0) {
-        shell_warn ("pmi-exchange response handling failed to update dict");
-        xcg->session->has_error = 1;
-        goto done;
-    }
-done:
     session_process (xcg->session);
 }
 
-/* child shell sent a pmi-exchange request
+/* child shell sent a pmix-exchange request
  */
 static void exchange_request_cb (flux_t *h,
                                  flux_msg_handler_t *mh,
@@ -194,10 +199,10 @@ static void exchange_request_cb (flux_t *h,
                                  void *arg)
 {
     struct exchange *xcg = arg;
-    json_t *dict;
+    json_t *data;
     const char *errstr = NULL;
 
-    if (flux_request_unpack (msg, NULL, "o", &dict) < 0)
+    if (flux_request_unpack (msg, NULL, "{s:o}", "data", &data) < 0)
         goto error;
     if (!xcg->session) {
         if (!(xcg->session = session_create (xcg)))
@@ -208,8 +213,8 @@ static void exchange_request_cb (flux_t *h,
         errno = EINPROGRESS;
         goto error;
     }
-    if (json_object_update (xcg->session->dict, dict) < 0) {
-        errstr = "exchange request failed to update dict";
+    if (json_array_extend (xcg->session->data_in, data) < 0) {
+        errstr = "exchange request failed to extend data_in array";
         errno = ENOMEM;
         goto error;
     }
@@ -221,14 +226,24 @@ static void exchange_request_cb (flux_t *h,
     return;
 error:
     if (flux_respond_error (h, msg, errno, errstr) < 0)
-        shell_warn ("error responding to pmi-exchange request: %s",
+        shell_warn ("error responding to pmix-exchange request: %s",
                     flux_strerror (errno));
 }
 
 /* this shell is ready to exchange.
  */
-int exchange (struct exchange *xcg, json_t *dict, exchange_f cb, void *arg)
+int exchange_enter_base64_string (struct exchange *xcg,
+                                  json_t *data,
+                                  exchange_exit_f exit_cb,
+                                  void *exit_cb_arg)
 {
+    if (!xcg
+        || !data
+        || !exit_cb
+        || !json_is_string (data)) {
+        errno = EINVAL;
+        return -1;
+    }
     if (!xcg->session) {
         if (!(xcg->session = session_create (xcg)))
             return -1;
@@ -237,10 +252,10 @@ int exchange (struct exchange *xcg, json_t *dict, exchange_f cb, void *arg)
         errno = EINPROGRESS;
         return -1;
     }
-    xcg->session->cb = cb;
-    xcg->session->cb_arg = arg;
+    xcg->session->exit_cb = exit_cb;
+    xcg->session->exit_cb_arg = exit_cb_arg;
     xcg->session->local = 1;
-    if (json_object_update (xcg->session->dict, dict) < 0) {
+    if (json_array_append (xcg->session->data_in, data) < 0) {
         errno = ENOMEM;
         return -1;
     }
@@ -315,9 +330,42 @@ bool exchange_has_error (struct exchange *xcg)
     return xcg->session->has_error ? true : false;
 }
 
-json_t *exchange_get_dict (struct exchange *xcg)
+/* Convert internal array of base64 json strings to one continguous
+ * data blob that the caller must free.
+ */
+int exchange_get_data (struct exchange *xcg, void **datap, size_t *sizep)
 {
-    return xcg->session->dict;
+    size_t bufsize = 0;
+    size_t index;
+    json_t *value;
+    uint8_t *data = NULL;
+    size_t size = 0;
+
+    // compute buffer size and allocate
+    json_array_foreach (xcg->session->data_out, index, value) {
+        ssize_t chunksize = codec_data_decode_bufsize (value);
+        if (chunksize < 0)
+            return -1;
+        bufsize += chunksize;
+    }
+    if (!(data = malloc (bufsize)))
+        return -1;
+
+    // decode array to buffer
+    json_array_foreach (xcg->session->data_out, index, value) {
+        ssize_t chunksize = codec_data_decode_tobuf (value,
+                                                     data + size,
+                                                     bufsize - size);
+        if (chunksize < 0)
+            goto error;
+        size += chunksize;
+    }
+    *datap = data;
+    *sizep = size;
+    return 0;
+error:
+    free (data);
+    return -1;
 }
 
 /* vi: ts=4 sw=4 expandtab

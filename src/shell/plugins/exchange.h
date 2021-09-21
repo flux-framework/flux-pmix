@@ -17,20 +17,29 @@
 struct exchange *exchange_create (flux_shell_t *shell, int k);
 void exchange_destroy (struct exchange *xcg);
 
-typedef void (*exchange_f)(struct exchange *xcg, void *arg);
+typedef void (*exchange_exit_f)(struct exchange *xcg, void *arg);
 
 /* Perform one exchange across all shell ranks.
- * 'dict' is the input from this  shell.  Once the the result of the exchange
- * is availbale, 'cb' is invoked.
+ * 'data' is the input from this shell, in the form of a base64 json string.
+ * Once the the result of the exchange is available, 'exit_cb' is invoked.
  */
-int exchange (struct exchange *xcg, json_t *dict, exchange_f cb, void *arg);
+int exchange_enter_base64_string (struct exchange *xcg,
+                                  json_t *data,
+                                  exchange_exit_f exit_cb,
+                                  void *exit_cb_arg);
 
-/* Accessors may be called only from exchange_f callback.
- * exchange_get_dict() returns a json object that is invalidated when
- * the callback returns.
+/* This may be called from the exchange_exit_f callback
+ * to determine whether or not the exchange was successful.
  */
 bool exchange_has_error (struct exchange *xcg);
-json_t *exchange_get_dict (struct exchange *xcg);
+
+/* Accessor to be called only from exchange_exit_f callback.
+ * The caller must free the 'data' result, if successful.
+ * 'data' is built by decoding the base64-encoded blobs collected from
+ * each shell and concatenating them in random order.
+ * This is consistent with the semantics of the fence_nb server callback.
+ */
+int exchange_get_data (struct exchange *xcg, void **data, size_t *size);
 
 #endif // _PX_EXCHANGE_H
 

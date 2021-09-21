@@ -28,7 +28,7 @@ static struct optparse_option opts[] = {
       .usage = "Get key from RANK (default=self)",
     },
     { .name = "rank", .has_arg = 1, .arginfo = "RANK",
-      .usage = "Perform the getkey on RANK (default=0)",
+      .usage = "Perform the getkey only on RANK (default=all)",
     },
     OPTPARSE_TABLE_END,
 };
@@ -107,11 +107,11 @@ int main (int argc, char **argv)
         else
             proc.rank = strtoul (s, NULL, 10);
     }
-    rank = optparse_get_int (p, "rank", 0);
+    rank = optparse_get_int (p, "rank", -1);
 
     /* Get key
      */
-    if (rank == self.rank)
+    if (rank == -1 || rank == self.rank)
         getkey (&proc, key, p);
 
     /* Finalize

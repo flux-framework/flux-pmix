@@ -68,7 +68,7 @@ test_expect_success 'pmix.univ.size 2 procs is 2' '
 	EOT
 	run_timeout 30 flux mini run -n2 \
 		-ouserrc=$(pwd)/rc.lua \
-		${GETKEY} --proc=* pmix.univ.size >univ.out &&
+		${GETKEY} --proc=* --rank=0 pmix.univ.size >univ.out &&
 	test_cmp univ.exp univ.out
 '
 test_expect_success 'pmix.local.size 2 procs 1 shell is 2' '
@@ -77,7 +77,7 @@ test_expect_success 'pmix.local.size 2 procs 1 shell is 2' '
 	EOT
 	run_timeout 30 flux mini run -n2 \
 		-ouserrc=$(pwd)/rc.lua \
-		${GETKEY} --proc=* pmix.local.size >localsize.out &&
+		${GETKEY} --proc=* --rank=0 pmix.local.size >localsize.out &&
 	test_cmp localsize.exp localsize.out
 '
 test_expect_success 'pmix.tmpdir is set' '
@@ -89,7 +89,7 @@ test_expect_success 'pmix.job.napps is set to 1' '
 	cat >napps.exp <<-EOT
 	1
 	EOT
-	run_timeout 30 flux mini run -n2 \
+	run_timeout 30 flux mini run -n1 \
 		-ouserrc=$(pwd)/rc.lua \
 		${GETKEY} --proc=* pmix.job.napps >napps.out
 '

@@ -18,7 +18,9 @@ pmix_la_SOURCES = \
 	codec.h \
 	codec.c \
 	interthread.h \
-	interthread.c
+	interthread.c \
+	exchange.h \
+	exchange.c
 pmix_la_CPPFLAGS = \
 	$(AM_CPPFLAGS) \
 	$(FLUX_CORE_CFLAGS) \

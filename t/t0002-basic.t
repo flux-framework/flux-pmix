@@ -6,8 +6,6 @@ PLUGINPATH=${FLUX_BUILD_DIR}/src/shell/plugins/.libs
 
 . `dirname $0`/sharness.sh
 
-BARRIER=${FLUX_BUILD_DIR}/t/src/barrier
-BIZCARD=${FLUX_BUILD_DIR}/t/src/bizcard
 VERSION=${FLUX_BUILD_DIR}/t/src/version
 GETKEY=${FLUX_BUILD_DIR}/t/src/getkey
 
@@ -136,18 +134,6 @@ test_expect_success 'pmix.srv.rank is set to 0' '
 		-ouserrc=$(pwd)/rc.lua \
 		${GETKEY} pmix.srv.rank >srvrank.out &&
 	test_cmp srvrank.exp srvrank.out
-'
-
-test_expect_success 'pmix barrier works' '
-	run_timeout 30 flux mini run -n2 \
-		-ouserrc=$(pwd)/rc.lua \
-		${BARRIER}
-'
-
-test_expect_success 'pmix bizcard works' '
-	run_timeout 30 flux mini run -n2 \
-		-ouserrc=$(pwd)/rc.lua \
-		${BIZCARD} 1
 '
 
 test_done

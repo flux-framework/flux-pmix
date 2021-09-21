@@ -22,6 +22,7 @@
 #include "infovec.h"
 #include "maps.h"
 #include "interthread.h"
+#include "fence.h"
 
 struct px {
     flux_shell_t *shell;
@@ -32,7 +33,10 @@ struct px {
     int total_nprocs;
     const char *job_tmpdir;
     struct interthread *it;
+    struct fence *fence;
 };
+
+static pmix_server_module_t server_callbacks;
 
 static void px_destroy (struct px *px)
 {
@@ -41,6 +45,7 @@ static void px_destroy (struct px *px)
         int saved_errno = errno;
         if ((rc = PMIx_server_finalize ()))
             shell_warn ("PMIx_server_finalize: %s", PMIx_Error_string (rc));
+        fence_destroy (px->fence);
         interthread_destroy (px->it);
         free (px);
         errno = saved_errno;
@@ -137,6 +142,9 @@ static int px_init (flux_plugin_t *p,
 
     if (!(px->it = interthread_create (shell)))
         return -1;
+    if (!(px->fence = fence_create (shell, px->it)))
+        return -1;
+    server_callbacks.fence_nb = fence_server_cb;
 
     strncpy (info[0].key, PMIX_SERVER_TMPDIR, PMIX_MAX_KEYLEN);
     info[0].value.type = PMIX_STRING;
@@ -146,7 +154,7 @@ static int px_init (flux_plugin_t *p,
     info[1].value.type = PMIX_PROC_RANK;
     info[1].value.data.rank = px->shell_rank;
 
-    if ((rc = PMIx_server_init (NULL, info, 2)) != PMIX_SUCCESS) {
+    if ((rc = PMIx_server_init (&server_callbacks, info, 2)) != PMIX_SUCCESS) {
         shell_warn ("PMIx_server_init: %s", PMIx_Error_string (rc));
         return -1;
     }

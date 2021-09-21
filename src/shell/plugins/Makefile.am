@@ -20,7 +20,9 @@ pmix_la_SOURCES = \
 	interthread.h \
 	interthread.c \
 	exchange.h \
-	exchange.c
+	exchange.c \
+	fence.h \
+	fence.c
 pmix_la_CPPFLAGS = \
 	$(AM_CPPFLAGS) \
 	$(FLUX_CORE_CFLAGS) \

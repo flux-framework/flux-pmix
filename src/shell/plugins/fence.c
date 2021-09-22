@@ -145,6 +145,11 @@ static void fence_shell_cb (const flux_msg_t *msg, void *arg)
         fence_call_destroy (fxcall);
         return;
     }
+    if (fxcall->nprocs > 1 || fxcall->procs[0].rank != PMIX_RANK_WILDCARD) {
+        shell_warn ("fence over proc subset is not supported by flux");
+        rc = PMIX_ERR_NOT_SUPPORTED;
+        goto error;
+    }
     for (int i = 0; i < fxcall->ninfo; i++) {
         if ((rc = parse_fence_attr (fxcall, &fxcall->info[i])) != PMIX_SUCCESS)
             goto error;

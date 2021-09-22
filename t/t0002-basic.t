@@ -152,7 +152,7 @@ test_expect_success '2n4p pmix.nodeid is set correctly' '
 	run_timeout 30 flux mini run -N2 -n4 \
 		-ouserrc=$(pwd)/rc.lua \
 		${GETKEY} --label-io pmix.nodeid \
-			| sort -n >pmix.nodeid.out
+			| sort -n >pmix.nodeid.out &&
 	test_cmp pmix.nodeid.exp pmix.nodeid.out
 '
 test_expect_success '2n4p pmix.lrank is set correctly' '

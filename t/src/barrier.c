@@ -16,14 +16,133 @@
 #endif
 #include <pmix.h>
 #include <stdio.h>
+#include <flux/optparse.h>
 
 #include "log.h"
 #include "monotime.h"
 
+const char *opt_usage = "[OPTIONS]";
+
+static struct optparse_option opts[] = {
+    { .name = "unknown", .has_arg = 1, .arginfo = "[+]INT",
+      .usage = "set pmix.unknown attribute to the specified value",
+    },
+    { .name = "collect-data", .has_arg = 1, .arginfo = "[+]true|false",
+      .usage = "set pmix.collect attribute to the specified value,"
+               " optional unless prefixed with a '+'",
+    },
+    { .name = "collect-job-info", .has_arg = 1, .arginfo = "[+]true|false",
+      .usage = "set pmix.collect.gen attribute to the specified value",
+    },
+    { .name = "timeout", .has_arg = 1, .arginfo = "[+]SECONDS",
+      .usage = "set pmix.timeout attribute to the specified value",
+    },
+    { .name = "unknown", .has_arg = 1, .arginfo = "[+]INT",
+      .usage = "set pmix.unknown attribute to the specified value",
+    },
+    OPTPARSE_TABLE_END,
+};
+
+void set_info_bool (pmix_info_t *info,
+                    const char *name,
+                    int flags,
+                    const char *optarg)
+{
+    bool value = true;
+    if (!strcmp (optarg, "false"))
+        value = false;
+    strncpy (info->key, name, PMIX_MAX_KEYLEN);
+    info->flags = flags;
+    info->value.type = PMIX_BOOL;
+    info->value.data.flag = value;
+}
+
+void set_info_int (pmix_info_t *info,
+                   const char *name,
+                   int flags,
+                   int optarg)
+{
+    strncpy (info->key, name, PMIX_MAX_KEYLEN);
+    info->flags = flags;
+    info->value.type = PMIX_INT;
+    info->value.data.flag = optarg;
+}
+
+size_t parse_info_opts (optparse_t *p, pmix_info_t *infos, size_t ninfo)
+{
+    size_t count = 0;
+    const char *arg;
+    int flags = 0;
+
+    if (optparse_hasopt (p, "collect-data")) {
+        arg = optparse_get_str (p, "collect-data", "true");
+        if (*arg == '+') {
+            flags |= PMIX_INFO_REQD;
+            arg++;
+        }
+        if (count == ninfo)
+            log_err_exit ("too many attribute options");
+        set_info_bool (&infos[count++], PMIX_COLLECT_DATA, flags, arg);
+    }
+    if (optparse_hasopt (p, "collect-job-info")) {
+        arg = optparse_get_str (p, "collect-job-info", "true");
+        if (*arg == '+') {
+            flags |= PMIX_INFO_REQD;
+            arg++;
+        }
+        if (count == ninfo)
+            log_err_exit ("too many attribute options");
+        set_info_bool (&infos[count++],
+                       PMIX_COLLECT_GENERATED_JOB_INFO,
+                       flags,
+                       arg);
+    }
+    if (optparse_hasopt (p, "timeout")) {
+        arg = optparse_get_str (p, "timeout", "0");
+        if (*arg == '+') {
+            flags |= PMIX_INFO_REQD;
+            arg++;
+        }
+        if (count == ninfo)
+            log_err_exit ("too many attribute options");
+        set_info_int (&infos[count++],
+                      PMIX_TIMEOUT,
+                      flags,
+                      strtol (arg, NULL, 10));
+    }
+    if (optparse_hasopt (p, "unknown")) {
+        arg = optparse_get_str (p, "unknown", "0");
+        if (*arg == '+') {
+            flags |= PMIX_INFO_REQD;
+            arg++;
+        }
+        set_info_int (&infos[count++],
+                      "pmix.unknown",
+                      flags,
+                      strtol (arg, NULL, 10));
+    }
+    return count;
+}
+
 int main (int argc, char **argv)
 {
+    optparse_t *p;
+    int optindex;
     pmix_proc_t self;
     int rc;
+
+    /* Parse args
+     */
+    if (!(p = optparse_create ("barrier"))
+        || optparse_add_option_table (p, opts) != OPTPARSE_SUCCESS
+        || optparse_set (p, OPTPARSE_USAGE, opt_usage) != OPTPARSE_SUCCESS)
+        log_msg_exit ("error setting up option parsing");
+    if ((optindex = optparse_parse_args (p, argc, argv)) < 0)
+        return 1;
+    if (optindex != argc) {
+        optparse_print_usage (p);
+        return 1;
+    }
 
     /* Initialize and set log prefix to nspace.rank
      */
@@ -53,7 +172,10 @@ int main (int argc, char **argv)
      */
     struct timespec t;
     monotime (&t);
-    if ((rc = PMIx_Fence (NULL, 0, NULL, 0)))
+    pmix_info_t info[8] = { 0 };
+    size_t ninfo = parse_info_opts (p, info, sizeof (info) / sizeof (info[0]));
+
+    if ((rc = PMIx_Fence (NULL, 0, info, ninfo)))
         log_msg_exit ("PMIx_Fence: %s", PMIx_Error_string (rc));
     if (self.rank == 0)
         log_msg ("completed barrier in %0.3fs.", monotime_since (t) / 1000);
@@ -64,6 +186,8 @@ int main (int argc, char **argv)
         log_msg_exit ("PMIx_Finalize: %s", PMIx_Error_string (rc));
     if (self.rank == 0)
         log_msg ("completed PMIx_Finalize.");
+
+    optparse_destroy (p);
     return 0;
 }
 

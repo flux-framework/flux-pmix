@@ -1,0 +1,8 @@
+coverage:
+ ignore:
+ - "t/.*"
+ - ".*/test/.*"
+ - ".*/common/libtap/.*"
+ - ".*/common/libccan/.*"
+ - "/usr/include/.*"
+ - "/usr/lib/.*"

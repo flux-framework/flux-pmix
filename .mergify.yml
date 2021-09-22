@@ -4,6 +4,9 @@ pull_request_rules:
       - base=main
       - status-success="validate commits"
       - status-success="focal - ompi v5.0.x"
+      - status-success="focal - ompi v5.0.x, chain_lint"
+      - status-success="centos8 - ommpi v5.0.x, distcheck"
+      - status-success="coverage"
       - label="merge-when-passing"
       - label!="work-in-progress"
       - "approved-reviews-by=@flux-framework/core"

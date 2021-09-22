@@ -17,6 +17,7 @@
 #include <pmix.h>
 #include <stdio.h>
 #include <flux/optparse.h>
+#include <flux/idset.h>
 
 #include "log.h"
 #include "monotime.h"
@@ -37,8 +38,8 @@ static struct optparse_option opts[] = {
     { .name = "timeout", .has_arg = 1, .arginfo = "[+]SECONDS",
       .usage = "set pmix.timeout attribute to the specified value",
     },
-    { .name = "unknown", .has_arg = 1, .arginfo = "[+]INT",
-      .usage = "set pmix.unknown attribute to the specified value",
+    { .name = "procs", .has_arg = 1, .arginfo = "IDSET",
+      .usage = "Fence over set of proc ranks (default=all)",
     },
     OPTPARSE_TABLE_END,
 };
@@ -124,6 +125,35 @@ size_t parse_info_opts (optparse_t *p, pmix_info_t *infos, size_t ninfo)
     return count;
 }
 
+size_t parse_procs_opt (optparse_t *p, pmix_proc_t *self, pmix_proc_t **procsp)
+{
+    size_t nprocs;
+    const char *s;
+    struct idset *ids;
+    pmix_proc_t *procs;
+    unsigned int id;
+
+    if (!(s = optparse_get_str (p, "procs", NULL)))
+        return 0;
+    if (!(ids = idset_decode (s)))
+        log_err_exit ("could not make an idset from '%s'", s);
+    nprocs = idset_count (ids);
+    if (!(procs = calloc (nprocs, sizeof (procs[0]))))
+        log_err_exit ("allocating procs");
+    int index = 0;
+    id = idset_first (ids);
+    while (id != IDSET_INVALID_ID) {
+        strncpy (procs[index].nspace, self->nspace, PMIX_MAX_NSLEN);
+        procs[index].rank = id;
+        index++;
+        id = idset_next (ids, id);
+    }
+    idset_destroy (ids);
+    *procsp = procs;
+    return nprocs;
+
+}
+
 int main (int argc, char **argv)
 {
     optparse_t *p;
@@ -173,12 +203,16 @@ int main (int argc, char **argv)
     struct timespec t;
     monotime (&t);
     pmix_info_t info[8] = { 0 };
+    pmix_proc_t *procs;
     size_t ninfo = parse_info_opts (p, info, sizeof (info) / sizeof (info[0]));
+    size_t nprocs = parse_procs_opt (p, &self, &procs);
 
-    if ((rc = PMIx_Fence (NULL, 0, info, ninfo)))
+    if ((rc = PMIx_Fence (procs, nprocs, info, ninfo)))
         log_msg_exit ("PMIx_Fence: %s", PMIx_Error_string (rc));
     if (self.rank == 0)
         log_msg ("completed barrier in %0.3fs.", monotime_since (t) / 1000);
+
+    free (procs);
 
     /* Finalize
      */

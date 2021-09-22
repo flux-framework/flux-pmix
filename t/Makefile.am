@@ -29,7 +29,8 @@ TESTSCRIPTS = \
 	t0003-barrier.t \
 	t0004-bizcard.t \
 	t0005-abort.t \
-	t0006-notify.t
+	t0006-notify.t \
+	t1000-ompi-basic.t
 
 # make check runs these TAP tests directly (both scripts and programs)
 TESTS = \

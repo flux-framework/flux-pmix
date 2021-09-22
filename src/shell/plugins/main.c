@@ -62,6 +62,7 @@ static int set_node_map (struct infovec *iv,
 
     if (!(raw = maps_node_create (shell)))
         return -1;
+    shell_debug ("node_map = %s", raw);
     if ((rc = PMIx_generate_regex (raw, &cooked) != PMIX_SUCCESS)) {
         free (raw);
         shell_warn ("PMIx_generate_regex: %s", PMIx_Error_string (rc));
@@ -86,6 +87,7 @@ static int set_proc_map (struct infovec *iv,
 
     if (!(raw = maps_proc_create (shell)))
         return -1;
+    shell_debug ("proc_map = %s", raw);
     if ((rc = PMIx_generate_ppn (raw, &cooked) != PMIX_SUCCESS)) {
         free (raw);
         shell_warn ("PMIx_generate_ppn: %s", PMIx_Error_string (rc));

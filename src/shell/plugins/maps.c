@@ -92,6 +92,20 @@ char *maps_proc_create (flux_shell_t *shell)
     return argz;
 }
 
+static bool contains_duplicates (struct hostlist *hl)
+{
+    struct hostlist *hl2;
+    bool result = false;
+
+    if (!(hl2 = hostlist_copy (hl)))
+        return false;
+    hostlist_uniq (hl2);
+    if (hostlist_count (hl) > hostlist_count (hl2))
+        result = true;
+    hostlist_destroy (hl2);
+    return result;
+}
+
 /* First fetch the nodelist from R and convert it to a hostlist.
  * Then encode the hostlist to a string with no range compression
  * (we have to do that manually with an argz).
@@ -105,8 +119,8 @@ char *maps_node_create (flux_shell_t *shell)
     char *argz = NULL;
     size_t argz_len = 0;
     const char *node;
-    char *hostname;
     char *s;
+    bool uniqify = false;
 
     if (flux_shell_info_unpack (shell,
                                 "{s:{s:{s:o}}}",
@@ -121,8 +135,16 @@ char *maps_node_create (flux_shell_t *shell)
         if (!s || hostlist_append (hl, s) < 0)
             goto error;
     }
+    if (contains_duplicates (hl))
+        uniqify = true;
+    index = 0;
     node = hostlist_first (hl);
     while (node) {
+        char newnode[HOST_NAME_MAX + 1];
+        if (uniqify) {
+            snprintf (newnode, sizeof (newnode), "%s%zu", node, index++);
+            node = newnode;
+        }
         if (argz_add (&argz, &argz_len, node) != 0)
             goto error;
         node = hostlist_next (hl);

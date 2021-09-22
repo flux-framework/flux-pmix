@@ -27,11 +27,37 @@ test_expect_success '1n2p barrier works' '
 		${BARRIER}
 '
 
+test_expect_success '2n2p barrier works' '
+	run_timeout 30 flux mini run -N2 -n2 \
+		-overbose=2 \
+		-ouserrc=$(pwd)/rc.lua \
+		${BARRIER}
+'
+
+test_expect_success '2n4p barrier works' '
+	run_timeout 30 flux mini run -N2 -n4 \
+		-overbose=2 \
+		-ouserrc=$(pwd)/rc.lua \
+		${BARRIER}
+'
+
 test_expect_success '1n2p bizcard exchange works' '
        run_timeout 30 flux mini run -N1 -n2 \
                -ouserrc=$(pwd)/rc.lua \
                ${BIZCARD} 1
 '
 
+test_expect_success '2n2p bizcard exchange works' '
+       run_timeout 30 flux mini run -N2 -n2 \
+	       -overbose=2 \
+               -ouserrc=$(pwd)/rc.lua \
+               ${BIZCARD} 1
+'
+
+test_expect_success '2n4p bizcard exchange works' '
+       run_timeout 30 flux mini run -N2 -n4 \
+               -ouserrc=$(pwd)/rc.lua \
+               ${BIZCARD} 1
+'
 
 test_done

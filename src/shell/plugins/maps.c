@@ -22,6 +22,34 @@
 
 #include "maps.h"
 
+char *maps_lpeers_create (flux_shell_t *shell)
+{
+    int shell_rank;
+    int base_rank;
+    int ntasks;
+    struct idset *ids;
+    char *s;
+
+    if (flux_shell_info_unpack (shell, "{s:i}", "rank", &shell_rank) < 0)
+        return NULL;
+    base_rank = 0;
+    for (int i= 0; i <= shell_rank; i++) {
+        if (flux_shell_rank_info_unpack (shell,
+                                         i,
+                                         "{s:i}", "ntasks",
+                                         &ntasks) < 0)
+            return NULL;
+        if (i < shell_rank)
+            base_rank += ntasks;
+    }
+    if (!(ids = idset_create (0, IDSET_FLAG_AUTOGROW))
+        || idset_range_set (ids, base_rank, base_rank + ntasks - 1) < 0
+        || !(s = idset_encode (ids, 0)))
+        s = NULL;
+    idset_destroy (ids);
+    return s;
+}
+
 /* Iterate over each shell, creating an idset of ranks.
  * Create a semicolon delimited list of idsets, where each entry
  * represents a set of ranks on a shell.

@@ -52,6 +52,22 @@ static void px_destroy (struct px *px)
     }
 }
 
+static int set_lpeers (struct infovec *iv,
+                       const char *key,
+                       flux_shell_t *shell)
+{
+    char *s;
+
+    if (!(s = maps_lpeers_create (shell)))
+        return -1;
+    shell_debug ("local_peers = %s", s);
+    if (infovec_set_str_new (iv, key, s) < 0) { // steals s
+        free (s);
+        return -1;
+    }
+    return 0;
+}
+
 static int set_node_map (struct infovec *iv,
                          const char *key,
                          flux_shell_t *shell)
@@ -162,6 +178,7 @@ static int px_init (flux_plugin_t *p,
     }
 
     if (!(iv = infovec_create ())
+        || set_lpeers (iv, PMIX_LOCAL_PEERS, shell) < 0
         || set_node_map (iv, PMIX_NODE_MAP, shell) < 0
         || set_proc_map (iv, PMIX_PROC_MAP, shell) < 0
         || infovec_set_str (iv, PMIX_NSDIR, px->job_tmpdir) < 0

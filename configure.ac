@@ -75,6 +75,7 @@ AC_SUBST(fluxplugin_ldflags)
 AC_CONFIG_FILES( \
   Makefile \
   src/common/libtap/Makefile \
+  src/common/libccan/Makefile \
   src/shell/plugins/Makefile \
   t/Makefile \
   t/sharness.d/00-setup.sh \

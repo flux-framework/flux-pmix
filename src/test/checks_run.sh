@@ -85,47 +85,12 @@ fi
 # Enable coverage for $CC-coverage build
 # We can't use distcheck here, it doesn't play well with coverage testing:
 if test "$COVERAGE" = "t"; then
-	# usercustomize.py must go under USER_SITE, so determine that path:
-	USER_SITE=$(python3 -c 'import site; print(site.USER_SITE)')
-	mkdir -p ${USER_SITE}
-
-	# Setup environment for Python coverage
-	# This file will be loaded by all python scripts run by the
-	# current user, but only activate coverage if COVERAGE_PROCESS_START
-	# is set in the environment.
-	#
-	cat <<-EOF >${USER_SITE}/usercustomize.py
-	try:
-	    import coverage
-	    coverage.process_startup()
-	except ImportError:
-	    pass
-	EOF
-
-	# Add Python coverage config:
-	cat <<-EOF >coverage.rc
-	[run]
-	data_file = $(pwd)/.coverage
-	include = $(pwd)/src/*
-	parallel = True
-	relative_files = True
-	omit = src/bindings/python/flux/utils/*
-	[report]
-	omit = src/bindings/python/flux/utils/*
-	EOF
-
 	rm -f .coverage .coverage*
 
 	ARGS="$ARGS --enable-code-coverage"
 	CHECKCMDS="\
-	ENABLE_USER_SITE=1 \
-	COVERAGE_PROCESS_START=$(pwd)/coverage.rc \
 	${MAKE} -j $JOBS check-code-coverage && \
-	lcov -l flux*-coverage.info && \
-	coverage combine .coverage* && \
-	coverage html && coverage xml &&
-	chmod 444 coverage.xml &&
-	coverage report"
+	lcov -l flux*-coverage.info"
 
 # Use make install for T_INSTALL:
 elif test "$TEST_INSTALL" = "t"; then

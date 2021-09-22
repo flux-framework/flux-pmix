@@ -21,10 +21,33 @@ jobs:
     timeout-minutes: 20
     strategy:
       matrix:
-        image: ["focal"]
-        ompi_branch: ["v5.0.x"]
+        include:
+        - name: "focal - ompi v0.5.x"
+          image: "focal"
+          ompi_branch: "v5.0.x"
+          coverage: false
+          env: {}
+        - name: "focal - ompi v0.5.x, chain_lint"
+          image: "focal"
+          ompi_branch: "v5.0.x"
+          coverage: false
+          env:
+            chain_lint: t
+        - name: "centos8 - ompi v0.5.x, distcheck"
+          image: "centos8"
+          ompi_branch: "v5.0.x"
+          coverage: false
+          env:
+            DISTCHECK: t
+        - name: "coverage"
+          image: "focal"
+          ompi_branch: "v5.0.x"
+          coverage: true
+          env:
+            COVERAGE: t
+
       fail-fast: false
-    name: ${{ matrix.image }} - ompi ${{ matrix.ompi_branch }}
+    name: ${{ matrix.name }}
     steps:
     - name: checkout
       uses: actions/checkout@v2
@@ -33,6 +56,7 @@ jobs:
        fetch-depth: 0
 
     - name: docker-run-checks
+      env: ${{ matrix.env }}
       run: >
         ./src/test/docker/docker-run-checks.sh
         -j $(nproc)
@@ -43,3 +67,10 @@ jobs:
     - name: annotate errors
       if: failure() || cancelled()
       run: src/test/checks-annotate.sh
+
+    - name: coverage report
+      if: success() && matrix.coverage
+      env:
+        DOCKER_REPO:
+      uses: codecov/codecov-action@v1
+      

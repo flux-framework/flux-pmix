@@ -110,8 +110,7 @@ test_expect_success '2n4p pmix.hname is set' '
 		${GETKEY} --label-io pmix.hname
 '
 
-# This does not produce the expected results and needs investigation.
-test_expect_success XFAIL '2n4p pmix.lpeers is set correctly' '
+test_expect_success '2n4p pmix.lpeers is set correctly' '
 	cat >pmix.lpeers.exp <<-EOT &&
 	0: 0,1
 	1: 0,1

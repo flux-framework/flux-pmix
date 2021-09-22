@@ -26,7 +26,8 @@ TESTSCRIPTS = \
 	t0000-sharness.t \
 	t0001-ompi-sanity.t \
 	t0002-basic.t \
-	t0003-bizcard.t
+	t0003-barrier.t \
+	t0004-bizcard.t
 
 # make check runs these TAP tests directly (both scripts and programs)
 TESTS = \

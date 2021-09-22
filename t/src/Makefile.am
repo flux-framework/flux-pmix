@@ -29,8 +29,15 @@ test_ldadd = \
 	$(builddir)/libtestutil.la
 
 barrier_SOURCES = barrier.c
-barrier_CPPFLAGS = $(AM_CPPFLAGS) $(PMIX_CFLAGS)
-barrier_LDADD = $(test_ldadd) $(PMIX_LIBS)
+barrier_CPPFLAGS = \
+	$(AM_CPPFLAGS) \
+	$(PMIX_CFLAGS) \
+	$(FLUX_OPTPARSE_CFLAGS) \
+	$(FLUX_IDSET_CFLAGS)
+barrier_LDADD = $(test_ldadd) \
+	$(PMIX_LIBS) \
+	$(FLUX_OPTPARSE_LIBS) \
+	$(FLUX_IDSET_LIBS)
 
 bizcard_SOURCES = bizcard.c
 bizcard_CPPFLAGS = $(AM_CPPFLAGS) $(PMIX_CFLAGS)

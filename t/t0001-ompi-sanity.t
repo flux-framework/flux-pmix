@@ -28,6 +28,12 @@ test_expect_success 'prterun barrier' '
 	${PRTERUN} --n 8 ${BARRIER}
 '
 
+# XXX This occasionally hangs.
+test_expect_success XFAIL 'prterun barrier works with procs subset' '
+	${PRTERUN} --n 8 ${BARRIER} --procs=0-1
+'
+
+
 test_expect_success 'prterun bizcard' '
 	${PRTERUN} --n 8 ${BIZCARD} 1
 '

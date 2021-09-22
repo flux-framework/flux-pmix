@@ -89,6 +89,34 @@ done:
     fxcall->cbfunc (status, data, ndata, fxcall->cbdata, free, data);
 }
 
+/* Parse info[] attributes from the fence callback.
+ * Return PMIX_SUCCESS or an error status.
+ */
+static int parse_fence_attr (struct fence_call *fxcall, pmix_info_t *info)
+{
+    int rc = PMIX_SUCCESS;
+    int required = (info->flags & PMIX_INFO_REQD);
+
+    if (!strcmp (info->key, "pmix.collect")) {
+        /* ignore this attribute - we always collect data posted by
+         * the participants.  However if it is set to false, log it.
+         */
+        if (!info->value.data.flag)
+            shell_debug ("ignoring fence attr %s=%s",
+                         info->key,
+                         info->value.data.flag ? "true" : "false");
+        goto done;
+    }
+
+    shell_warn ("unknown %s fence attr: %s",
+                required ? "required" : "optional",
+                info->key);
+    if (required)
+        rc = PMIX_ERR_BAD_PARAM;
+done:
+    return rc;
+}
+
 static void fence_shell_cb (const flux_msg_t *msg, void *arg)
 {
     struct fence *fx = arg;
@@ -98,13 +126,14 @@ static void fence_shell_cb (const flux_msg_t *msg, void *arg)
     json_t *xcbfunc;
     json_t *xcbdata;
     struct fence_call *fxcall;
+    int rc;
 
     if (!(fxcall = fence_call_create ())
         || flux_msg_unpack (msg,
                             "{s:o s:o s:o s:o s:o}",
                             "procs", &xprocs,
                             "info", &xinfo,
-                            "data", &xdata,
+                            "data", &xdata, // not further decoded here
                             "cbfunc", &xcbfunc,
                             "cbdata", &xcbdata) < 0
         || codec_proc_array_decode (xprocs, &fxcall->procs, &fxcall->nprocs) < 0
@@ -116,19 +145,29 @@ static void fence_shell_cb (const flux_msg_t *msg, void *arg)
         fence_call_destroy (fxcall);
         return;
     }
-    /* N.B. there is no need to decode 'xdata' as we would need to
-     * re-encode it for the exchange anyway.
-     */
+    if (fxcall->nprocs > 1 || fxcall->procs[0].rank != PMIX_RANK_WILDCARD) {
+        shell_warn ("fence over proc subset is not supported by flux");
+        rc = PMIX_ERR_NOT_SUPPORTED;
+        goto error;
+    }
+    for (int i = 0; i < fxcall->ninfo; i++) {
+        if ((rc = parse_fence_attr (fxcall, &fxcall->info[i])) != PMIX_SUCCESS)
+            goto error;
+    }
     if (exchange_enter_base64_string (fx->exchange,
                                       xdata,
                                       exchange_exit_cb,
                                       fxcall) < 0) {
         shell_warn ("error initiating pmix exchange");
-        fxcall->cbfunc (PMIX_ERROR, NULL, 0, fxcall->cbdata, NULL, NULL);
-        fence_call_destroy (fxcall);
+        rc = PMIX_ERROR;
+        goto error;
     }
     if (fx->trace_flag)
         shell_trace ("starting pmix exchange");
+    return;
+error:
+    fxcall->cbfunc (rc, NULL, 0, fxcall->cbdata, NULL, NULL);
+    fence_call_destroy (fxcall);
 }
 
 int fence_server_cb (const pmix_proc_t procs[],

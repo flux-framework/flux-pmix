@@ -52,6 +52,22 @@ static void px_destroy (struct px *px)
     }
 }
 
+static int set_lpeers (struct infovec *iv,
+                       const char *key,
+                       flux_shell_t *shell)
+{
+    char *s;
+
+    if (!(s = maps_lpeers_create (shell)))
+        return -1;
+    shell_debug ("local_peers = %s", s);
+    if (infovec_set_str_new (iv, key, s) < 0) { // steals s
+        free (s);
+        return -1;
+    }
+    return 0;
+}
+
 static int set_node_map (struct infovec *iv,
                          const char *key,
                          flux_shell_t *shell)
@@ -62,6 +78,7 @@ static int set_node_map (struct infovec *iv,
 
     if (!(raw = maps_node_create (shell)))
         return -1;
+    shell_debug ("node_map = %s", raw);
     if ((rc = PMIx_generate_regex (raw, &cooked) != PMIX_SUCCESS)) {
         free (raw);
         shell_warn ("PMIx_generate_regex: %s", PMIx_Error_string (rc));
@@ -86,6 +103,7 @@ static int set_proc_map (struct infovec *iv,
 
     if (!(raw = maps_proc_create (shell)))
         return -1;
+    shell_debug ("proc_map = %s", raw);
     if ((rc = PMIx_generate_ppn (raw, &cooked) != PMIX_SUCCESS)) {
         free (raw);
         shell_warn ("PMIx_generate_ppn: %s", PMIx_Error_string (rc));
@@ -160,6 +178,7 @@ static int px_init (flux_plugin_t *p,
     }
 
     if (!(iv = infovec_create ())
+        || set_lpeers (iv, PMIX_LOCAL_PEERS, shell) < 0
         || set_node_map (iv, PMIX_NODE_MAP, shell) < 0
         || set_proc_map (iv, PMIX_PROC_MAP, shell) < 0
         || infovec_set_str (iv, PMIX_NSDIR, px->job_tmpdir) < 0

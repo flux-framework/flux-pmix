@@ -161,6 +161,12 @@ static int px_init (flux_plugin_t *p,
     if (!(px->job_tmpdir = flux_shell_getenv (shell, "FLUX_JOB_TMPDIR")))
         return -1;
 
+    if (px->shell_rank == 0) {
+        const char *s = PMIx_Get_version ();
+        const char *cp = strchr (s, ',');
+        int len = cp ? cp - s : strlen (s);
+        shell_debug ("server outsourced to %.*s", len, s);
+    }
     if (!(px->it = interthread_create (shell)))
         return -1;
     if (!(px->fence = fence_create (shell, px->it)))

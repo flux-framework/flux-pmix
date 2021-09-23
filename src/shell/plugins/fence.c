@@ -224,7 +224,6 @@ void fence_destroy (struct fence *fx)
 
 struct fence *fence_create (flux_shell_t *shell, struct interthread *it)
 {
-    flux_t *h = flux_shell_get_flux (shell);
     struct fence *fx;
 
     if (!(fx = calloc (1, sizeof (*fx))))

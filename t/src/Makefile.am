@@ -13,6 +13,7 @@ check_PROGRAMS = \
 	bizcard \
 	version \
 	getkey \
+	abort \
 	mpi_hello \
 	mpi_version \
 	mpi_abort
@@ -50,6 +51,10 @@ version_LDADD = $(test_ldadd) $(PMIX_LIBS)
 getkey_SOURCES = getkey.c
 getkey_CPPFLAGS = $(AM_CPPFLAGS) $(PMIX_CFLAGS) $(FLUX_OPTPARSE_CFLAGS)
 getkey_LDADD = $(test_ldadd) $(PMIX_LIBS) $(FLUX_OPTPARSE_LIBS)
+
+abort_SOURCES = abort.c
+abort_CPPFLAGS = $(AM_CPPFLAGS) $(PMIX_CFLAGS) $(FLUX_OPTPARSE_CFLAGS)
+abort_LDADD = $(test_ldadd) $(PMIX_LIBS) $(FLUX_OPTPARSE_LIBS)
 
 mpi_hello_SOURCES = mpi_hello.c
 mpi_hello_CPPFLAGS = $(AM_CPPFLAGS) $(OMPI_CFLAGS)

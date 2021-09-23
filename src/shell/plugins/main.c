@@ -43,7 +43,7 @@ static void px_destroy (struct px *px)
     if (px) {
         int rc;
         int saved_errno = errno;
-        if ((rc = PMIx_server_finalize ()))
+        if ((rc = PMIx_server_finalize ()) != PMIX_SUCCESS)
             shell_warn ("PMIx_server_finalize: %s", PMIx_Error_string (rc));
         fence_destroy (px->fence);
         interthread_destroy (px->it);

@@ -24,7 +24,9 @@ pmix_la_SOURCES = \
 	fence.h \
 	fence.c \
 	abort.h \
-	abort.c
+	abort.c \
+	notify.h \
+	notify.c
 pmix_la_CPPFLAGS = \
 	$(AM_CPPFLAGS) \
 	$(FLUX_CORE_CFLAGS) \

@@ -14,6 +14,7 @@ check_PROGRAMS = \
 	version \
 	getkey \
 	abort \
+	notify \
 	mpi_hello \
 	mpi_version \
 	mpi_abort
@@ -55,6 +56,10 @@ getkey_LDADD = $(test_ldadd) $(PMIX_LIBS) $(FLUX_OPTPARSE_LIBS)
 abort_SOURCES = abort.c
 abort_CPPFLAGS = $(AM_CPPFLAGS) $(PMIX_CFLAGS) $(FLUX_OPTPARSE_CFLAGS)
 abort_LDADD = $(test_ldadd) $(PMIX_LIBS) $(FLUX_OPTPARSE_LIBS)
+
+notify_SOURCES = notify.c
+notify_CPPFLAGS = $(AM_CPPFLAGS) $(PMIX_CFLAGS) $(FLUX_OPTPARSE_CFLAGS)
+notify_LDADD = $(test_ldadd) $(PMIX_LIBS) $(FLUX_OPTPARSE_LIBS)
 
 mpi_hello_SOURCES = mpi_hello.c
 mpi_hello_CPPFLAGS = $(AM_CPPFLAGS) $(OMPI_CFLAGS)

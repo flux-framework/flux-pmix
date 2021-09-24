@@ -161,6 +161,24 @@ void check_value ()
     codec_value_release (&val2);
 }
 
+void check_proc_array (void)
+{
+    json_t *o;
+    pmix_proc_t *procs;
+    size_t nprocs;
+
+    /* null array in and out */
+    o = codec_proc_array_encode (NULL, 0);
+    ok (o != NULL,
+        "codec_proc_array_encode procs=NULL nprocs=0 works");
+
+    nprocs = 42;
+    ok (codec_proc_array_decode (o, &procs, &nprocs) == 0,
+        "codec_proc_array_decode works");
+    ok (nprocs == 0,
+        "nprocs is set to 0");
+}
+
 int main (int argc, char **argv)
 {
     plan (NO_PLAN);
@@ -171,7 +189,9 @@ int main (int argc, char **argv)
 
     // TODO pmix_info_t
     // TODO pmix_proc_t
-    // TODO array of pmix_proc_t
+
+    check_proc_array ();
+
     // TODO array of pmix_info_t
 
     done_testing ();

@@ -22,7 +22,9 @@ pmix_la_SOURCES = \
 	exchange.h \
 	exchange.c \
 	fence.h \
-	fence.c
+	fence.c \
+	abort.h \
+	abort.c
 pmix_la_CPPFLAGS = \
 	$(AM_CPPFLAGS) \
 	$(FLUX_CORE_CFLAGS) \

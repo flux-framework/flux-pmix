@@ -23,6 +23,7 @@
 #include "maps.h"
 #include "interthread.h"
 #include "fence.h"
+#include "abort.h"
 
 struct px {
     flux_shell_t *shell;
@@ -34,6 +35,7 @@ struct px {
     const char *job_tmpdir;
     struct interthread *it;
     struct fence *fence;
+    struct abort *abort;
 };
 
 static pmix_server_module_t server_callbacks;
@@ -43,8 +45,9 @@ static void px_destroy (struct px *px)
     if (px) {
         int rc;
         int saved_errno = errno;
-        if ((rc = PMIx_server_finalize ()))
+        if ((rc = PMIx_server_finalize ()) != PMIX_SUCCESS)
             shell_warn ("PMIx_server_finalize: %s", PMIx_Error_string (rc));
+        abort_destroy (px->abort);
         fence_destroy (px->fence);
         interthread_destroy (px->it);
         free (px);
@@ -158,11 +161,20 @@ static int px_init (flux_plugin_t *p,
     if (!(px->job_tmpdir = flux_shell_getenv (shell, "FLUX_JOB_TMPDIR")))
         return -1;
 
+    if (px->shell_rank == 0) {
+        const char *s = PMIx_Get_version ();
+        const char *cp = strchr (s, ',');
+        int len = cp ? cp - s : strlen (s);
+        shell_debug ("server outsourced to %.*s", len, s);
+    }
     if (!(px->it = interthread_create (shell)))
         return -1;
     if (!(px->fence = fence_create (shell, px->it)))
         return -1;
     server_callbacks.fence_nb = fence_server_cb;
+    if (!(px->abort = abort_create (shell, px->it)))
+        return -1;
+    server_callbacks.abort = abort_server_cb;
 
     strncpy (info[0].key, PMIX_SERVER_TMPDIR, PMIX_MAX_KEYLEN);
     info[0].value.type = PMIX_STRING;

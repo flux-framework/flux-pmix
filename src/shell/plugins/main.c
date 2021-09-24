@@ -24,6 +24,7 @@
 #include "interthread.h"
 #include "fence.h"
 #include "abort.h"
+#include "notify.h"
 
 struct px {
     flux_shell_t *shell;
@@ -36,6 +37,7 @@ struct px {
     struct interthread *it;
     struct fence *fence;
     struct abort *abort;
+    struct notify *notify;
 };
 
 static pmix_server_module_t server_callbacks;
@@ -47,6 +49,7 @@ static void px_destroy (struct px *px)
         int saved_errno = errno;
         if ((rc = PMIx_server_finalize ()) != PMIX_SUCCESS)
             shell_warn ("PMIx_server_finalize: %s", PMIx_Error_string (rc));
+        notify_destroy (px->notify);
         abort_destroy (px->abort);
         fence_destroy (px->fence);
         interthread_destroy (px->it);
@@ -188,6 +191,9 @@ static int px_init (flux_plugin_t *p,
         shell_warn ("PMIx_server_init: %s", PMIx_Error_string (rc));
         return -1;
     }
+
+    if (!(px->notify = notify_create (shell, px->it)))
+        return -1;
 
     if (!(iv = infovec_create ())
         || set_lpeers (iv, PMIX_LOCAL_PEERS, shell) < 0

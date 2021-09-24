@@ -22,18 +22,18 @@ jobs:
     strategy:
       matrix:
         include:
-        - name: "focal - ompi v0.5.x"
+        - name: "focal - ompi v5.0.x"
           image: "focal"
           ompi_branch: "v5.0.x"
           coverage: false
           env: {}
-        - name: "focal - ompi v0.5.x, chain_lint"
+        - name: "focal - ompi v5.0.x, chain_lint"
           image: "focal"
           ompi_branch: "v5.0.x"
           coverage: false
           env:
             chain_lint: t
-        - name: "centos8 - ompi v0.5.x, distcheck"
+        - name: "centos8 - ompi v5.0.x, distcheck"
           image: "centos8"
           ompi_branch: "v5.0.x"
           coverage: false

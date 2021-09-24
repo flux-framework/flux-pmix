@@ -49,7 +49,7 @@ AC_DEFUN([AX_FLUX_CORE], [
   PKG_CONFIG_PATH=${prefix}/lib/pkgconfig:${PKG_CONFIG_PATH}
   export PKG_CONFIG_PATH
 
-  PKG_CHECK_MODULES([FLUX_CORE], [flux-core],
+  PKG_CHECK_MODULES([FLUX_CORE], [flux-core > 0.29.0],
     [
       FLUX_PREFIX=`pkg-config --variable=prefix flux-core`
       LIBFLUX_VERSION=`pkg-config --modversion flux-core`
@@ -71,7 +71,7 @@ AC_DEFUN([AX_FLUX_CORE], [
       FLUX_PYTHON_VERSION=$($FLUX python -c 'import sys; print(".".join(map(str, sys.version_info[[:2]])))')
       AC_SUBST(FLUX_PYTHON_VERSION)
     ],
-    AC_MSG_ERROR([flux-core package not installed]))
+    AC_MSG_ERROR([a suitable flux-core package is not installed]))
   ]
 
   #  Check for other flux-core libraries

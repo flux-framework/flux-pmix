@@ -22,32 +22,30 @@
 
 #include "maps.h"
 
+static char *derange_idset (const char *in)
+{
+    struct idset *ids;
+    char *out;
+
+    if (!(ids = idset_decode (in)))
+        return NULL;
+    out = idset_encode (ids, 0);
+    idset_destroy (ids);
+    return out;
+}
+
 char *maps_lpeers_create (flux_shell_t *shell)
 {
     int shell_rank;
-    int base_rank;
-    int ntasks;
-    struct idset *ids;
-    char *s;
+    const char *taskids;
 
-    if (flux_shell_info_unpack (shell, "{s:i}", "rank", &shell_rank) < 0)
+    if (flux_shell_info_unpack (shell, "{s:i}", "rank", &shell_rank) < 0
+        || flux_shell_rank_info_unpack (shell,
+                                        shell_rank,
+                                        "{s:s}",
+                                        "taskids", &taskids) < 0)
         return NULL;
-    base_rank = 0;
-    for (int i= 0; i <= shell_rank; i++) {
-        if (flux_shell_rank_info_unpack (shell,
-                                         i,
-                                         "{s:i}", "ntasks",
-                                         &ntasks) < 0)
-            return NULL;
-        if (i < shell_rank)
-            base_rank += ntasks;
-    }
-    if (!(ids = idset_create (0, IDSET_FLAG_AUTOGROW))
-        || idset_range_set (ids, base_rank, base_rank + ntasks - 1) < 0
-        || !(s = idset_encode (ids, 0)))
-        s = NULL;
-    idset_destroy (ids);
-    return s;
+    return derange_idset (taskids);
 }
 
 /* Iterate over each shell, creating an idset of ranks.
@@ -58,35 +56,25 @@ char *maps_lpeers_create (flux_shell_t *shell)
 char *maps_proc_create (flux_shell_t *shell)
 {
     int shell_size;
-    int base_rank = 0;
     char *argz = NULL;
     size_t argz_len = 0;
+    const char *taskids;
     char *s;
 
     if (flux_shell_info_unpack (shell, "{s:i}", "size", &shell_size) < 0)
         return NULL;
     for (int shell_rank = 0; shell_rank < shell_size; shell_rank++) {
-        int ntasks;
-        struct idset *ids;
-        char *s;
         if (flux_shell_rank_info_unpack (shell,
                                          shell_rank,
-                                         "{s:i}", "ntasks",
-                                         &ntasks) < 0)
-            return NULL;
-        if (!(ids = idset_create (0, IDSET_FLAG_AUTOGROW))
-            || idset_range_set (ids,
-                                base_rank,
-                                base_rank + ntasks - 1) < 0
-            || !(s = idset_encode (ids, 0))
+                                         "{s:s}",
+                                         "taskids", &taskids) < 0
+            || !(s = derange_idset (taskids))
             || argz_add (&argz, &argz_len, s) != 0) {
-            idset_destroy (ids);
+            free (s);
             free (argz);
             return NULL;
         }
         free (s);
-        idset_destroy (ids);
-        base_rank += ntasks;
     }
     argz_stringify (argz, argz_len, ';');
     return argz;

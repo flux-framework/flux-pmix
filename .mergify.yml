@@ -5,7 +5,7 @@ pull_request_rules:
       - status-success="validate commits"
       - status-success="focal - ompi v5.0.x"
       - status-success="focal - ompi v5.0.x, chain_lint"
-      - status-success="centos8 - ommpi v5.0.x, distcheck"
+      - status-success="centos8 - ompi v5.0.x, distcheck"
       - status-success="coverage"
       - label="merge-when-passing"
       - label!="work-in-progress"

@@ -90,6 +90,17 @@ int codec_data_decode (json_t *o, void **datap, size_t *lengthp)
     return 0;
 }
 
+ssize_t codec_data_length (json_t *o)
+{
+    void *data;
+    size_t length;
+    if (codec_data_decode (o, &data, &length) < 0)
+        return -1;
+    free (data);
+    return length;
+}
+
+
 json_t *codec_proc_encode (const pmix_proc_t *proc)
 {
     return json_pack ("{s:s s:i}",

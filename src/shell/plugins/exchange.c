@@ -158,7 +158,7 @@ static void session_process (struct session *ses)
     if (ses->f && !flux_future_is_ready (ses->f))
         return;
 
-    if (xcg->rank == 0);
+    if (xcg->rank == 0)
         ses->data_out = json_incref (ses->data_in);
 
     /* Send exchange response(s), if needed.

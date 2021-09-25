@@ -19,6 +19,7 @@ int codec_pointer_decode (json_t *o, void **ptr);
 
 json_t *codec_data_encode (const void *data, size_t length);
 int codec_data_decode (json_t *o, void **data, size_t *length);
+ssize_t codec_data_length (json_t *o);
 
 ssize_t codec_data_decode_bufsize (json_t *o);
 ssize_t codec_data_decode_tobuf (json_t *o, void *data, size_t buflen);

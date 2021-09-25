@@ -45,6 +45,11 @@ jobs:
           coverage: true
           env:
             COVERAGE: t
+        - name: "fedora34 - ompi v5.0.x"
+          image: "fedora34"
+          ompi_branch: "v5.0.x"
+          coverage: false
+          env: {}
 
       fail-fast: false
     name: ${{ matrix.name }}

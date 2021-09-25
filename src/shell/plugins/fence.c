@@ -40,6 +40,7 @@ struct fence_call {
     size_t ninfo;
     pmix_modex_cbfunc_t cbfunc;
     void *cbdata;
+    bool collect;
 };
 
 /* This is for the benefit of server callbacks that don't have
@@ -82,10 +83,12 @@ static void exchange_exit_cb (struct exchange *xcg, void *arg)
         shell_warn ("error accessing pmix exchanged data");
         goto done;
     }
-    shell_trace ("completed pmix exchange");
     status = PMIX_SUCCESS;
 done:
     // N.B. pmix calls 'free' on data when fence is complete
+    shell_trace ("completed pmix exchange: size %zu %s",
+                 ndata,
+                 PMIx_Error_string (status));
     fxcall->cbfunc (status, data, ndata, fxcall->cbdata, free, data);
 }
 
@@ -98,16 +101,11 @@ static int parse_fence_attr (struct fence_call *fxcall, pmix_info_t *info)
     int required = (info->flags & PMIX_INFO_REQD);
 
     if (!strcmp (info->key, "pmix.collect")) {
-        /* ignore this attribute - we always collect data posted by
-         * the participants.  However if it is set to false, log it.
-         */
-        if (!info->value.data.flag)
-            shell_debug ("ignoring fence attr %s=%s",
-                         info->key,
-                         info->value.data.flag ? "true" : "false");
+        if (info->value.type == PMIX_BOOL
+            && info->value.data.flag == true)
+            fxcall->collect = true;
         goto done;
     }
-
     shell_warn ("unknown %s fence attr: %s",
                 required ? "required" : "optional",
                 info->key);
@@ -155,7 +153,7 @@ static void fence_shell_cb (const flux_msg_t *msg, void *arg)
             goto error;
     }
     if (exchange_enter_base64_string (fx->exchange,
-                                      xdata,
+                                      fxcall->collect ? xdata : NULL,
                                       exchange_exit_cb,
                                       fxcall) < 0) {
         shell_warn ("error initiating pmix exchange");
@@ -163,7 +161,8 @@ static void fence_shell_cb (const flux_msg_t *msg, void *arg)
         goto error;
     }
     if (fx->trace_flag)
-        shell_trace ("starting pmix exchange");
+        shell_trace ("starting pmix exchange: size %zi",
+                     fxcall->collect ? codec_data_length (xdata) : 0);
     return;
 error:
     fxcall->cbfunc (rc, NULL, 0, fxcall->cbdata, NULL, NULL);

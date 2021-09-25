@@ -72,11 +72,10 @@ void set_info_int (pmix_info_t *info,
 size_t parse_info_opts (optparse_t *p, pmix_info_t *infos, size_t ninfo)
 {
     size_t count = 0;
-    const char *arg;
-    int flags = 0;
 
     if (optparse_hasopt (p, "collect-data")) {
-        arg = optparse_get_str (p, "collect-data", "true");
+        const char *arg = optparse_get_str (p, "collect-data", "true");
+        int flags = 0;
         if (*arg == '+') {
             flags |= PMIX_INFO_REQD;
             arg++;
@@ -86,7 +85,8 @@ size_t parse_info_opts (optparse_t *p, pmix_info_t *infos, size_t ninfo)
         set_info_bool (&infos[count++], PMIX_COLLECT_DATA, flags, arg);
     }
     if (optparse_hasopt (p, "collect-job-info")) {
-        arg = optparse_get_str (p, "collect-job-info", "true");
+        const char *arg = optparse_get_str (p, "collect-job-info", "true");
+        int flags = 0;
         if (*arg == '+') {
             flags |= PMIX_INFO_REQD;
             arg++;
@@ -99,7 +99,8 @@ size_t parse_info_opts (optparse_t *p, pmix_info_t *infos, size_t ninfo)
                        arg);
     }
     if (optparse_hasopt (p, "timeout")) {
-        arg = optparse_get_str (p, "timeout", "0");
+        const char *arg = optparse_get_str (p, "timeout", "0");
+        int flags = 0;
         if (*arg == '+') {
             flags |= PMIX_INFO_REQD;
             arg++;
@@ -112,7 +113,8 @@ size_t parse_info_opts (optparse_t *p, pmix_info_t *infos, size_t ninfo)
                       strtol (arg, NULL, 10));
     }
     if (optparse_hasopt (p, "unknown")) {
-        arg = optparse_get_str (p, "unknown", "0");
+        const char *arg = optparse_get_str (p, "unknown", "0");
+        int flags = 0;
         if (*arg == '+') {
             flags |= PMIX_INFO_REQD;
             arg++;
@@ -203,7 +205,7 @@ int main (int argc, char **argv)
     struct timespec t;
     monotime (&t);
     pmix_info_t info[8] = { 0 };
-    pmix_proc_t *procs;
+    pmix_proc_t *procs = NULL;
     size_t ninfo = parse_info_opts (p, info, sizeof (info) / sizeof (info[0]));
     size_t nprocs = parse_procs_opt (p, &self, &procs);
 

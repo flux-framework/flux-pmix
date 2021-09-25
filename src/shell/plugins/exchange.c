@@ -158,7 +158,7 @@ static void session_process (struct session *ses)
     if (ses->f && !flux_future_is_ready (ses->f))
         return;
 
-    if (xcg->rank == 0);
+    if (xcg->rank == 0)
         ses->data_out = json_incref (ses->data_in);
 
     /* Send exchange response(s), if needed.
@@ -238,9 +238,8 @@ int exchange_enter_base64_string (struct exchange *xcg,
                                   void *exit_cb_arg)
 {
     if (!xcg
-        || !data
         || !exit_cb
-        || !json_is_string (data)) {
+        || (data && !json_is_string (data))) {
         errno = EINVAL;
         return -1;
     }
@@ -255,9 +254,11 @@ int exchange_enter_base64_string (struct exchange *xcg,
     xcg->session->exit_cb = exit_cb;
     xcg->session->exit_cb_arg = exit_cb_arg;
     xcg->session->local = 1;
-    if (json_array_append (xcg->session->data_in, data) < 0) {
-        errno = ENOMEM;
-        return -1;
+    if (data) {
+        if (json_array_append (xcg->session->data_in, data) < 0) {
+            errno = ENOMEM;
+            return -1;
+        }
     }
     session_process (xcg->session);
     return 0;

@@ -26,7 +26,9 @@ pmix_la_SOURCES = \
 	abort.h \
 	abort.c \
 	notify.h \
-	notify.c
+	notify.c \
+	dmodex.h \
+	dmodex.c
 pmix_la_CPPFLAGS = \
 	$(AM_CPPFLAGS) \
 	$(FLUX_CORE_CFLAGS) \

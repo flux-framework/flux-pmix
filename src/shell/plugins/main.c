@@ -25,6 +25,7 @@
 #include "fence.h"
 #include "abort.h"
 #include "notify.h"
+#include "dmodex.h"
 
 struct px {
     flux_shell_t *shell;
@@ -38,6 +39,7 @@ struct px {
     struct fence *fence;
     struct abort *abort;
     struct notify *notify;
+    struct dmodex *dmodex;
 };
 
 static pmix_server_module_t server_callbacks;
@@ -52,6 +54,7 @@ static void px_destroy (struct px *px)
         notify_destroy (px->notify);
         abort_destroy (px->abort);
         fence_destroy (px->fence);
+        dmodex_destroy (px->dmodex);
         interthread_destroy (px->it);
         free (px);
         errno = saved_errno;
@@ -178,6 +181,9 @@ static int px_init (flux_plugin_t *p,
     if (!(px->abort = abort_create (shell, px->it)))
         return -1;
     server_callbacks.abort = abort_server_cb;
+    if (!(px->dmodex = dmodex_create (shell, px->it)))
+        return -1;
+    server_callbacks.direct_modex = dmodex_server_cb;
 
     strncpy (info[0].key, PMIX_SERVER_TMPDIR, PMIX_MAX_KEYLEN);
     info[0].value.type = PMIX_STRING;

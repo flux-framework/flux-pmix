@@ -82,10 +82,12 @@ static void exchange_exit_cb (struct exchange *xcg, void *arg)
         shell_warn ("error accessing pmix exchanged data");
         goto done;
     }
-    shell_trace ("completed pmix exchange");
     status = PMIX_SUCCESS;
 done:
     // N.B. pmix calls 'free' on data when fence is complete
+    shell_trace ("completed pmix exchange: size %zu %s",
+                 ndata,
+                 PMIx_Error_string (status));
     fxcall->cbfunc (status, data, ndata, fxcall->cbdata, free, data);
 }
 
@@ -163,7 +165,8 @@ static void fence_shell_cb (const flux_msg_t *msg, void *arg)
         goto error;
     }
     if (fx->trace_flag)
-        shell_trace ("starting pmix exchange");
+        shell_trace ("starting pmix exchange: size %zi",
+                     codec_data_length (xdata));
     return;
 error:
     fxcall->cbfunc (rc, NULL, 0, fxcall->cbdata, NULL, NULL);

@@ -2,6 +2,7 @@ SUBDIRS = \
 	src/common/libtap \
 	src/common/libccan \
 	src/shell/plugins \
+	src/shell/lua.d \
 	t
 
 EXTRA_DIST = \

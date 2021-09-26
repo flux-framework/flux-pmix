@@ -64,6 +64,9 @@ PKG_CHECK_MODULES([OMPI], [ompi >= 5.0.0], [
 AX_FLUX_CORE
 AX_CODE_COVERAGE
 
+AS_VAR_SET(shell_luadir, $sysconfdir/flux/shell/lua.d)
+AC_SUBST(shell_luadir)
+
 AS_VAR_SET(shell_plugindir, $libdir/flux/shell/plugins)
 AC_SUBST(shell_plugindir)
 
@@ -78,6 +81,7 @@ AC_CONFIG_FILES( \
   src/common/libtap/Makefile \
   src/common/libccan/Makefile \
   src/shell/plugins/Makefile \
+  src/shell/lua.d/Makefile \
   t/Makefile \
   t/sharness.d/00-setup.sh \
   t/src/Makefile \

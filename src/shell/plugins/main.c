@@ -210,7 +210,8 @@ static int px_init (flux_plugin_t *p,
         || infovec_set_str (iv, PMIX_TMPDIR, px->job_tmpdir) < 0
         || infovec_set_u32 (iv, PMIX_LOCAL_SIZE, px->local_nprocs) < 0
         || infovec_set_u32 (iv, PMIX_UNIV_SIZE, px->total_nprocs) < 0
-        || infovec_set_u32 (iv, PMIX_JOB_SIZE, px->total_nprocs) < 0)
+        || infovec_set_u32 (iv, PMIX_JOB_SIZE, px->total_nprocs) < 0
+        || infovec_set_u32 (iv, PMIX_APPNUM, 0) < 0)
         goto error;
 
     if ((rc = PMIx_server_register_nspace (px->nspace,

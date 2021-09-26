@@ -180,5 +180,18 @@ test_expect_success '2n4p pmix.srv.rank is set correctly' '
 			| sort -n >pmix.srv.rank.out &&
 	test_cmp pmix.srv.rank.exp pmix.srv.rank.out
 '
+test_expect_success '2n4p pmix.appnum is set correctly' '
+	cat >pmix.appnum.exp <<-EOT &&
+	0: 0
+	1: 0
+	2: 0
+	3: 0
+	EOT
+	run_timeout 30 flux mini run -N2 -n4 \
+		-ouserrc=$(pwd)/rc.lua \
+		${GETKEY} --proc=* --label-io pmix.appnum \
+			| sort -n >pmix.appnum.out &&
+	test_cmp pmix.appnum.exp pmix.appnum.out
+'
 
 test_done

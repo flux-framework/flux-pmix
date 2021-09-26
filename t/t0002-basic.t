@@ -193,5 +193,18 @@ test_expect_success '2n4p pmix.appnum is set correctly' '
 			| sort -n >pmix.appnum.out &&
 	test_cmp pmix.appnum.exp pmix.appnum.out
 '
+test_expect_success '2n4p pmix.job.napps is set correctly' '
+	cat >pmix.job.napps.exp <<-EOT &&
+	0: 1
+	1: 1
+	2: 1
+	3: 1
+	EOT
+	run_timeout 30 flux mini run -N2 -n4 \
+		-ouserrc=$(pwd)/rc.lua \
+		${GETKEY} --proc=* --label-io pmix.job.napps \
+			| sort -n >pmix.job.napps.out &&
+	test_cmp pmix.job.napps.exp pmix.job.napps.out
+'
 
 test_done

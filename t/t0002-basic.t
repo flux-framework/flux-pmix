@@ -206,5 +206,18 @@ test_expect_success '2n4p pmix.job.napps is set correctly' '
 			| sort -n >pmix.job.napps.out &&
 	test_cmp pmix.job.napps.exp pmix.job.napps.out
 '
+test_expect_success '2n4p pmix.nrank is set correctly' '
+	cat >pmix.nrank.exp <<-EOT &&
+	0: 0
+	1: 1
+	2: 0
+	3: 1
+	EOT
+	run_timeout 30 flux mini run -N2 -n4 \
+		-ouserrc=$(pwd)/rc.lua \
+		${GETKEY} --label-io pmix.nrank \
+			| sort -n >pmix.nrank.out &&
+	test_cmp pmix.nrank.exp pmix.nrank.out
+'
 
 test_done

@@ -99,10 +99,11 @@ test_expect_success 'pmix.job.napps is set to 1' '
 		${GETKEY} --proc=* pmix.job.napps >pmix.job.napps.out &&
 	test_cmp pmix.job.napps.exp pmix.job.napps.out
 '
-test_expect_success 'pmix.nsdir is set' '
-	run_timeout 30 flux mini run -n1 \
+test_expect_success 'pmix.nsdir is NOT set' '
+	test_must_fail flux mini run \
 		-ouserrc=$(pwd)/rc.lua \
-		${GETKEY} --proc=* pmix.nsdir
+		${GETKEY} --proc=* pmix.nsdir 2>pmix.nsdir.err &&
+	grep NOT-FOUND pmix.nsdir.err
 '
 test_expect_success '2n4p pmix.hname is set' '
 	run_timeout 30 flux mini run -N2 -n4 \
@@ -179,6 +180,54 @@ test_expect_success '2n4p pmix.srv.rank is set correctly' '
 		${GETKEY} --label-io pmix.srv.rank \
 			| sort -n >pmix.srv.rank.out &&
 	test_cmp pmix.srv.rank.exp pmix.srv.rank.out
+'
+test_expect_success '2n4p pmix.appnum is set correctly' '
+	cat >pmix.appnum.exp <<-EOT &&
+	0: 0
+	1: 0
+	2: 0
+	3: 0
+	EOT
+	run_timeout 30 flux mini run -N2 -n4 \
+		-ouserrc=$(pwd)/rc.lua \
+		${GETKEY} --proc=* --label-io pmix.appnum \
+			| sort -n >pmix.appnum.out &&
+	test_cmp pmix.appnum.exp pmix.appnum.out
+'
+test_expect_success '2n4p pmix.job.napps is set correctly' '
+	cat >pmix.job.napps.exp <<-EOT &&
+	0: 1
+	1: 1
+	2: 1
+	3: 1
+	EOT
+	run_timeout 30 flux mini run -N2 -n4 \
+		-ouserrc=$(pwd)/rc.lua \
+		${GETKEY} --proc=* --label-io pmix.job.napps \
+			| sort -n >pmix.job.napps.out &&
+	test_cmp pmix.job.napps.exp pmix.job.napps.out
+'
+test_expect_success '2n4p pmix.nrank is set correctly' '
+	cat >pmix.nrank.exp <<-EOT &&
+	0: 0
+	1: 1
+	2: 0
+	3: 1
+	EOT
+	run_timeout 30 flux mini run -N2 -n4 \
+		-ouserrc=$(pwd)/rc.lua \
+		${GETKEY} --label-io pmix.nrank \
+			| sort -n >pmix.nrank.out &&
+	test_cmp pmix.nrank.exp pmix.nrank.out
+'
+test_expect_success '1n1p pmix.tdir.rmclean is true' '
+	cat >pmix.tdir.rmclean.exp <<-EOT &&
+	true
+	EOT
+	flux mini run \
+		-ouserrc=$(pwd)/rc.lua \
+		${GETKEY} --proc=* pmix.tdir.rmclean >pmix.tdir.rmclean.out &&
+	test_cmp pmix.tdir.rmclean.exp pmix.tdir.rmclean.out
 '
 
 test_done

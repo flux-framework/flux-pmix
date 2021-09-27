@@ -72,6 +72,18 @@ test_expect_success '2n4p pmix.univ.size is set correctly' '
 			| sort -n >pmix.univ.size.out &&
 	test_cmp pmix.univ.size.exp pmix.univ.size.out
 '
+test_expect_success '2n3p pmix.local.size is set correctly' '
+	cat >2n3p.pmix.local.size.exp <<-EOT &&
+	0: 2
+	1: 2
+	2: 1
+	EOT
+	run_timeout 30 flux mini run -N2 -n3 \
+		-ouserrc=$(pwd)/rc.lua \
+		${GETKEY} --proc=* --label-io pmix.local.size \
+			| sort -n >2n3p.pmix.local.size.out &&
+	test_cmp 2n3p.pmix.local.size.exp 2n3p.pmix.local.size.out
+'
 test_expect_success '2n4p pmix.local.size is set correctly' '
 	cat >pmix.local.size.exp <<-EOT &&
 	0: 2
@@ -111,6 +123,18 @@ test_expect_success '2n4p pmix.hname is set' '
 		${GETKEY} --label-io pmix.hname
 '
 
+test_expect_success '2n3p pmix.lpeers is set correctly' '
+	cat >2n3p.pmix.lpeers.exp <<-EOT &&
+	0: 0,1
+	1: 0,1
+	2: 2
+	EOT
+	run_timeout 30 flux mini run -N2 -n3 \
+		-ouserrc=$(pwd)/rc.lua \
+		${GETKEY} --proc=* --label-io pmix.lpeers \
+			| sort -n >2n3p.pmix.lpeers.out &&
+	test_cmp 2n3p.pmix.lpeers.exp 2n3p.pmix.lpeers.out
+'
 test_expect_success '2n4p pmix.lpeers is set correctly' '
 	cat >pmix.lpeers.exp <<-EOT &&
 	0: 0,1
@@ -142,6 +166,18 @@ test_expect_success '2n4p pmix.num.nodes is set correctly' '
 			| sort -n >pmix.num.nodes.out &&
 	test_cmp pmix.num.nodes.exp pmix.num.nodes.out
 '
+test_expect_success '2n3p pmix.nodeid is set correctly' '
+	cat >2n3p.pmix.nodeid.exp <<-EOT &&
+	0: 0
+	1: 0
+	2: 1
+	EOT
+	run_timeout 30 flux mini run -N2 -n3 \
+		-ouserrc=$(pwd)/rc.lua \
+		${GETKEY} --label-io pmix.nodeid \
+			| sort -n >2n3p.pmix.nodeid.out &&
+	test_cmp 2n3p.pmix.nodeid.exp 2n3p.pmix.nodeid.out
+'
 test_expect_success '2n4p pmix.nodeid is set correctly' '
 	cat >pmix.nodeid.exp <<-EOT &&
 	0: 0
@@ -155,6 +191,18 @@ test_expect_success '2n4p pmix.nodeid is set correctly' '
 			| sort -n >pmix.nodeid.out &&
 	test_cmp pmix.nodeid.exp pmix.nodeid.out
 '
+test_expect_success '2n3p pmix.lrank is set correctly' '
+	cat >2n3p.pmix.lrank.exp <<-EOT &&
+	0: 0
+	1: 1
+	2: 0
+	EOT
+	run_timeout 30 flux mini run -N2 -n3 \
+		-ouserrc=$(pwd)/rc.lua \
+		${GETKEY} --label-io pmix.lrank \
+			| sort -n >2n3p.pmix.lrank.out &&
+	test_cmp 2n3p.pmix.lrank.exp 2n3p.pmix.lrank.out
+'
 test_expect_success '2n4p pmix.lrank is set correctly' '
 	cat >pmix.lrank.exp <<-EOT &&
 	0: 0
@@ -167,6 +215,18 @@ test_expect_success '2n4p pmix.lrank is set correctly' '
 		${GETKEY} --label-io pmix.lrank \
 			| sort -n >pmix.lrank.out &&
 	test_cmp pmix.lrank.exp pmix.lrank.out
+'
+test_expect_success '2n3p pmix.srv.rank is set correctly' '
+	cat >2n3p.pmix.srv.rank.exp <<-EOT &&
+	0: 0
+	1: 0
+	2: 1
+	EOT
+	run_timeout 30 flux mini run -N2 -n3 \
+		-ouserrc=$(pwd)/rc.lua \
+		${GETKEY} --label-io pmix.srv.rank \
+			| sort -n >2n3p.pmix.srv.rank.out &&
+	test_cmp 2n3p.pmix.srv.rank.exp 2n3p.pmix.srv.rank.out
 '
 test_expect_success '2n4p pmix.srv.rank is set correctly' '
 	cat >pmix.srv.rank.exp <<-EOT &&
@@ -206,6 +266,18 @@ test_expect_success '2n4p pmix.job.napps is set correctly' '
 		${GETKEY} --proc=* --label-io pmix.job.napps \
 			| sort -n >pmix.job.napps.out &&
 	test_cmp pmix.job.napps.exp pmix.job.napps.out
+'
+test_expect_success '2n3p pmix.nrank is set correctly' '
+	cat >2n3p.pmix.nrank.exp <<-EOT &&
+	0: 0
+	1: 1
+	2: 0
+	EOT
+	run_timeout 30 flux mini run -N2 -n3 \
+		-ouserrc=$(pwd)/rc.lua \
+		${GETKEY} --label-io pmix.nrank \
+			| sort -n >2n3p.pmix.nrank.out &&
+	test_cmp 2n3p.pmix.nrank.exp 2n3p.pmix.nrank.out
 '
 test_expect_success '2n4p pmix.nrank is set correctly' '
 	cat >pmix.nrank.exp <<-EOT &&

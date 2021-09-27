@@ -151,6 +151,8 @@ static int px_init (flux_plugin_t *p,
                                 "jobid", &px->id,
                                 "rank", &px->shell_rank) < 0)
         return -1;
+    shell_debug ("jobid = %ju", (uintmax_t)px->id);
+    shell_debug ("shell_rank = %d", px->shell_rank);
     if (flux_job_id_encode (px->id, "f58", px->nspace, sizeof (px->nspace)) < 0)
         return -1;
     if (flux_shell_rank_info_unpack (shell,
@@ -159,13 +161,16 @@ static int px_init (flux_plugin_t *p,
                                      "ntasks",
                                      &px->local_nprocs) < 0)
         return -1;
+    shell_debug ("local_nprocs = %d", px->local_nprocs);
     if (flux_shell_jobspec_info_unpack (shell,
                                         "{s:i}",
                                         "ntasks",
                                         &px->total_nprocs) < 0)
         return -1;
+    shell_debug ("total_nprocs = %d", px->total_nprocs);
     if (!(px->job_tmpdir = flux_shell_getenv (shell, "FLUX_JOB_TMPDIR")))
         return -1;
+
 
     if (px->shell_rank == 0) {
         const char *s = PMIx_Get_version ();

@@ -94,6 +94,7 @@ done:
                  ndata,
                  PMIx_Error_string (status));
     fxcall->cbfunc (status, data, ndata, fxcall->cbdata, free, data);
+    fence_call_destroy (fxcall);
 }
 
 /* Parse info[] attributes from the fence callback.

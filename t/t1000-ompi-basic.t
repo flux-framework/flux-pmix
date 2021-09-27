@@ -30,4 +30,13 @@ test_expect_success '2n2p ompi hello' '
 		${MPI_HELLO}
 '
 
+# see issue #26
+test_expect_success '2n4p ompi hello reports no system call errors' '
+        run_timeout 30 flux mini run -N2 -n4 \
+                -ouserrc=$(pwd)/rc.lua \
+                -ompi=openmpi@5 \
+                ${MPI_HELLO} 2>2n4p_hello.err &&
+        test_must_fail grep "System call:" 2n4p_hello.err
+'
+
 test_done

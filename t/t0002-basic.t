@@ -99,10 +99,11 @@ test_expect_success 'pmix.job.napps is set to 1' '
 		${GETKEY} --proc=* pmix.job.napps >pmix.job.napps.out &&
 	test_cmp pmix.job.napps.exp pmix.job.napps.out
 '
-test_expect_success 'pmix.nsdir is set' '
-	run_timeout 30 flux mini run -n1 \
+test_expect_success 'pmix.nsdir is NOT set' '
+	test_must_fail flux mini run \
 		-ouserrc=$(pwd)/rc.lua \
-		${GETKEY} --proc=* pmix.nsdir
+		${GETKEY} --proc=* pmix.nsdir 2>pmix.nsdir.err &&
+	grep NOT-FOUND pmix.nsdir.err
 '
 test_expect_success '2n4p pmix.hname is set' '
 	run_timeout 30 flux mini run -N2 -n4 \

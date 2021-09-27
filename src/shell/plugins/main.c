@@ -206,7 +206,6 @@ static int px_init (flux_plugin_t *p,
         || set_node_map (iv, PMIX_NODE_MAP, shell) < 0
         || set_proc_map (iv, PMIX_PROC_MAP, shell) < 0
         || infovec_set_bool (iv, PMIX_TDIR_RMCLEAN, true) < 0
-        || infovec_set_str (iv, PMIX_NSDIR, px->job_tmpdir) < 0
         || infovec_set_u32 (iv, PMIX_JOB_NUM_APPS, 1) < 0
         || infovec_set_str (iv, PMIX_TMPDIR, px->job_tmpdir) < 0
         || infovec_set_u32 (iv, PMIX_LOCAL_SIZE, px->local_nprocs) < 0

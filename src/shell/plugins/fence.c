@@ -31,6 +31,7 @@ struct fence {
     struct interthread *it;
     struct exchange *exchange;
     int trace_flag;
+    int exchange_seq;
 };
 
 struct fence_call {
@@ -41,6 +42,7 @@ struct fence_call {
     pmix_modex_cbfunc_t cbfunc;
     void *cbdata;
     bool collect;
+    int exchange_seq;
 };
 
 /* This is for the benefit of server callbacks that don't have
@@ -59,12 +61,13 @@ static void fence_call_destroy (struct fence_call *fxcall)
     }
 }
 
-static struct fence_call *fence_call_create (void)
+static struct fence_call *fence_call_create (struct fence *fx)
 {
     struct fence_call *fxcall;
 
     if (!(fxcall = calloc (1, sizeof (*fxcall))))
         return NULL;
+    fxcall->exchange_seq = fx->exchange_seq++;
     return fxcall;
 }
 
@@ -86,7 +89,8 @@ static void exchange_exit_cb (struct exchange *xcg, void *arg)
     status = PMIX_SUCCESS;
 done:
     // N.B. pmix calls 'free' on data when fence is complete
-    shell_trace ("completed pmix exchange: size %zu %s",
+    shell_trace ("completed pmix exchange %d: size %zu %s",
+                 fxcall->exchange_seq,
                  ndata,
                  PMIx_Error_string (status));
     fxcall->cbfunc (status, data, ndata, fxcall->cbdata, free, data);
@@ -126,7 +130,7 @@ static void fence_shell_cb (const flux_msg_t *msg, void *arg)
     struct fence_call *fxcall;
     int rc;
 
-    if (!(fxcall = fence_call_create ())
+    if (!(fxcall = fence_call_create (fx))
         || flux_msg_unpack (msg,
                             "{s:o s:o s:o s:o s:o}",
                             "procs", &xprocs,
@@ -161,7 +165,8 @@ static void fence_shell_cb (const flux_msg_t *msg, void *arg)
         goto error;
     }
     if (fx->trace_flag)
-        shell_trace ("starting pmix exchange: size %zi",
+        shell_trace ("starting pmix exchange %d: size %zi",
+                     fxcall->exchange_seq,
                      fxcall->collect ? codec_data_length (xdata) : 0);
     return;
 error:

@@ -219,5 +219,14 @@ test_expect_success '2n4p pmix.nrank is set correctly' '
 			| sort -n >pmix.nrank.out &&
 	test_cmp pmix.nrank.exp pmix.nrank.out
 '
+test_expect_success '1n1p pmix.tdir.rmclean is true' '
+	cat >pmix.tdir.rmclean.exp <<-EOT &&
+	true
+	EOT
+	flux mini run \
+		-ouserrc=$(pwd)/rc.lua \
+		${GETKEY} --proc=* pmix.tdir.rmclean >pmix.tdir.rmclean.out &&
+	test_cmp pmix.tdir.rmclean.exp pmix.tdir.rmclean.out
+'
 
 test_done

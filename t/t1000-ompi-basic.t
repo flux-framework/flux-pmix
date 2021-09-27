@@ -16,6 +16,22 @@ test_expect_success 'create rc.lua script' "
 	EOT
 "
 
+test_expect_success 'capture the job environment' '
+	run_timeout 30 flux mini run \
+		-ouserrc=$(pwd)/rc.lua \
+		-ompi=openmpi@5 \
+		printenv >printenv.out
+'
+
+test_expect_success 'verify deprecated flux pmix/schizo plugins are not requested' '
+	test_must_fail grep OMPI_MCA_pmix=flux printenv.out &&
+	test_must_fail grep OMPI_MCA_schizo=flux printenv.out
+'
+
+test_expect_success 'sanity check pmix environment' '
+	grep ^PMIX_NAMESPACE printenv.out
+'
+
 test_expect_success '1n2p ompi hello' '
 	run_timeout 30 flux mini run -N1 -n2 \
 		-ouserrc=$(pwd)/rc.lua \

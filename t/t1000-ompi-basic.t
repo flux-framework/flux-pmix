@@ -13,6 +13,7 @@ test_under_flux 2
 test_expect_success 'create rc.lua script' "
 	cat >rc.lua <<-EOT
 	plugin.load (\"$PLUGINPATH/pmix.so\")
+	shell.setenv (\"OMPI_MCA_btl_tcp_if_include\", \"lo\")
 	EOT
 "
 
@@ -43,6 +44,21 @@ test_expect_success '2n2p ompi hello' '
 	run_timeout 30 flux mini run -N2 -n2 \
 		-ouserrc=$(pwd)/rc.lua \
 		-ompi=openmpi@5 \
+		${MPI_HELLO}
+'
+
+# Useful debugging runes:
+# --env=PMIX_MCA_pmix_client_fence_verbose=100 \
+# --env=OMPI_MCA_shmem_base_verbose=100 \
+# --env=OMPI_MCA_btl_base_verbose=100 \
+# --env=OMPI_MCA_btl_tcp_if_exclude=docker0,lo \
+
+# see issue #27
+test_expect_success '2n3p ompi hello doesnt hang' '
+	run_timeout 60 flux mini run -N2 -n3 \
+		-ouserrc=$(pwd)/rc.lua \
+		-ompi=openmpi@5 \
+		-overbose=2 \
 		${MPI_HELLO}
 '
 

@@ -33,6 +33,13 @@ test_expect_success '2n2p bizcard exchange works' '
                ${BIZCARD} 1
 '
 
+test_expect_success '2n3p bizcard exchange works' '
+       run_timeout 30 flux mini run -N2 -n3 \
+	       -overbose=2 \
+               -ouserrc=$(pwd)/rc.lua \
+               ${BIZCARD} 1
+'
+
 test_expect_success '2n4p bizcard exchange works' '
        run_timeout 30 flux mini run -N2 -n4 \
                -ouserrc=$(pwd)/rc.lua \

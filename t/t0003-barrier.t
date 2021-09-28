@@ -122,6 +122,13 @@ test_expect_success '2n2p barrier with procs explictly set fails' '
 
 # Try a larger size for fun
 
+test_expect_success '2n3p barrier works' '
+	run_timeout 30 flux mini run -N2 -n3 \
+		-overbose=2 \
+		-ouserrc=$(pwd)/rc.lua \
+		${BARRIER}
+'
+
 test_expect_success '2n4p barrier works' '
 	run_timeout 30 flux mini run -N2 -n4 \
 		-overbose=2 \

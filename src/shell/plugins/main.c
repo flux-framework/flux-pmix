@@ -307,7 +307,7 @@ static int px_task_init (flux_plugin_t *p,
 
 int flux_plugin_init (flux_plugin_t *p)
 {
-    if (flux_plugin_set_name (p, "pmix") < 0
+    if (flux_plugin_set_name (p, FLUX_SHELL_PLUGIN_NAME) < 0
         || flux_plugin_add_handler (p, "shell.init", px_init, NULL) < 0
         || flux_plugin_add_handler (p, "task.init",  px_task_init, NULL) < 0) {
         return -1;

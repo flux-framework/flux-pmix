@@ -106,8 +106,9 @@ static int parse_fence_attr (struct fence_call *fxcall, pmix_info_t *info)
     int required = (info->flags & PMIX_INFO_REQD);
 
     if (!strcmp (info->key, "pmix.collect")) {
-        if (info->value.type == PMIX_BOOL
-            && info->value.data.flag == true)
+        if (info->value.type != PMIX_BOOL)
+            goto type_error;
+        if (info->value.data.flag == true)
             fxcall->collect = true;
         goto done;
     }
@@ -118,6 +119,9 @@ static int parse_fence_attr (struct fence_call *fxcall, pmix_info_t *info)
         rc = PMIX_ERR_BAD_PARAM;
 done:
     return rc;
+type_error:
+    shell_warn ("fence attr %s has wrong type=%d", info->key, info->value.type);
+    return PMIX_ERR_BAD_PARAM;
 }
 
 static void fence_shell_cb (const flux_msg_t *msg, void *arg)

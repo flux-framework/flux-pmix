@@ -1,4 +1,4 @@
-SUBDIRS = src .
+SUBDIRS = src osu-micro-benchmarks .
 
 AM_CFLAGS = \
 	$(WARNING_CFLAGS) \

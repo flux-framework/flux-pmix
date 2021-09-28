@@ -85,6 +85,7 @@ AC_CONFIG_FILES( \
   t/Makefile \
   t/sharness.d/00-setup.sh \
   t/src/Makefile \
+  t/osu-micro-benchmarks/Makefile \
 )
 
 AC_OUTPUT

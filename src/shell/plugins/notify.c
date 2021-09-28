@@ -136,10 +136,8 @@ static void notify_server_cb (size_t evhdlr_registration_id,
                                   "info", xinfo,
                                   "results", xresults,
                                   "cbfunc", xcbfunc,
-                                  "cbdata", xcbdata) < 0) {
+                                  "cbdata", xcbdata) < 0)
         fprintf (stderr, "error sending notify_upcall interthread message\n");
-        return;
-    }
     json_decref (xsource);
     json_decref (xinfo);
     json_decref (xresults);

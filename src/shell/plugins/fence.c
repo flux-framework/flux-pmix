@@ -112,6 +112,17 @@ static int parse_fence_attr (struct fence_call *fxcall, pmix_info_t *info)
             fxcall->collect = true;
         goto done;
     }
+    /* This attr is listed in the openpmix EXCEPTIONS as an
+     * experimental development feature and pops pops up when running
+     * osu benchmarks.  We don't know what to do with it, but let's
+     * tone down the warning to debug level to avoid alarming users.
+     */
+    else if (!strcmp (info->key, "pmix.loc.col.st")) {
+        shell_debug ("ignoring experimental %s fence attr: %s",
+                     required ? "required" : "optional",
+                     info->key);
+        goto done;
+    }
     shell_warn ("unknown %s fence attr: %s",
                 required ? "required" : "optional",
                 info->key);

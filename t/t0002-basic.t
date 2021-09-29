@@ -301,5 +301,18 @@ test_expect_success '1n1p pmix.tdir.rmclean is true' '
 		${GETKEY} --proc=* pmix.tdir.rmclean >pmix.tdir.rmclean.out &&
 	test_cmp pmix.tdir.rmclean.exp pmix.tdir.rmclean.out
 '
+test_expect_success '2n4p pmix.max.size is set correctly' '
+	cat >pmix.max.size.exp <<-EOT &&
+	0: 4
+	1: 4
+	2: 4
+	3: 4
+	EOT
+	run_timeout 30 flux mini run -N2 -n4 \
+		-ouserrc=$(pwd)/rc.lua \
+		${GETKEY} --proc=* --label-io pmix.max.size \
+			| sort -n >pmix.max.size.out &&
+	test_cmp pmix.max.size.exp pmix.max.size.out
+'
 
 test_done

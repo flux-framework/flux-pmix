@@ -4,7 +4,9 @@ AM_CFLAGS = \
 AM_LDFLAGS = \
 	$(CODE_COVERAGE_LIBS)
 AM_CPPFLAGS = \
-	-I$(top_srcdir)
+	-I$(top_srcdir) \
+	-DFLUX_SHELL_PLUGIN_NAME=\"pmix\"
+
 
 shell_plugin_subdir = \
 	$(shell_plugindir)/pmix

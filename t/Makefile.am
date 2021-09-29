@@ -1,4 +1,4 @@
-SUBDIRS = src .
+SUBDIRS = src osu-micro-benchmarks .
 
 AM_CFLAGS = \
 	$(WARNING_CFLAGS) \
@@ -31,7 +31,8 @@ TESTSCRIPTS = \
 	t0005-abort.t \
 	t0006-notify.t \
 	t0007-dmodex.t \
-	t1000-ompi-basic.t
+	t1000-ompi-basic.t \
+	t1001-osu-benchmarks.t
 
 # make check runs these TAP tests directly (both scripts and programs)
 TESTS = \

@@ -314,5 +314,10 @@ test_expect_success '2n4p pmix.max.size is set correctly' '
 			| sort -n >pmix.max.size.out &&
 	test_cmp pmix.max.size.exp pmix.max.size.out
 '
+test_expect_success '2n4p pmix.jobid is set' '
+	run_timeout 30 flux mini run -N2 -n4 \
+		-ouserrc=$(pwd)/rc.lua \
+		${GETKEY} --proc=* --label-io pmix.jobid
+'
 
 test_done

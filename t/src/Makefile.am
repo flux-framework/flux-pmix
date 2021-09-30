@@ -6,7 +6,11 @@ AM_LDFLAGS = \
 	$(CODE_COVERAGE_LIBS)
 
 AM_CPPFLAGS = \
-	-I$(top_srcdir)
+	-I$(top_srcdir) \
+	$(FLUX_OPTPARSE_CFLAGS) \
+	$(FLUX_IDSET_CFLAGS) \
+	$(OMPI_CFLAGS) \
+	$(PMIX_CFLAGS)
 
 check_PROGRAMS = \
 	barrier \
@@ -28,47 +32,35 @@ libtestutil_la_SOURCES = \
 	monotime.h
 
 test_ldadd = \
-	$(builddir)/libtestutil.la
+	$(builddir)/libtestutil.la \
+	$(FLUX_OPTPARSE_LIBS) \
+	$(FLUX_IDSET_LIBS) \
+	$(OMPI_LIBS) \
+	$(PMIX_LIBS)
 
 barrier_SOURCES = barrier.c
-barrier_CPPFLAGS = \
-	$(AM_CPPFLAGS) \
-	$(PMIX_CFLAGS) \
-	$(FLUX_OPTPARSE_CFLAGS) \
-	$(FLUX_IDSET_CFLAGS)
-barrier_LDADD = $(test_ldadd) \
-	$(PMIX_LIBS) \
-	$(FLUX_OPTPARSE_LIBS) \
-	$(FLUX_IDSET_LIBS)
+barrier_LDADD = $(test_ldadd)
 
 bizcard_SOURCES = bizcard.c
-bizcard_CPPFLAGS = $(AM_CPPFLAGS) $(PMIX_CFLAGS)
-bizcard_LDADD = $(test_ldadd) $(PMIX_LIBS)
+bizcard_LDADD = $(test_ldadd)
 
 version_SOURCES = version.c
-version_CPPFLAGS = $(AM_CPPFLAGS) $(PMIX_CFLAGS)
-version_LDADD = $(test_ldadd) $(PMIX_LIBS)
+version_LDADD = $(test_ldadd)
 
 getkey_SOURCES = getkey.c
-getkey_CPPFLAGS = $(AM_CPPFLAGS) $(PMIX_CFLAGS) $(FLUX_OPTPARSE_CFLAGS)
-getkey_LDADD = $(test_ldadd) $(PMIX_LIBS) $(FLUX_OPTPARSE_LIBS)
+getkey_LDADD = $(test_ldadd)
 
 abort_SOURCES = abort.c
-abort_CPPFLAGS = $(AM_CPPFLAGS) $(PMIX_CFLAGS) $(FLUX_OPTPARSE_CFLAGS)
-abort_LDADD = $(test_ldadd) $(PMIX_LIBS) $(FLUX_OPTPARSE_LIBS)
+abort_LDADD = $(test_ldadd)
 
 notify_SOURCES = notify.c
-notify_CPPFLAGS = $(AM_CPPFLAGS) $(PMIX_CFLAGS) $(FLUX_OPTPARSE_CFLAGS)
-notify_LDADD = $(test_ldadd) $(PMIX_LIBS) $(FLUX_OPTPARSE_LIBS)
+notify_LDADD = $(test_ldadd)
 
 mpi_hello_SOURCES = mpi_hello.c
-mpi_hello_CPPFLAGS = $(AM_CPPFLAGS) $(OMPI_CFLAGS)
-mpi_hello_LDADD = $(test_ldadd) $(OMPI_LIBS)
+mpi_hello_LDADD = $(test_ldadd)
 
 mpi_version_SOURCES = mpi_version.c
-mpi_version_CPPFLAGS = $(AM_CPPFLAGS) $(OMPI_CFLAGS)
-mpi_version_LDADD = $(test_ldadd) $(OMPI_LIBS)
+mpi_version_LDADD = $(test_ldadd)
 
 mpi_abort_SOURCES = mpi_abort.c
-mpi_abort_CPPFLAGS = $(AM_CPPFLAGS) $(OMPI_CFLAGS)
-mpi_abort_LDADD = $(test_ldadd) $(OMPI_LIBS)
+mpi_abort_LDADD = $(test_ldadd)

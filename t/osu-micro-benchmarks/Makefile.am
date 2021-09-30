@@ -1,6 +1,11 @@
 AM_CFLAGS = \
         $(WARNING_CFLAGS) \
-        $(CODE_COVERAGE_CFLAGS)
+        $(CODE_COVERAGE_CFLAGS) \
+	-Wno-error=switch \
+	-Wno-error=format \
+	-Wno-error=format-extra-args \
+	-Wno-error=unused-variable \
+	-Wno-error=maybe-uninitialized
 
 AM_LDFLAGS = \
         $(CODE_COVERAGE_LIBS)

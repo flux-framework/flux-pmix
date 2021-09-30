@@ -44,8 +44,6 @@ static struct abort *global_abort_ctx;
 
 static void abort_shell_cb (const flux_msg_t *msg, void *arg)
 {
-    struct abort *abort = arg;
-
     json_t *xproc;
     json_t *xserver_object;
     json_t *xprocs;
@@ -122,7 +120,6 @@ int abort_server_cb (const pmix_proc_t *proc,
         fprintf (stderr, "error sending abort_upcall interthread message\n");
         rc = PMIX_ERROR;
     }
-done:
     json_decref (xproc);
     json_decref (xserver_object);
     json_decref (xprocs);

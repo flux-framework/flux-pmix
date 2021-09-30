@@ -44,7 +44,6 @@ static pmix_info_t *alloc_slot (struct infovec *iv)
 
 int infovec_set_str_new (struct infovec *iv, const char *key, char *val)
 {
-    char *cpy;
     pmix_info_t *info;
 
     if (!iv || !key || !val) {
@@ -62,7 +61,6 @@ int infovec_set_str_new (struct infovec *iv, const char *key, char *val)
 int infovec_set_str (struct infovec *iv, const char *key, const char *val)
 {
     char *cpy;
-    pmix_info_t *info;
 
     if (!iv || !key || !val) {
         errno = EINVAL;

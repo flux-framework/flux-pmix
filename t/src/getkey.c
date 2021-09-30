@@ -108,7 +108,7 @@ int main (int argc, char **argv)
 
     /* Parse --proc and --rank
      */
-    strncpy (proc.nspace, self.nspace, PMIX_MAX_NSLEN);
+    snprintf (proc.nspace, sizeof (proc.nspace), "%s", self.nspace);
     proc.rank = self.rank;
     if (optparse_hasopt (p, "proc")) {
         const char *s = optparse_get_str (p, "proc", NULL);

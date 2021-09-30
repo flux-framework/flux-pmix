@@ -59,7 +59,7 @@ char *maps_proc_create (flux_shell_t *shell)
     char *argz = NULL;
     size_t argz_len = 0;
     const char *taskids;
-    char *s;
+    char *s = NULL;
 
     if (flux_shell_info_unpack (shell, "{s:i}", "size", &shell_size) < 0)
         return NULL;
@@ -107,7 +107,6 @@ char *maps_node_create (flux_shell_t *shell)
     char *argz = NULL;
     size_t argz_len = 0;
     const char *node;
-    char *s;
     bool uniqify = false;
 
     if (flux_shell_info_unpack (shell,

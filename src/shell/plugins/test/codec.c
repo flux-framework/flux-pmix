@@ -63,7 +63,6 @@ void check_value ()
     pmix_value_t val;
     pmix_value_t val2;
     pmix_proc_t proc;
-    pmix_proc_t *proc2;
 
     val.type = PMIX_BOOL;
     val.data.flag = true;

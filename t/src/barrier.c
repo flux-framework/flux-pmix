@@ -145,7 +145,10 @@ size_t parse_procs_opt (optparse_t *p, pmix_proc_t *self, pmix_proc_t **procsp)
     int index = 0;
     id = idset_first (ids);
     while (id != IDSET_INVALID_ID) {
-        strncpy (procs[index].nspace, self->nspace, PMIX_MAX_NSLEN);
+        snprintf (procs[index].nspace,
+                  sizeof (procs[index].nspace),
+                  "%s",
+                  self->nspace);
         procs[index].rank = id;
         index++;
         id = idset_next (ids, id);

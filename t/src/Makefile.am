@@ -21,7 +21,8 @@ check_PROGRAMS = \
 	notify \
 	mpi_hello \
 	mpi_version \
-	mpi_abort
+	mpi_abort \
+	mpi_pingpong
 
 check_LTLIBRARIES = libtestutil.la
 
@@ -64,3 +65,6 @@ mpi_version_LDADD = $(test_ldadd)
 
 mpi_abort_SOURCES = mpi_abort.c
 mpi_abort_LDADD = $(test_ldadd)
+
+mpi_pingpong_SOURCES = mpi_pingpong.c
+mpi_pingpong_LDADD = $(test_ldadd)

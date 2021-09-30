@@ -136,7 +136,6 @@ static int px_init (flux_plugin_t *p,
     struct px *px;
     int rc;
     pmix_info_t info[2] = { 0 };
-    const char *s;
     struct infovec *iv;
 
     if (!(px = calloc (1, sizeof (*px)))

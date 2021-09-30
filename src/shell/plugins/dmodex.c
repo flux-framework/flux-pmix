@@ -181,7 +181,6 @@ void dmodex_destroy (struct dmodex *dx)
 
 struct dmodex *dmodex_create (flux_shell_t *shell, struct interthread *it)
 {
-    flux_t *h = flux_shell_get_flux (shell);
     struct dmodex *dx;
 
     if (!(dx = calloc (1, sizeof (*dx))))

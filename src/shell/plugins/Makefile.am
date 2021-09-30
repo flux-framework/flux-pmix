@@ -61,36 +61,36 @@ test_ldadd = \
 	$(top_builddir)/src/common/libccan/libccan.la
 
 test_ldflags = \
-        -no-install
+	-no-install
 
 test_cppflags = \
-        -I$(top_srcdir)/src/common/libtap \
-        $(AM_CPPFLAGS)
+	-I$(top_srcdir)/src/common/libtap \
+	$(AM_CPPFLAGS)
 
 check_PROGRAMS = $(TESTS)
 
 test_infovec_t_SOURCES = \
-        infovec.c \
-        infovec.h \
-        test/infovec.c
+	infovec.c \
+	infovec.h \
+	test/infovec.c
 test_infovec_t_CPPFLAGS = \
-        $(PMIX_CFLAGS) \
-        $(test_cppflags)
+	$(PMIX_CFLAGS) \
+	$(test_cppflags)
 test_infovec_t_LDADD = \
-        $(test_ldadd)
+	$(test_ldadd)
 test_infovec_t_LDFLAGS = \
-        $(test_ldflags)
+	$(test_ldflags)
 
 test_codec_t_SOURCES = \
-        codec.c \
-        codec.h \
-        test/codec.c
+	codec.c \
+	codec.h \
+	test/codec.c
 test_codec_t_CPPFLAGS = \
-        $(PMIX_CFLAGS) \
-        $(JANSSON_CFLAGS) \
-        $(test_cppflags)
+	$(PMIX_CFLAGS) \
+	$(JANSSON_CFLAGS) \
+	$(test_cppflags)
 test_codec_t_LDADD = \
-        $(test_ldadd) \
+	$(test_ldadd) \
 	$(JANSSON_LIBS)
 test_codec_t_LDFLAGS = \
-        $(test_ldflags)
+	$(test_ldflags)

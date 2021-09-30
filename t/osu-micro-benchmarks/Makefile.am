@@ -1,6 +1,6 @@
 AM_CFLAGS = \
-        $(WARNING_CFLAGS) \
-        $(CODE_COVERAGE_CFLAGS) \
+	$(WARNING_CFLAGS) \
+	$(CODE_COVERAGE_CFLAGS) \
 	-Wno-error=switch \
 	-Wno-error=format \
 	-Wno-error=format-extra-args \
@@ -8,10 +8,10 @@ AM_CFLAGS = \
 	-Wno-error=maybe-uninitialized
 
 AM_LDFLAGS = \
-        $(CODE_COVERAGE_LIBS)
+	$(CODE_COVERAGE_LIBS)
 
 AM_CPPFLAGS = \
-        -I$(top_srcdir) \
+	-I$(top_srcdir) \
 	-I$(top_srcdir)/t/osu-micro-benchmarks/util \
 	$(OMPI_CFLAGS)
 

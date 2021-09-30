@@ -103,7 +103,7 @@ static void dmodex_shell_cb (const flux_msg_t *msg, void *arg)
     struct dmodex_call *dxcall;
     int rc;
 
-    if (!(dxcall = calloc (1, sizeof (*dxcall)))
+    if (!(dxcall = dmodex_call_create ())
         || flux_msg_unpack (msg,
                             "{s:o s:o s:o s:o}",
                             "proc", &xproc,

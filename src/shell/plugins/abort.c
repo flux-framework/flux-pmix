@@ -122,7 +122,6 @@ int abort_server_cb (const pmix_proc_t *proc,
         fprintf (stderr, "error sending abort_upcall interthread message\n");
         rc = PMIX_ERROR;
     }
-done:
     json_decref (xproc);
     json_decref (xserver_object);
     json_decref (xprocs);

@@ -207,6 +207,7 @@ static int px_init (flux_plugin_t *p,
         return -1;
 
     if (!(iv = infovec_create ())
+        || infovec_set_str (iv, PMIX_JOBID, px->nspace) < 0
         || set_lpeers (iv, PMIX_LOCAL_PEERS, shell) < 0
         || set_node_map (iv, PMIX_NODE_MAP, shell) < 0
         || set_proc_map (iv, PMIX_PROC_MAP, shell) < 0

@@ -257,7 +257,7 @@ static int px_task_init (flux_plugin_t *p,
         return -1;
 
     proc.rank = rank;
-    strncpy (proc.nspace, px->nspace, PMIX_MAX_NSLEN);
+    snprintf (proc.nspace, sizeof (proc.nspace), "%s", px->nspace);
 
     /* Fetch this task's PMIX_* environment and add to task's
      * subprocess command.

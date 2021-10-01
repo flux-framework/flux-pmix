@@ -7,6 +7,7 @@ PLUGINPATH=${FLUX_BUILD_DIR}/src/shell/plugins/.libs
 . `dirname $0`/sharness.sh
 
 MPI_HELLO=${FLUX_BUILD_DIR}/t/src/mpi_hello
+MPI_PINGPONG=${FLUX_BUILD_DIR}/t/src/mpi_pingpong
 
 test_under_flux 2
 
@@ -69,6 +70,19 @@ test_expect_success '2n4p ompi hello reports no system call errors' '
                 -ompi=openmpi@5 \
                 ${MPI_HELLO} 2>2n4p_hello.err &&
         test_must_fail grep "System call:" 2n4p_hello.err
+'
+
+test_expect_success '1n2p ompi pingpong works' '
+        run_timeout 30 flux mini run -N1 -n2 \
+                -ouserrc=$(pwd)/rc.lua \
+                -ompi=openmpi@5 \
+                ${MPI_PINGPONG}
+'
+test_expect_success '2n2p ompi pingpong works' '
+        run_timeout 30 flux mini run -N2 -n2 \
+                -ouserrc=$(pwd)/rc.lua \
+                -ompi=openmpi@5 \
+                ${MPI_PINGPONG}
 '
 
 test_done

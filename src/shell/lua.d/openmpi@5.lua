@@ -8,8 +8,4 @@
 -- SPDX-License-Identifier: LGPL-3.0
 -------------------------------------------------------------
 
-local mpi, version = shell.getopt_with_version ("mpi")
-
-if mpi ~= "openmpi" or version ~= "5" then return end
-
 plugin.load ("pmix/pmix.so")

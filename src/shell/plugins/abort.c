@@ -73,6 +73,7 @@ static void abort_shell_cb (const flux_msg_t *msg, void *arg)
         || codec_pointer_decode (xcbfunc, (void **)&cbfunc) < 0
         || codec_pointer_decode (xcbdata, &cbdata) < 0) {
         shell_warn ("error unpacking interthread abort_upcall message");
+        free (procs);
         return;
     }
     if (cbfunc)

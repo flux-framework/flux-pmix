@@ -12,9 +12,8 @@
  *
  * User calls PMIx_Abort (status, msg, NULL, 0)
  *
- * This is translated into shell_die() using 'status' as the exit code.
- * shell_die() raises a fatal exception on the job before calling exit(3).
- * (Probably the czmq atexit handler for the interthread sockets will complain.)
+ * This is translated into a fatal job exception.
+ * N.B. Currently 'status' is not propagated to the job exit code.
  */
 
 #if HAVE_CONFIG_H
@@ -76,13 +75,18 @@ static void abort_shell_cb (const flux_msg_t *msg, void *arg)
         free (procs);
         return;
     }
+
+    flux_shell_raise ("exec",
+                      0,
+                      "%s.%d called PMIx_Abort (status=%d): %s",
+                      proc.nspace,
+                      proc.rank,
+                      status,
+                      message);
+
     if (cbfunc)
-        cbfunc (PMIX_SUCCESS, cbdata);
-    shell_die (status,
-               "%s.%d called PMIx_Abort: %s",
-               proc.nspace,
-               proc.rank,
-               message);
+        cbfunc (PMIX_SUCCESS, cbdata); // release the calling process
+
     free (procs);
 }
 

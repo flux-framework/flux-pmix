@@ -7,6 +7,11 @@ OSU_MPI=${FLUX_BUILD_DIR}/t/osu-micro-benchmarks/mpi
 
 . `dirname $0`/sharness.sh
 
+if ! test_have_prereq LONGTEST; then
+    skip_all='skipping OSU micro benchmarks due to missing LONGTEST prereq'
+    test_done
+fi
+
 test_under_flux 2
 
 cat >tests.dat<<EOT
@@ -82,9 +87,7 @@ run_osutest() {
 
 while read timeout nnodes ntasks cmd; do
 	testname="${nnodes}n${ntasks}p ${cmd}"
-	if test $timeout -gt 120; then
-		prereq=LONGTEST
-	elif test $timeout -lt 0; then
+	if test $timeout -lt 0; then
 		prereq=XFAIL
 	else
 		prereq=""

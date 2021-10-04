@@ -8,8 +8,7 @@
 -- SPDX-License-Identifier: LGPL-3.0
 -------------------------------------------------------------
 
-local mpi, version = shell.getopt_with_version ("mpi")
-
-if mpi ~= "openmpi" or version ~= "5" then return end
+-- undo settings from built-in openmpi.lua that break v5+
+shell.env_strip ("^OMPI_MCA_pmix", "^OMPI_MCA_schizo")
 
 plugin.load ("pmix/pmix.so")

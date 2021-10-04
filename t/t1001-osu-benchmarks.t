@@ -64,6 +64,7 @@ EOT2
 test_expect_success 'create rc.lua script' "
 	cat >rc.lua <<-EOT
 	plugin.load (\"$PLUGINPATH/pmix.so\")
+	shell.env_strip (\"^OMPI_MCA_pmix\", \"^OMPI_MCA_schizo\")
 	shell.setenv (\"OMPI_MCA_btl_tcp_if_include\", \"lo\")
 	EOT
 "

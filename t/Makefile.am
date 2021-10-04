@@ -61,4 +61,5 @@ EXTRA_DIST= \
 	$(T) \
 	scripts/run_timeout.py \
 	mpibench/README.md \
-	mpibench/crunch_mpiBench
+	mpibench/crunch_mpiBench \
+	etc/rc.lua.in

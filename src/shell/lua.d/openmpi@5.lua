@@ -8,4 +8,7 @@
 -- SPDX-License-Identifier: LGPL-3.0
 -------------------------------------------------------------
 
+-- undo settings from built-in openmpi.lua that break v5+
+shell.env_strip ("^OMPI_MCA_pmix", "^OMPI_MCA_schizo")
+
 plugin.load ("pmix/pmix.so")

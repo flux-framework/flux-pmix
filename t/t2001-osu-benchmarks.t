@@ -2,10 +2,11 @@
 
 test_description='Test openmpi with OSU micro benchmarks.'
 
-PLUGINPATH=${FLUX_BUILD_DIR}/src/shell/plugins/.libs
 OSU_MPI=${FLUX_BUILD_DIR}/t/osu-micro-benchmarks/mpi
 
 . `dirname $0`/sharness.sh
+
+export FLUX_SHELL_RC_PATH=${FLUX_BUILD_DIR}/t/etc
 
 if ! test_have_prereq LONGTEST; then
     skip_all='skipping OSU micro benchmarks due to missing LONGTEST prereq'
@@ -66,21 +67,12 @@ EOT
 cat >slowtests.dat<<EOT2
 EOT2
 
-test_expect_success 'create rc.lua script' "
-	cat >rc.lua <<-EOT
-	plugin.load (\"$PLUGINPATH/pmix.so\")
-	shell.env_strip (\"^OMPI_MCA_pmix\", \"^OMPI_MCA_schizo\")
-	shell.setenv (\"OMPI_MCA_btl_tcp_if_include\", \"lo\")
-	EOT
-"
-
 run_osutest() {
 	local timeout=$1
 	local nnodes=$2
 	local ntasks=$3
 	local cmd=$4
 	run_timeout $timeout flux mini run -N$nnodes -n$ntasks \
-		-ouserrc=$(pwd)/rc.lua \
 		-ompi=openmpi@5 \
 		${OSU_MPI}/${cmd}
 }

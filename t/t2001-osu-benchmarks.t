@@ -73,7 +73,6 @@ run_osutest() {
 	local ntasks=$3
 	local cmd=$4
 	run_timeout $timeout flux mini run -N$nnodes -n$ntasks \
-		-ompi=openmpi@5 \
 		${OSU_MPI}/${cmd}
 }
 

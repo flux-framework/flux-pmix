@@ -13,7 +13,6 @@ test_under_flux 2
 
 test_expect_success 'capture the job environment' '
 	run_timeout 30 flux mini run \
-		-ompi=openmpi@5 \
 		printenv >printenv.out
 '
 
@@ -28,13 +27,11 @@ test_expect_success 'sanity check pmix environment' '
 
 test_expect_success '1n2p ompi hello' '
 	run_timeout 30 flux mini run -N1 -n2 \
-		-ompi=openmpi@5 \
 		${MPI_HELLO}
 '
 
 test_expect_success '2n2p ompi hello' '
 	run_timeout 30 flux mini run -N2 -n2 \
-		-ompi=openmpi@5 \
 		${MPI_HELLO}
 '
 
@@ -47,7 +44,6 @@ test_expect_success '2n2p ompi hello' '
 # see issue #27
 test_expect_success '2n3p ompi hello doesnt hang' '
 	run_timeout 60 flux mini run -N2 -n3 \
-		-ompi=openmpi@5 \
 		-overbose=2 \
 		${MPI_HELLO}
 '
@@ -55,19 +51,16 @@ test_expect_success '2n3p ompi hello doesnt hang' '
 # see issue #26
 test_expect_success '2n4p ompi hello reports no system call errors' '
         run_timeout 30 flux mini run -N2 -n4 \
-                -ompi=openmpi@5 \
                 ${MPI_HELLO} 2>2n4p_hello.err &&
         test_must_fail grep "System call:" 2n4p_hello.err
 '
 
 test_expect_success '1n2p ompi pingpong works' '
         run_timeout 30 flux mini run -N1 -n2 \
-                -ompi=openmpi@5 \
                 ${MPI_PINGPONG}
 '
 test_expect_success '2n2p ompi pingpong works' '
         run_timeout 30 flux mini run -N2 -n2 \
-                -ompi=openmpi@5 \
                 ${MPI_PINGPONG}
 '
 

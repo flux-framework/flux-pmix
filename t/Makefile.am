@@ -32,21 +32,35 @@ TESTSCRIPTS = \
 	t0006-notify.t \
 	t0007-dmodex.t \
 	t1000-ompi-basic.t \
-	t1001-osu-benchmarks.t
+	t2001-osu-benchmarks.t \
+	t2002-mpibench.t
 
 # make check runs these TAP tests directly (both scripts and programs)
 TESTS = \
 	$(TESTSCRIPTS)
+
+dist_check_SCRIPTS = \
+	$(TESTSCRIPTS)
+
+check_PROGRAMS = \
+	mpibench/mpibench
+
+check-prep:
+	$(MAKE)
+
+mpibench_mpibench_SOURCES = mpibench/mpiBench.c
+mpibench_mpibench_CPPFLAGS = \
+	-Wno-error=unused-variable \
+	-Wno-error=format= \
+	$(OMPI_CFLAGS)
+mpibench_mpibench_LDADD = $(OMPI_LIBS)
 
 EXTRA_DIST= \
 	aggregate-results.sh \
 	sharness.sh \
 	sharness.d \
 	$(T) \
-	scripts/run_timeout.py
-
-dist_check_SCRIPTS = \
-	$(TESTSCRIPTS)
-
-check-prep:
-	$(MAKE)
+	scripts/run_timeout.py \
+	mpibench/README.md \
+	mpibench/crunch_mpiBench \
+	etc/rc.lua.in

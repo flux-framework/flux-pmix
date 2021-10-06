@@ -60,6 +60,11 @@ jobs:
           ompi_branch: "v3.1.x"
           coverage: false
           env: {}
+        - name: "focal - ompi v3.0.x"
+          image: "focal"
+          ompi_branch: "v3.0.x"
+          coverage: false
+          env: {}
 
       fail-fast: false
     name: ${{ matrix.name }}

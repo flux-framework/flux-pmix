@@ -71,7 +71,8 @@ util_libutil_la_SOURCES = \
 
 test_ldadd = \
 	$(builddir)/util/libutil.la \
-	$(OMPI_LIBS)
+	$(OMPI_LIBS) \
+	$(LIBPTHREAD)
 
 
 mpi_startup_osu_init_SOURCES = mpi/startup/osu_init.c

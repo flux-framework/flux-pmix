@@ -3,6 +3,7 @@ FROM fluxrm/flux-core:fedora34
 ARG USER=fluxuser
 ARG UID=1000
 ARG OMPI_BRANCH=v5.0.x
+ARG OPENPMIX_BRANCH=v4.1.1rc2
 
 RUN \
  if test "$USER" != "fluxuser"; then  \
@@ -22,6 +23,20 @@ RUN sudo yum -y update \
  && sudo yum -y remove mpich mpich-devel \
  && sudo yum clean all
 
+ # build/install openpmix
+RUN cd /tmp \
+ && git clone -b ${OPENPMIX_BRANCH} \
+      --recursive --depth=1 https://github.com/openpmix/openpmix \
+ && cd openpmix \
+ && git branch \
+ && ./autogen.pl \
+ && ./configure --prefix=/usr \
+      --enable-debug \
+ && make -j $(nproc) \
+ && sudo make install \
+ && cd .. \
+ && rm -rf openpmix
+
 # build/install ompi
 RUN cd /tmp \
  && git clone -b ${OMPI_BRANCH} \
@@ -31,6 +46,7 @@ RUN cd /tmp \
  && ./autogen.pl \
  && ./configure --prefix=/usr \
       --disable-man-pages --enable-debug --enable-mem-debug \
+      --with-pmix=external \
  && make -j $(nproc) \
  && sudo make install \
  && cd .. \

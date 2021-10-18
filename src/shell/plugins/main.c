@@ -49,9 +49,9 @@ static void px_destroy (struct px *px)
     if (px) {
         int rc;
         int saved_errno = errno;
+        notify_destroy (px->notify);
         if ((rc = PMIx_server_finalize ()) != PMIX_SUCCESS)
             shell_warn ("PMIx_server_finalize: %s", PMIx_Error_string (rc));
-        notify_destroy (px->notify);
         abort_destroy (px->abort);
         fence_destroy (px->fence);
         dmodex_destroy (px->dmodex);

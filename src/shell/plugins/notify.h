@@ -15,7 +15,8 @@
 #include <pmix_server.h>
 #include "interthread.h"
 
-/* N.B. notify_create() must be called after PMIx_server_init().
+/* N.B. notify_create() must be called after PMIx_server_init()
+ * and notify_destroy() must be called before PMIx_server_finalize().
  */
 struct notify *notify_create (flux_shell_t *shell, struct interthread *it);
 void notify_destroy (struct notify *notify);

@@ -79,7 +79,7 @@ int main (int argc, char **argv)
     optparse_t *p;
     int optindex;
     pmix_proc_t self;
-    pmix_proc_t proc = { 0 };
+    pmix_proc_t proc;
     const char *key;
     int rc;
     int rank;

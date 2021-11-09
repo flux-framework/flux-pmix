@@ -39,7 +39,7 @@ int main (int argc, char **argv)
     pmix_proc_t self;
     int event_status;
     const char *event_message;
-    pmix_info_t info[1] = { 0 };
+    pmix_info_t info[1];
     size_t ninfo = 0;
     int rc;
 

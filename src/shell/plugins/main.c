@@ -192,10 +192,12 @@ static int px_init (flux_plugin_t *p,
     strncpy (info[0].key, PMIX_SERVER_TMPDIR, PMIX_MAX_KEYLEN);
     info[0].value.type = PMIX_STRING;
     info[0].value.data.string = (char *)px->job_tmpdir;
+    info[0].flags = 0;
 
     strncpy (info[1].key, PMIX_SERVER_RANK, PMIX_MAX_KEYLEN);
     info[1].value.type = PMIX_PROC_RANK;
     info[1].value.data.rank = px->shell_rank;
+    info[1].flags = 0;
 
     if ((rc = PMIx_server_init (&server_callbacks, info, 2)) != PMIX_SUCCESS) {
         shell_warn ("PMIx_server_init: %s", PMIx_Error_string (rc));

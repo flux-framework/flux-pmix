@@ -207,7 +207,7 @@ int main (int argc, char **argv)
      */
     struct timespec t;
     monotime (&t);
-    pmix_info_t info[8] = { 0 };
+    pmix_info_t info[8];
     pmix_proc_t *procs = NULL;
     size_t ninfo = parse_info_opts (p, info, sizeof (info) / sizeof (info[0]));
     size_t nprocs = parse_procs_opt (p, &self, &procs);

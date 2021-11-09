@@ -27,8 +27,8 @@ jobs:
           ompi_branch: "v5.0.x"
           coverage: false
           env: {}
-        - name: "focal - ompi v5.0.x, chain_lint"
-          image: "focal"
+        - name: "centos7 - ompi v5.0.x, chain_lint"
+          image: "centos7"
           ompi_branch: "v5.0.x"
           coverage: false
           env:

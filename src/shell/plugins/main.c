@@ -135,7 +135,7 @@ static int px_init (flux_plugin_t *p,
     flux_shell_t *shell = flux_plugin_get_shell (p);
     struct px *px;
     int rc;
-    pmix_info_t info[2] = { 0 };
+    pmix_info_t info[2] = {{{ 0 }}};
     struct infovec *iv;
 
     if (!(px = calloc (1, sizeof (*px)))
@@ -244,7 +244,7 @@ static int px_task_init (flux_plugin_t *p,
     struct px *px;
     flux_shell_task_t *task;
     flux_cmd_t *cmd;
-    pmix_proc_t proc = { 0 };
+    pmix_proc_t proc = {{ 0 }};
     char **env = NULL;
     int rank;
     int rc;

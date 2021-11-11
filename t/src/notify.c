@@ -18,6 +18,8 @@
 #include <stdio.h>
 #include <flux/optparse.h>
 
+#include "src/common/libutil/strlcpy.h"
+
 #include "log.h"
 
 const char *opt_usage = "[OPTIONS]";
@@ -72,8 +74,7 @@ int main (int argc, char **argv)
      */
     pmix_proc_t proc;
     pmix_value_t *valp;
-    strncpy (proc.nspace, self.nspace, PMIX_MAX_NSLEN);
-    proc.nspace[PMIX_MAX_NSLEN] = '\0';
+    strlcpy (proc.nspace, self.nspace, sizeof (proc.nspace));
     proc.rank = PMIX_RANK_WILDCARD;
     if ((rc = PMIx_Get (&proc, PMIX_JOB_SIZE, NULL, 0, &valp)) != PMIX_SUCCESS)
         log_msg_exit ("PMIx_Get %s: %s", PMIX_JOB_SIZE, PMIx_Error_string (rc));
@@ -85,7 +86,9 @@ int main (int argc, char **argv)
     /* Add any info options
      */
     if (event_message) {
-        strncpy (info[ninfo].key, PMIX_EVENT_TEXT_MESSAGE, PMIX_MAX_KEYLEN);
+        strlcpy (info[ninfo].key,
+                 PMIX_EVENT_TEXT_MESSAGE,
+                 sizeof (info[ninfo].key));
         info[ninfo].value.type = PMIX_STRING;
         info[ninfo].value.data.string = (char *)event_message;
         info[ninfo].flags = 0;

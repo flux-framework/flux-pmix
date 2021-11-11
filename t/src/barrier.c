@@ -19,6 +19,8 @@
 #include <flux/optparse.h>
 #include <flux/idset.h>
 
+#include "src/common/libutil/strlcpy.h"
+
 #include "log.h"
 #include "monotime.h"
 
@@ -52,7 +54,7 @@ void set_info_bool (pmix_info_t *info,
     bool value = true;
     if (!strcmp (optarg, "false"))
         value = false;
-    strncpy (info->key, name, PMIX_MAX_KEYLEN);
+    strlcpy (info->key, name, sizeof (info->key));
     info->flags = flags;
     info->value.type = PMIX_BOOL;
     info->value.data.flag = value;
@@ -63,7 +65,7 @@ void set_info_int (pmix_info_t *info,
                    int flags,
                    int optarg)
 {
-    strncpy (info->key, name, PMIX_MAX_KEYLEN);
+    strlcpy (info->key, name, sizeof (info->key));
     info->flags = flags;
     info->value.type = PMIX_INT;
     info->value.data.flag = optarg;
@@ -193,8 +195,7 @@ int main (int argc, char **argv)
      */
     pmix_proc_t proc;
     pmix_value_t *valp;
-    strncpy (proc.nspace, self.nspace, PMIX_MAX_NSLEN);
-    proc.nspace[PMIX_MAX_NSLEN] = '\0';
+    strlcpy (proc.nspace, self.nspace, sizeof (proc.nspace));
     proc.rank = PMIX_RANK_WILDCARD;
     if ((rc = PMIx_Get (&proc, PMIX_JOB_SIZE, NULL, 0, &valp)) != PMIX_SUCCESS)
         log_msg_exit ("PMIx_Get %s: %s", PMIX_JOB_SIZE, PMIx_Error_string (rc));

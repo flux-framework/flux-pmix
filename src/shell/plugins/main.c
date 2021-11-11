@@ -19,6 +19,8 @@
 #include <pmix_server.h>
 #include <pmix.h>
 
+#include "src/common/libutil/strlcpy.h"
+
 #include "infovec.h"
 #include "maps.h"
 #include "interthread.h"
@@ -189,12 +191,12 @@ static int px_init (flux_plugin_t *p,
         return -1;
     server_callbacks.direct_modex = dmodex_server_cb;
 
-    strncpy (info[0].key, PMIX_SERVER_TMPDIR, PMIX_MAX_KEYLEN);
+    strlcpy (info[0].key, PMIX_SERVER_TMPDIR, sizeof (info[0].key));
     info[0].value.type = PMIX_STRING;
     info[0].value.data.string = (char *)px->job_tmpdir;
     info[0].flags = 0;
 
-    strncpy (info[1].key, PMIX_SERVER_RANK, PMIX_MAX_KEYLEN);
+    strlcpy (info[1].key, PMIX_SERVER_RANK, sizeof (info[1].key));
     info[1].value.type = PMIX_PROC_RANK;
     info[1].value.data.rank = px->shell_rank;
     info[1].flags = 0;

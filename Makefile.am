@@ -1,6 +1,7 @@
 SUBDIRS = \
 	src/common/libtap \
 	src/common/libccan \
+	src/common/libutil \
 	src/shell/plugins \
 	src/shell/lua.d \
 	t

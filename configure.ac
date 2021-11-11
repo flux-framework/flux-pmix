@@ -80,6 +80,7 @@ AC_CONFIG_FILES( \
   Makefile \
   src/common/libtap/Makefile \
   src/common/libccan/Makefile \
+  src/common/libutil/Makefile \
   src/shell/plugins/Makefile \
   src/shell/lua.d/Makefile \
   t/Makefile \

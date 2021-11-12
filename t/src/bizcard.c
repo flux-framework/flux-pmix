@@ -18,6 +18,8 @@
 #include <stdio.h>
 #include <stdint.h>
 
+#include "src/common/libutil/strlcpy.h"
+
 #include "log.h"
 #include "monotime.h"
 
@@ -48,8 +50,7 @@ int main (int argc, char **argv)
 
     /* Get the size
      */
-    strncpy (proc.nspace, self.nspace, PMIX_MAX_NSLEN);
-    proc.nspace[PMIX_MAX_NSLEN] = '\0';
+    strlcpy (proc.nspace, self.nspace, sizeof (proc.nspace));
     proc.rank = PMIX_RANK_WILDCARD;
     if ((rc = PMIx_Get (&proc,
                         PMIX_JOB_SIZE,
@@ -130,8 +131,7 @@ int main (int argc, char **argv)
 
     /* Fence
      */
-    strncpy (info.key, PMIX_COLLECT_DATA, PMIX_MAX_KEYLEN);
-    info.key[PMIX_MAX_KEYLEN] = '\0';
+    strlcpy (info.key, PMIX_COLLECT_DATA, sizeof (info.key));
     info.value.type = PMIX_BOOL;
     info.value.data.flag = true;
 
@@ -148,8 +148,7 @@ int main (int argc, char **argv)
             pmix_proc_t proc;
             pmix_value_t *valp;
 
-            strncpy (proc.nspace, self.nspace, PMIX_MAX_NSLEN);
-            proc.nspace[PMIX_MAX_NSLEN] = '\0';
+            strlcpy (proc.nspace, self.nspace, sizeof (proc.nspace));
             errno = 0;
             proc.rank = strtoul (argv[optindex], NULL, 10);
             if (errno != 0)

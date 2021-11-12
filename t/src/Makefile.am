@@ -34,6 +34,7 @@ libtestutil_la_SOURCES = \
 
 test_ldadd = \
 	$(builddir)/libtestutil.la \
+	$(top_builddir)/src/common/libutil/libutil.la \
 	$(FLUX_OPTPARSE_LIBS) \
 	$(FLUX_IDSET_LIBS) \
 	$(OMPI_LIBS) \

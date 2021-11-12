@@ -17,6 +17,8 @@
 #include <jansson.h>
 #include <flux/core.h>
 
+#include "src/common/libutil/strlcpy.h"
+
 #include "interthread.h"
 
 #define MAX_HANDLERS 32
@@ -48,7 +50,7 @@ int interthread_register (struct interthread *it,
         return -1;
     }
     handler = &it->handlers[it->handler_count++];
-    strncpy (handler->topic, topic, sizeof (handler->topic) - 1);
+    strlcpy (handler->topic, topic, sizeof (handler->topic));
     handler->cb = cb;
     handler->arg = arg;
     return 0;

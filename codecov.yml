@@ -4,5 +4,6 @@ coverage:
  - ".*/test/.*"
  - ".*/common/libtap/.*"
  - ".*/common/libccan/.*"
+ - ".*/common/libutil/strlcpy.[ch]"
  - "/usr/include/.*"
  - "/usr/lib/.*"

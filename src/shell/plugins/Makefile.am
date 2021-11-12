@@ -46,7 +46,8 @@ pmix_la_LIBADD = \
 	$(FLUX_IDSET_LIBS) \
 	$(FLUX_HOSTLIST_LIBS) \
 	$(JANSSON_LIBS) \
-	$(top_builddir)/src/common/libccan/libccan.la
+	$(top_builddir)/src/common/libccan/libccan.la \
+	$(top_builddir)/src/common/libutil/libutil.la
 pmix_la_LDFLAGS = \
 	$(AM_LDFLAGS) \
 	$(fluxplugin_ldflags) \
@@ -58,7 +59,8 @@ TESTS = \
 
 test_ldadd = \
 	$(top_builddir)/src/common/libtap/libtap.la \
-	$(top_builddir)/src/common/libccan/libccan.la
+	$(top_builddir)/src/common/libccan/libccan.la \
+	$(top_builddir)/src/common/libutil/libutil.la
 
 test_ldflags = \
 	-no-install

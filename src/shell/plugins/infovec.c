@@ -17,6 +17,8 @@
 #include <errno.h>
 #include <pmix.h>
 
+#include "src/common/libutil/strlcpy.h"
+
 #include "infovec.h"
 
 #define INFOVEC_CHUNK 8
@@ -52,7 +54,7 @@ int infovec_set_str_new (struct infovec *iv, const char *key, char *val)
     }
     if (!(info = alloc_slot (iv)))
         return -1;
-    strncpy (info->key, key, PMIX_MAX_KEYLEN);
+    strlcpy (info->key, key, sizeof (info->key));
     info->value.type = PMIX_STRING;
     info->value.data.string = val;
     return 0;
@@ -86,7 +88,7 @@ int infovec_set_u32 (struct infovec *iv, const char *key, uint32_t value)
     }
     if (!(info = alloc_slot (iv)))
         return -1;
-    strncpy (info->key, key, PMIX_MAX_KEYLEN);
+    strlcpy (info->key, key, sizeof (info->key));
     info->value.type = PMIX_UINT32;
     info->value.data.uint32 = value;
     return 0;
@@ -102,7 +104,7 @@ int infovec_set_bool (struct infovec *iv, const char *key, bool value)
     }
     if (!(info = alloc_slot (iv)))
         return -1;
-    strncpy (info->key, key, PMIX_MAX_KEYLEN);
+    strlcpy (info->key, key, sizeof (info->key));
     info->value.type = PMIX_BOOL;
     info->value.data.flag = value;
     return 0;
@@ -120,7 +122,7 @@ int infovec_set_rank (struct infovec *iv,
     }
     if (!(info = alloc_slot (iv)))
         return -1;
-    strncpy (info->key, key, PMIX_MAX_KEYLEN);
+    strlcpy (info->key, key, sizeof (info->key));
     info->value.type = PMIX_PROC_RANK;
     info->value.data.rank = value;
     return 0;

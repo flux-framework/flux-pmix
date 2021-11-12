@@ -18,6 +18,7 @@
 #include <pmix_server.h>
 
 #include "src/common/libccan/ccan/base64/base64.h"
+#include "src/common/libutil/strlcpy.h"
 
 #include "codec.h"
 
@@ -119,7 +120,7 @@ int codec_proc_decode (json_t *o, pmix_proc_t *proc)
                      "rank", &rank) < 0)
         return -1;
     proc->rank = rank;
-    strncpy (proc->nspace, nspace, PMIX_MAX_NSLEN);
+    strlcpy (proc->nspace, nspace, sizeof (proc->nspace));
     proc->nspace[PMIX_MAX_NSLEN] = '\0';
     return 0;
 }
@@ -399,7 +400,7 @@ int codec_info_decode (json_t *o, pmix_info_t *info)
         return -1;
     if (codec_value_decode (xvalue, &info->value) < 0) // allocs mem
         return -1;
-    strncpy (info->key, key, PMIX_MAX_KEYLEN);
+    strlcpy (info->key, key, sizeof (info->key));
     info->key[PMIX_MAX_KEYLEN] = '\0';
     return 0;
 }

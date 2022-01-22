@@ -14,7 +14,7 @@ RUN \
  fi
 
 # ompi can't coexist with mpich
-RUN sudo apt remove -yy mpich libmpich-dev libmpich12 \
+RUN sudo apt remove -yy mpich libmpich-dev \
  && sudo apt clean
 
 # install ompi prereqs

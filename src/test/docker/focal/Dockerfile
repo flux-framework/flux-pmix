@@ -13,8 +13,9 @@ RUN \
    && sudo adduser $USER sudo ; \
  fi
 
-# ompi can't coexist with mpich
-RUN sudo apt remove -yy mpich libmpich-dev libmpich12 \
+# remove installed mpich / openmpi / pmix
+RUN sudo apt purge -yy mpich libmpich-dev \
+ openmpi-bin openmpi-common libopenmpi-dev libopenmpi3 libpmix2 \
  && sudo apt clean
 
 # install ompi prereqs

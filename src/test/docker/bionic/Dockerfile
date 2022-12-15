@@ -2,8 +2,8 @@ FROM fluxrm/flux-core:bionic
 
 ARG USER=fluxuser
 ARG UID=1000
-ARG OMPI_BRANCH=v5.0.x
-ARG OPENPMIX_BRANCH=v4.1.1rc2
+ARG OMPI_BRANCH=v5.0.0rc9
+ARG OPENPMIX_BRANCH=v4.2.2rc2
 
 RUN \
  if test "$USER" != "fluxuser"; then  \
@@ -48,7 +48,7 @@ RUN cd /tmp \
  && git branch \
  && ./autogen.pl \
  && ./configure --prefix=/usr \
-      --disable-man-pages --enable-debug --enable-mem-debug \
+      --disable-man-pages --disable-sphinx --enable-debug --enable-mem-debug \
       --with-pmix=external --with-libevent \
  && make -j $(nproc) \
  && sudo make install \

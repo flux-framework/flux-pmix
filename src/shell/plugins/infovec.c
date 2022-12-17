@@ -150,6 +150,7 @@ void infovec_destroy (struct infovec *iv)
                     break;
             }
         }
+        free (iv->info);
         free (iv);
         errno = saved_errno;
     }

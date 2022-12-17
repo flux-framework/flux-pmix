@@ -94,6 +94,22 @@ int infovec_set_u32 (struct infovec *iv, const char *key, uint32_t value)
     return 0;
 }
 
+int infovec_set_u16 (struct infovec *iv, const char *key, uint16_t value)
+{
+    pmix_info_t *info;
+
+    if (!iv || !key) {
+        errno = EINVAL;
+        return -1;
+    }
+    if (!(info = alloc_slot (iv)))
+        return -1;
+    strlcpy (info->key, key, sizeof (info->key));
+    info->value.type = PMIX_UINT16;
+    info->value.data.uint16 = value;
+    return 0;
+}
+
 int infovec_set_bool (struct infovec *iv, const char *key, bool value)
 {
     pmix_info_t *info;

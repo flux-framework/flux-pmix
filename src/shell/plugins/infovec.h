@@ -17,6 +17,7 @@ struct infovec *infovec_create (void);
 void infovec_destroy (struct infovec *iv);
 
 int infovec_set_u32 (struct infovec *iv, const char *key, uint32_t val);
+int infovec_set_u16 (struct infovec *iv, const char *key, uint16_t val);
 int infovec_set_str (struct infovec *iv, const char *key, const char *str);
 int infovec_set_str_new (struct infovec *iv, const char *key, char *str);
 int infovec_set_bool (struct infovec *iv, const char *key, bool val);

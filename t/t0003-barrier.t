@@ -21,9 +21,9 @@ test_expect_success '1n2p barrier works' '
 		${BARRIER}
 '
 
-test_expect_success '1n2p barrier tolerates pmix.timeout=2' '
+test_expect_success '1n2p barrier tolerates pmix.timeout=20' '
 	run_timeout 30 flux mini run -N1 -n2 \
-		${BARRIER} --timeout=2
+		${BARRIER} --timeout=20
 '
 
 test_expect_success '1n2p barrier tolerates pmix.collect=false' '
@@ -55,10 +55,10 @@ test_expect_success '2n2p barrier works' '
 		${BARRIER}
 '
 
-test_expect_success '2n2p barrier tolerates optional pmix.timeout=2' '
+test_expect_success '2n2p barrier tolerates optional pmix.timeout=20' '
 	run_timeout 30 flux mini run -N2 -n2 \
 		-overbose=2 \
-		${BARRIER} --timeout=2
+		${BARRIER} --timeout=20
 '
 
 test_expect_success '2n2p barrier tolerates optional pmix.collect=false' '

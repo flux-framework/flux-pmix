@@ -27,14 +27,14 @@ jobs:
           ompi_branch: "v5.0.x"
           coverage: false
           env: {}
-        - name: "centos7 - ompi v5.0.x, chain_lint"
-          image: "centos7"
+        - name: "el7 - ompi v5.0.x, chain_lint"
+          image: "el7"
           ompi_branch: "v5.0.x"
           coverage: false
           env:
             chain_lint: t
-        - name: "centos8 - ompi v5.0.x, distcheck"
-          image: "centos8"
+        - name: "el8 - ompi v5.0.x, distcheck"
+          image: "el8"
           ompi_branch: "v5.0.x"
           coverage: false
           env:

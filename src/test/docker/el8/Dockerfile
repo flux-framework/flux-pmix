@@ -1,4 +1,4 @@
-FROM fluxrm/flux-core:centos8
+FROM fluxrm/flux-core:el8
 
 ARG USER=fluxuser
 ARG UID=1000

@@ -112,13 +112,13 @@ static int set_node_map (struct infovec *iv,
 
 static int set_proc_map (struct infovec *iv,
                          const char *key,
-                         flux_shell_t *shell)
+                         const struct taskmap *taskmap)
 {
     char *raw;
     char *cooked;
     int rc;
 
-    if (!(raw = maps_proc_create (shell)))
+    if (!(raw = taskmap_encode (taskmap, TASKMAP_ENCODE_RAW_DERANGED)))
         return -1;
     shell_debug ("proc_map = %s", raw);
     if ((rc = PMIx_generate_ppn (raw, &cooked) != PMIX_SUCCESS)) {
@@ -221,7 +221,7 @@ static int px_init (flux_plugin_t *p,
         || infovec_set_str (iv, PMIX_JOBID, px->nspace) < 0
         || set_lpeers (iv, PMIX_LOCAL_PEERS, px->taskmap, px->shell_rank) < 0
         || set_node_map (iv, PMIX_NODE_MAP, shell) < 0
-        || set_proc_map (iv, PMIX_PROC_MAP, shell) < 0
+        || set_proc_map (iv, PMIX_PROC_MAP, px->taskmap) < 0
         || infovec_set_bool (iv, PMIX_TDIR_RMCLEAN, true) < 0
         || infovec_set_u32 (iv, PMIX_JOB_NUM_APPS, 1) < 0
         || infovec_set_str (iv, PMIX_TMPDIR, px->job_tmpdir) < 0

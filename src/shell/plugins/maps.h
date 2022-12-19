@@ -13,7 +13,6 @@
 
 #include <flux/shell.h>
 
-char *maps_proc_create (flux_shell_t *shell);
 char *maps_node_create (flux_shell_t *shell);
 
 #endif // _PX_MAPS_H

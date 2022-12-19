@@ -22,50 +22,6 @@
 
 #include "maps.h"
 
-static char *derange_idset (const char *in)
-{
-    struct idset *ids;
-    char *out;
-
-    if (!(ids = idset_decode (in)))
-        return NULL;
-    out = idset_encode (ids, 0);
-    idset_destroy (ids);
-    return out;
-}
-
-/* Iterate over each shell, creating an idset of ranks.
- * Create a semicolon delimited list of idsets, where each entry
- * represents a set of ranks on a shell.
- * E.g. "0,1;2,3" means ranks 0,1 on shell 0; ranks 2,3 on shell 1.
- */
-char *maps_proc_create (flux_shell_t *shell)
-{
-    int shell_size;
-    char *argz = NULL;
-    size_t argz_len = 0;
-    const char *taskids;
-    char *s = NULL;
-
-    if (flux_shell_info_unpack (shell, "{s:i}", "size", &shell_size) < 0)
-        return NULL;
-    for (int shell_rank = 0; shell_rank < shell_size; shell_rank++) {
-        if (flux_shell_rank_info_unpack (shell,
-                                         shell_rank,
-                                         "{s:s}",
-                                         "taskids", &taskids) < 0
-            || !(s = derange_idset (taskids))
-            || argz_add (&argz, &argz_len, s) != 0) {
-            free (s);
-            free (argz);
-            return NULL;
-        }
-        free (s);
-    }
-    argz_stringify (argz, argz_len, ';');
-    return argz;
-}
-
 static bool contains_duplicates (struct hostlist *hl)
 {
     struct hostlist *hl2;

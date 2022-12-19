@@ -5,6 +5,7 @@ test_description='Exercise the business card exchange use case.'
 . `dirname $0`/sharness.sh
 
 BIZCARD=${FLUX_BUILD_DIR}/t/src/bizcard
+VERSION=${FLUX_BUILD_DIR}/t/src/version
 
 export FLUX_SHELL_RC_PATH=${FLUX_BUILD_DIR}/t/etc
 

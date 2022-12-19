@@ -34,20 +34,6 @@ static char *derange_idset (const char *in)
     return out;
 }
 
-char *maps_lpeers_create (flux_shell_t *shell)
-{
-    int shell_rank;
-    const char *taskids;
-
-    if (flux_shell_info_unpack (shell, "{s:i}", "rank", &shell_rank) < 0
-        || flux_shell_rank_info_unpack (shell,
-                                        shell_rank,
-                                        "{s:s}",
-                                        "taskids", &taskids) < 0)
-        return NULL;
-    return derange_idset (taskids);
-}
-
 /* Iterate over each shell, creating an idset of ranks.
  * Create a semicolon delimited list of idsets, where each entry
  * represents a set of ranks on a shell.

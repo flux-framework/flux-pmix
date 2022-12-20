@@ -38,6 +38,7 @@ pmix_la_CPPFLAGS = \
 	$(FLUX_CORE_CFLAGS) \
 	$(FLUX_IDSET_CFLAGS) \
 	$(FLUX_HOSTLIST_CFLAGS) \
+	$(FLUX_TASKMAP_CFLAGS) \
 	$(PMIX_CFLAGS) \
 	$(JANSSON_CFLAGS)
 pmix_la_LIBADD = \
@@ -45,6 +46,7 @@ pmix_la_LIBADD = \
 	$(PMIX_LIBS) \
 	$(FLUX_IDSET_LIBS) \
 	$(FLUX_HOSTLIST_LIBS) \
+	$(FLUX_TASKMAP_LIBS) \
 	$(JANSSON_LIBS) \
 	$(top_builddir)/src/common/libccan/libccan.la \
 	$(top_builddir)/src/common/libutil/libutil.la

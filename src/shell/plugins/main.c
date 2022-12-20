@@ -15,6 +15,8 @@
 #include "config.h"
 #endif
 #include <flux/shell.h>
+#include <flux/taskmap.h>
+#include <flux/idset.h>
 
 #include <pmix_server.h>
 #include <pmix.h>
@@ -36,6 +38,7 @@ struct px {
     int shell_rank;
     int local_nprocs;
     int total_nprocs;
+    const struct taskmap *taskmap;
     const char *job_tmpdir;
     struct interthread *it;
     struct fence *fence;
@@ -65,11 +68,14 @@ static void px_destroy (struct px *px)
 
 static int set_lpeers (struct infovec *iv,
                        const char *key,
-                       flux_shell_t *shell)
+                       const struct taskmap *taskmap,
+                       int shell_rank)
 {
+    const struct idset *ids;
     char *s;
 
-    if (!(s = maps_lpeers_create (shell)))
+    if (!(ids = taskmap_taskids (taskmap, shell_rank))
+        || !(s = idset_encode (ids, 0)))
         return -1;
     shell_debug ("local_peers = %s", s);
     if (infovec_set_str_new (iv, key, s) < 0) { // steals s
@@ -106,13 +112,13 @@ static int set_node_map (struct infovec *iv,
 
 static int set_proc_map (struct infovec *iv,
                          const char *key,
-                         flux_shell_t *shell)
+                         const struct taskmap *taskmap)
 {
     char *raw;
     char *cooked;
     int rc;
 
-    if (!(raw = maps_proc_create (shell)))
+    if (!(raw = taskmap_encode (taskmap, TASKMAP_ENCODE_RAW_DERANGED)))
         return -1;
     shell_debug ("proc_map = %s", raw);
     if ((rc = PMIx_generate_ppn (raw, &cooked) != PMIX_SUCCESS)) {
@@ -172,6 +178,8 @@ static int px_init (flux_plugin_t *p,
     if (!(px->job_tmpdir = flux_shell_getenv (shell, "FLUX_JOB_TMPDIR")))
         return -1;
 
+    if (!(px->taskmap = flux_shell_get_taskmap (shell)))
+        return -1;
 
     if (px->shell_rank == 0) {
         const char *s = PMIx_Get_version ();
@@ -211,9 +219,9 @@ static int px_init (flux_plugin_t *p,
 
     if (!(iv = infovec_create ())
         || infovec_set_str (iv, PMIX_JOBID, px->nspace) < 0
-        || set_lpeers (iv, PMIX_LOCAL_PEERS, shell) < 0
+        || set_lpeers (iv, PMIX_LOCAL_PEERS, px->taskmap, px->shell_rank) < 0
         || set_node_map (iv, PMIX_NODE_MAP, shell) < 0
-        || set_proc_map (iv, PMIX_PROC_MAP, shell) < 0
+        || set_proc_map (iv, PMIX_PROC_MAP, px->taskmap) < 0
         || infovec_set_bool (iv, PMIX_TDIR_RMCLEAN, true) < 0
         || infovec_set_u32 (iv, PMIX_JOB_NUM_APPS, 1) < 0
         || infovec_set_str (iv, PMIX_TMPDIR, px->job_tmpdir) < 0

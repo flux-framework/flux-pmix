@@ -50,7 +50,7 @@ RUN cd /tmp \
  && ./autogen.pl \
  && ./configure --prefix=/usr \
       --disable-man-pages --enable-debug --enable-mem-debug \
-      --with-pmix=external --with-libevent \
+      --with-pmix=external --with-libevent --disable-sphinx \
  && make -j $(nproc) \
  && sudo make install \
  && cd .. \

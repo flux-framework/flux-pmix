@@ -135,6 +135,54 @@ static int set_proc_map (struct infovec *iv,
     return 0;
 }
 
+static int get_local_rank (const struct taskmap *taskmap,
+                           int nodeid,
+                           int rank)
+{
+    const struct idset *ranks;
+    unsigned int i;
+    int local_rank = 0;
+
+    if (!(ranks = taskmap_taskids (taskmap, nodeid)))
+        return -1;
+    i = idset_first (ranks);
+    while (i != IDSET_INVALID_ID) {
+        if (i == rank)
+            return local_rank;
+        local_rank++;
+        i = idset_next (ranks, i);
+    }
+    return -1;
+}
+
+static int set_proc_infos (struct infovec *iv,
+                           const char *key,
+                           struct px *px)
+{
+    struct infovec *ri;
+
+    for (int i = 0; i < px->total_nprocs; i++) {
+        int nodeid;
+        int local_rank;
+
+        if ((nodeid = taskmap_nodeid (px->taskmap, i)) < 0
+            || (local_rank = get_local_rank (px->taskmap, nodeid, i)) < 0)
+            return -1;
+
+        if (!(ri = infovec_create ())
+            || infovec_set_rank (ri, PMIX_RANK, i) < 0
+            || infovec_set_u32 (ri, PMIX_NODEID, nodeid) < 0
+            || infovec_set_u16 (ri, PMIX_LOCAL_RANK, local_rank) < 0
+            || infovec_set_u16 (ri, PMIX_NODE_RANK, local_rank) < 0
+            || infovec_set_infovec_new (iv, key, ri) < 0) {
+            shell_warn ("error setting %s for rank %d", key, i);
+            infovec_destroy (ri);
+            return -1;
+        }
+    }
+    return 0;
+}
+
 static int px_init (flux_plugin_t *p,
                     const char *topic,
                     flux_plugin_arg_t *arg,
@@ -228,7 +276,8 @@ static int px_init (flux_plugin_t *p,
         || infovec_set_u32 (iv, PMIX_LOCAL_SIZE, px->local_nprocs) < 0
         || infovec_set_u32 (iv, PMIX_UNIV_SIZE, px->total_nprocs) < 0
         || infovec_set_u32 (iv, PMIX_JOB_SIZE, px->total_nprocs) < 0
-        || infovec_set_u32 (iv, PMIX_APPNUM, 0) < 0)
+        || infovec_set_u32 (iv, PMIX_APPNUM, 0) < 0
+        || set_proc_infos (iv, PMIX_PROC_INFO_ARRAY, px) < 0)
         goto error;
 
     if ((rc = PMIx_server_register_nspace (px->nspace,

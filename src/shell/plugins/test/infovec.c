@@ -129,6 +129,28 @@ void basic (void)
     infovec_destroy (iv);
 }
 
+void nested (void)
+{
+    struct infovec *iv1 = NULL;
+    struct infovec *iv2 = NULL;
+    struct infovec *iv3 = NULL;
+
+    if (!(iv1 = infovec_create ())
+        || !(iv2 = infovec_create ())
+        || !(iv3 = infovec_create ()))
+        BAIL_OUT ("infovec_create failed");
+
+    if (infovec_set_str (iv3, "foo", "bar") < 0
+        || infovec_set_str (iv3, "foo2", "bar2") < 0)
+        BAIL_OUT ("infovec_set_str failed");
+
+    ok (infovec_set_infovec_new (iv2, "iv3", iv3) == 0
+        && infovec_set_infovec_new (iv1, "iv2", iv2) == 0,
+        "infovec_set_infovec_new works");
+
+    infovec_destroy (iv1);
+}
+
 void badarg (void)
 {
     struct infovec *iv;
@@ -136,6 +158,12 @@ void badarg (void)
     if (!(iv = infovec_create ()))
         BAIL_OUT ("infovec_create failed");
 
+    errno = 0;
+    ok (infovec_set_u16 (NULL, "foo", 42) < 0 && errno == EINVAL,
+        "infovec_set_u16 iv=NULL fails with EINVAL");
+    errno = 0;
+    ok (infovec_set_u16 (iv, NULL, 42) < 0 && errno == EINVAL,
+        "infovec_set_u16 key=NULL fails with EINVAL");
     errno = 0;
     ok (infovec_set_u32 (NULL, "foo", 42) < 0 && errno == EINVAL,
         "infovec_set_u32 iv=NULL fails with EINVAL");
@@ -163,6 +191,15 @@ void badarg (void)
     errno = 0;
     ok (infovec_set_str (iv, "foo", NULL) < 0 && errno == EINVAL,
         "infovec_set_str value=NULL fails with EINVAL");
+    errno = 0;
+    ok (infovec_set_infovec_new (NULL, "foo", iv) < 0 && errno == EINVAL,
+        "infovec_set_infovec_new iv=NULL fails with EINVAL");
+    errno = 0;
+    ok (infovec_set_infovec_new (iv, NULL, iv) < 0 && errno == EINVAL,
+        "infovec_set_infovec_new key=NULL fails with EINVAL");
+    errno = 0;
+    ok (infovec_set_infovec_new (iv, "foo", NULL) < 0 && errno == EINVAL,
+        "infovec_set_infovec_new value=NULL fails with EINVAL");
 
     infovec_destroy (iv);
 }
@@ -172,6 +209,7 @@ int main (int argc, char **argv)
     plan (NO_PLAN);
 
     basic ();
+    nested ();
     expansion (32); // make it > INFOVEC_CHUNK (8)
     badarg ();
 

@@ -89,6 +89,9 @@ jobs:
         --build-arg OMPI_BRANCH=${{ matrix.ompi_branch }}
         --
 
+    - if: failure()
+      uses: mxschmitt/action-tmate@v3
+
     - name: annotate errors
       if: failure() || cancelled()
       run: src/test/checks-annotate.sh

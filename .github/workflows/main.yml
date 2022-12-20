@@ -22,32 +22,32 @@ jobs:
     strategy:
       matrix:
         include:
-        - name: "focal - ompi v5.0.x"
+        - name: "focal - ompi v5.0.0rc2"
           image: "focal"
-          ompi_branch: "v5.0.x"
+          ompi_branch: "v5.0.0rc2"
           coverage: false
           env: {}
-        - name: "centos7 - ompi v5.0.x, chain_lint"
-          image: "centos7"
-          ompi_branch: "v5.0.x"
+        - name: "el7 - ompi v5.0.0rc2, chain_lint"
+          image: "el7"
+          ompi_branch: "v5.0.0rc2"
           coverage: false
           env:
             chain_lint: t
-        - name: "centos8 - ompi v5.0.x, distcheck"
-          image: "centos8"
-          ompi_branch: "v5.0.x"
+        - name: "el8 - ompi v5.0.0rc2, distcheck"
+          image: "el8"
+          ompi_branch: "v5.0.0rc2"
           coverage: false
           env:
             DISTCHECK: t
         - name: "coverage"
           image: "focal"
-          ompi_branch: "v5.0.x"
+          ompi_branch: "v5.0.0rc2"
           coverage: true
           env:
             COVERAGE: t
-        - name: "fedora34 - ompi v5.0.x"
+        - name: "fedora34 - ompi v5.0.0rc2"
           image: "fedora34"
-          ompi_branch: "v5.0.x"
+          ompi_branch: "v5.0.0rc2"
           coverage: false
           env: {}
         - name: "focal - ompi v4.1.x"

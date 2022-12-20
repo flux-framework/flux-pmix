@@ -5,6 +5,7 @@ test_description='Exercise empty fence (barrier).'
 . `dirname $0`/sharness.sh
 
 BARRIER=${FLUX_BUILD_DIR}/t/src/barrier
+VERSION=${FLUX_BUILD_DIR}/t/src/version
 export FLUX_SHELL_RC_PATH=${FLUX_BUILD_DIR}/t/etc
 
 test_under_flux 2

@@ -1,4 +1,4 @@
-FROM fluxrm/flux-core:centos8
+FROM fluxrm/flux-core:el8
 
 ARG USER=fluxuser
 ARG UID=1000
@@ -41,6 +41,7 @@ RUN cd /tmp \
  && ./configure --prefix=/usr \
       --enable-debug \
  && make -j $(nproc) \
+ && sudo rm -rf /usr/lib64/pmix \
  && sudo make install \
  && cd .. \
  && rm -rf openpmix

@@ -41,6 +41,7 @@ RUN cd /tmp \
  && ./configure --prefix=/usr \
       --enable-debug \
  && make -j $(nproc) \
+ && sudo rm -rf /usr/lib64/pmix \
  && sudo make install \
  && cd .. \
  && rm -rf openpmix

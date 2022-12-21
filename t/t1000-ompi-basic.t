@@ -12,7 +12,7 @@ export FLUX_SHELL_RC_PATH=${FLUX_BUILD_DIR}/t/etc
 test_under_flux 2
 
 test_expect_success 'capture the job environment' '
-	run_timeout 30 flux mini run \
+	run_timeout 30 flux mini run -opmi=off \
 		printenv >printenv.out
 '
 
@@ -26,13 +26,15 @@ test_expect_success 'sanity check pmix environment' '
 '
 
 test_expect_success '1n2p ompi hello' '
-	run_timeout 30 flux mini run -N1 -n2 \
-		${MPI_HELLO}
+	run_timeout 30 flux mini run -opmi=off -N1 -n2 \
+		${MPI_HELLO} >hello_1n2p.out &&
+	grep "There are 2 tasks" hello_1n2p.out
 '
 
 test_expect_success '2n2p ompi hello' '
-	run_timeout 30 flux mini run -N2 -n2 \
-		${MPI_HELLO}
+	run_timeout 30 flux mini run -opmi=off -N2 -n2 \
+		${MPI_HELLO} >hello_2n2p.out &&
+	grep "There are 2 tasks" hello_2n2p.out
 '
 
 # Useful debugging runes:
@@ -43,24 +45,25 @@ test_expect_success '2n2p ompi hello' '
 
 # see issue #27
 test_expect_success '2n3p ompi hello doesnt hang' '
-	run_timeout 60 flux mini run -N2 -n3 \
+	run_timeout 60 flux mini run -opmi=off -N2 -n3 \
 		-overbose=2 \
-		${MPI_HELLO}
+		${MPI_HELLO} >hello_2n3p.out &&
+	grep "There are 3 tasks" hello_2n3p.out
 '
 
 # see issue #26
 test_expect_success '2n4p ompi hello reports no system call errors' '
-        run_timeout 30 flux mini run -N2 -n4 \
+        run_timeout 30 flux mini run -opmi=off -N2 -n4 \
                 ${MPI_HELLO} 2>2n4p_hello.err &&
         test_must_fail grep "System call:" 2n4p_hello.err
 '
 
 test_expect_success '1n2p ompi pingpong works' '
-        run_timeout 30 flux mini run -N1 -n2 \
+        run_timeout 30 flux mini run -opmi=off -N1 -n2 \
                 ${MPI_PINGPONG}
 '
 test_expect_success '2n2p ompi pingpong works' '
-        run_timeout 30 flux mini run -N2 -n2 \
+        run_timeout 30 flux mini run -opmi=off -N2 -n2 \
                 ${MPI_PINGPONG}
 '
 

@@ -49,7 +49,7 @@ run_mpibench() {
 	local nnodes=$2
 	local ntasks=$3
 	local op=$4
-	run_timeout $timeout flux mini run -N$nnodes -n$ntasks \
+	run_timeout $timeout flux mini run -opmi=off -N$nnodes -n$ntasks \
 		${MPIBENCH} ${op}
 }
 

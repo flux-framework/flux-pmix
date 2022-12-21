@@ -102,37 +102,24 @@ done:
  */
 static int parse_fence_attr (struct fence_call *fxcall, pmix_info_t *info)
 {
-    int rc = PMIX_SUCCESS;
-    int required = (info->flags & PMIX_INFO_REQD);
-
     if (!strcmp (info->key, "pmix.collect")) {
-        if (info->value.type != PMIX_BOOL)
-            goto type_error;
+        if (info->value.type != PMIX_BOOL) {
+            shell_warn ("fence attr %s has wrong type=%d",
+                        info->key,
+                        info->value.type);
+            return PMIX_ERR_BAD_PARAM;
+        }
         if (info->value.data.flag == true)
             fxcall->collect = true;
-        goto done;
     }
-    /* This attr is listed in the openpmix EXCEPTIONS as an
-     * experimental development feature and pops pops up when running
-     * osu benchmarks.  We don't know what to do with it, but let's
-     * tone down the warning to debug level to avoid alarming users.
-     */
-    else if (!strcmp (info->key, "pmix.loc.col.st")) {
-        shell_debug ("ignoring experimental %s fence attr: %s",
-                     required ? "required" : "optional",
-                     info->key);
-        goto done;
+    else if ((info->flags & PMIX_INFO_REQD)) {
+        shell_warn ("unknown required fence attr: %s", info->key);
+        return PMIX_ERR_BAD_PARAM;
     }
-    shell_warn ("unknown %s fence attr: %s",
-                required ? "required" : "optional",
-                info->key);
-    if (required)
-        rc = PMIX_ERR_BAD_PARAM;
-done:
-    return rc;
-type_error:
-    shell_warn ("fence attr %s has wrong type=%d", info->key, info->value.type);
-    return PMIX_ERR_BAD_PARAM;
+    else {
+        shell_debug ("ignoring unknown optional fence attr: %s", info->key);
+    }
+    return 0;
 }
 
 static void fence_shell_cb (const flux_msg_t *msg, void *arg)

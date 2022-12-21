@@ -6,7 +6,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         ref: ${{ github.event.pull_request.head.sha }}
         fetch-depth: 0
@@ -75,7 +75,7 @@ jobs:
     name: ${{ matrix.name }}
     steps:
     - name: checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
        ref: ${{ github.event.pull_request.head.sha }}
        fetch-depth: 0
@@ -97,5 +97,4 @@ jobs:
       if: success() && matrix.coverage
       env:
         DOCKER_REPO:
-      uses: codecov/codecov-action@v1
-      
+      uses: codecov/codecov-action@858dd794fbb81941b6d60b0dca860878cba60fa9 # v3.1.1

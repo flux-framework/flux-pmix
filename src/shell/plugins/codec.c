@@ -271,6 +271,10 @@ int codec_value_decode (json_t *o, pmix_value_t *value)
     int type;
     json_t *data;
 
+    /* Zero-fill any unused memory in the pmix_value_t union.
+     */
+    memset (value, 0, sizeof (*value));
+
     if (json_unpack (o,
                      "{s:i s:o}",
                      "type", &type,

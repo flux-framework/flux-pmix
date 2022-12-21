@@ -212,6 +212,9 @@ int main (int argc, char **argv)
     monotime (&t);
     pmix_info_t info[8];
     pmix_proc_t *procs = NULL;
+
+    memset (info, 0, sizeof (info));
+
     size_t ninfo = parse_info_opts (p, info, sizeof (info) / sizeof (info[0]));
     size_t nprocs = parse_procs_opt (p, &self, &procs);
 

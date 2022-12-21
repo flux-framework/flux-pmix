@@ -159,6 +159,11 @@ static void fence_shell_cb (const flux_msg_t *msg, void *arg)
         if ((rc = parse_fence_attr (fxcall, &fxcall->info[i])) != PMIX_SUCCESS)
             goto error;
     }
+    if (fx->trace_flag) {
+        shell_trace ("starting pmix exchange %d: size %zi",
+                     fxcall->exchange_seq,
+                     fxcall->collect ? codec_data_length (xdata) : 0);
+    }
     if (exchange_enter_base64_string (fx->exchange,
                                       fxcall->collect ? xdata : NULL,
                                       exchange_exit_cb,
@@ -167,10 +172,6 @@ static void fence_shell_cb (const flux_msg_t *msg, void *arg)
         rc = PMIX_ERROR;
         goto error;
     }
-    if (fx->trace_flag)
-        shell_trace ("starting pmix exchange %d: size %zi",
-                     fxcall->exchange_seq,
-                     fxcall->collect ? codec_data_length (xdata) : 0);
     return;
 error:
     fxcall->cbfunc (rc, NULL, 0, fxcall->cbdata, NULL, NULL);

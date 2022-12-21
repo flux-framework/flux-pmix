@@ -27,12 +27,14 @@ test_expect_success 'sanity check pmix environment' '
 
 test_expect_success '1n2p ompi hello' '
 	run_timeout 30 flux mini run -opmi=off -N1 -n2 \
-		${MPI_HELLO}
+		${MPI_HELLO} >hello_1n2p.out &&
+	grep "There are 2 tasks" hello_1n2p.out
 '
 
 test_expect_success '2n2p ompi hello' '
 	run_timeout 30 flux mini run -opmi=off -N2 -n2 \
-		${MPI_HELLO}
+		${MPI_HELLO} >hello_2n2p.out &&
+	grep "There are 2 tasks" hello_2n2p.out
 '
 
 # Useful debugging runes:
@@ -45,7 +47,8 @@ test_expect_success '2n2p ompi hello' '
 test_expect_success '2n3p ompi hello doesnt hang' '
 	run_timeout 60 flux mini run -opmi=off -N2 -n3 \
 		-overbose=2 \
-		${MPI_HELLO}
+		${MPI_HELLO} >hello_2n3p.out &&
+	grep "There are 3 tasks" hello_2n3p.out
 '
 
 # see issue #26

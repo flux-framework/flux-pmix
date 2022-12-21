@@ -86,6 +86,7 @@ int main (int argc, char **argv)
     /* Add any info options
      */
     if (event_message) {
+        memset (&info[ninfo], 0, sizeof (info));
         strlcpy (info[ninfo].key,
                  PMIX_EVENT_TEXT_MESSAGE,
                  sizeof (info[ninfo].key));

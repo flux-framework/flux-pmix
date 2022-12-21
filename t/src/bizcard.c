@@ -131,6 +131,7 @@ int main (int argc, char **argv)
 
     /* Fence
      */
+    memset (&info, 0, sizeof (info));
     strlcpy (info.key, PMIX_COLLECT_DATA, sizeof (info.key));
     info.value.type = PMIX_BOOL;
     info.value.data.flag = true;

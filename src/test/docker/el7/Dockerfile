@@ -3,7 +3,7 @@ FROM fluxrm/flux-core:el7
 ARG USER=fluxuser
 ARG UID=1000
 ARG OMPI_BRANCH=v5.0.x
-ARG OPENPMIX_BRANCH=v4.1.1rc2
+ARG OPENPMIX_BRANCH=v4.2.2
 
 RUN \
  if test "$USER" != "fluxuser"; then  \
@@ -48,7 +48,7 @@ RUN cd /tmp \
  && ./autogen.pl \
  && ./configure --prefix=/usr \
       --disable-man-pages --enable-debug --enable-mem-debug \
-      --with-pmix=external --with-libevent \
+      --with-pmix=external --with-libevent --disable-sphinx \
  && make -j $(nproc) \
  && sudo make install \
  && cd .. \

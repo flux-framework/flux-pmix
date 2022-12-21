@@ -31,6 +31,8 @@ struct infovec {
 
 static pmix_info_t *alloc_slot (struct infovec *iv)
 {
+    pmix_info_t *info;
+
     if (iv->count == iv->length) {
         int new_length = iv->length + INFOVEC_CHUNK;
         size_t new_size = sizeof (iv->info[0]) * new_length;
@@ -41,7 +43,9 @@ static pmix_info_t *alloc_slot (struct infovec *iv)
         iv->info = new_info;
         iv->length = new_length;
     }
-    return &iv->info[iv->count++];
+    info = &iv->info[iv->count++];
+    memset (info, 0, sizeof (*info));
+    return info;
 }
 
 int infovec_set_str_new (struct infovec *iv, const char *key, char *val)

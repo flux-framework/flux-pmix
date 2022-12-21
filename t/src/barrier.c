@@ -58,6 +58,7 @@ void set_info_bool (pmix_info_t *info,
     info->flags = flags;
     info->value.type = PMIX_BOOL;
     info->value.data.flag = value;
+    log_msg ("Setting %s=%s flags=%d", name, value ? "true" : "false", flags);
 }
 
 void set_info_int (pmix_info_t *info,
@@ -69,6 +70,7 @@ void set_info_int (pmix_info_t *info,
     info->flags = flags;
     info->value.type = PMIX_INT;
     info->value.data.flag = optarg;
+    log_msg ("Setting %s=%d flags=%d", name, optarg, flags);
 }
 
 size_t parse_info_opts (optparse_t *p, pmix_info_t *infos, size_t ninfo)
@@ -210,6 +212,9 @@ int main (int argc, char **argv)
     monotime (&t);
     pmix_info_t info[8];
     pmix_proc_t *procs = NULL;
+
+    memset (info, 0, sizeof (info));
+
     size_t ninfo = parse_info_opts (p, info, sizeof (info) / sizeof (info[0]));
     size_t nprocs = parse_procs_opt (p, &self, &procs);
 

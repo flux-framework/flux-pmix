@@ -58,6 +58,7 @@ void set_info_bool (pmix_info_t *info,
     info->flags = flags;
     info->value.type = PMIX_BOOL;
     info->value.data.flag = value;
+    log_msg ("Setting %s=%s flags=%d", name, value ? "true" : "false", flags);
 }
 
 void set_info_int (pmix_info_t *info,
@@ -69,6 +70,7 @@ void set_info_int (pmix_info_t *info,
     info->flags = flags;
     info->value.type = PMIX_INT;
     info->value.data.flag = optarg;
+    log_msg ("Setting %s=%d flags=%d", name, optarg, flags);
 }
 
 size_t parse_info_opts (optparse_t *p, pmix_info_t *infos, size_t ninfo)

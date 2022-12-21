@@ -23,7 +23,7 @@ test_expect_success '1n2p barrier works' '
 '
 
 test_expect_success '1n2p barrier tolerates pmix.timeout=2' '
-	run_timeout 30 flux mini run -N1 -n2 \
+	run_timeout 30 flux mini run -N1 -n2 -overbose=2 \
 		${BARRIER} --timeout=2
 '
 

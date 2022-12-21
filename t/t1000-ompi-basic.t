@@ -4,10 +4,16 @@ test_description='Test openmpi bootstrap.'
 
 . `dirname $0`/sharness.sh
 
+MPI_VERSION=${FLUX_BUILD_DIR}/t/src/mpi_version
 MPI_HELLO=${FLUX_BUILD_DIR}/t/src/mpi_hello
 MPI_PINGPONG=${FLUX_BUILD_DIR}/t/src/mpi_pingpong
 
 export FLUX_SHELL_RC_PATH=${FLUX_BUILD_DIR}/t/etc
+
+if ! ${MPI_VERSION} >/dev/null 2>&1; then
+    skip_all='skipping openmpi bootstrap tests - MPI unavailable'
+    test_done
+fi
 
 test_under_flux 2
 

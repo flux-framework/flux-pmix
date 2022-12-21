@@ -1,4 +1,8 @@
-SUBDIRS = src osu-micro-benchmarks .
+SUBDIRS = src .
+
+if HAVE_MPI
+SUBDIRS += osu-micro-benchmarks
+endif
 
 AM_CFLAGS = \
 	$(WARNING_CFLAGS) \
@@ -41,8 +45,10 @@ TESTS = \
 dist_check_SCRIPTS = \
 	$(TESTSCRIPTS)
 
+if HAVE_MPI
 check_PROGRAMS = \
 	mpibench/mpibench
+endif
 
 check-prep:
 	$(MAKE)

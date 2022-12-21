@@ -2,12 +2,17 @@
 
 test_description='Test openmpi with OSU micro benchmarks.'
 
-OSU_MPI=${FLUX_BUILD_DIR}/t/osu-micro-benchmarks/mpi
-
 . `dirname $0`/sharness.sh
+
+MPI_VERSION=${FLUX_BUILD_DIR}/t/src/mpi_version
+OSU_MPI=${FLUX_BUILD_DIR}/t/osu-micro-benchmarks/mpi
 
 export FLUX_SHELL_RC_PATH=${FLUX_BUILD_DIR}/t/etc
 
+if ! ${MPI_VERSION} >/dev/null 2>&1; then
+    skip_all='skipping OSU micro benchmarks - MPI unavailable'
+    test_done
+fi
 if ! test_have_prereq LONGTEST; then
     skip_all='skipping OSU micro benchmarks due to missing LONGTEST prereq'
     test_done

@@ -2,14 +2,17 @@
 
 test_description='Test openmpi with mpibench.'
 
-PLUGINPATH=${FLUX_BUILD_DIR}/src/shell/plugins/.libs
+. `dirname $0`/sharness.sh
+
+MPI_VERSION=${FLUX_BUILD_DIR}/t/src/mpi_version
 MPIBENCH="${FLUX_BUILD_DIR}/t/mpibench/mpibench -i5 -C -e1K -m 1M"
 
 export FLUX_SHELL_RC_PATH=${FLUX_BUILD_DIR}/t/etc
 
-. `dirname $0`/sharness.sh
-
-
+if ! ${MPI_VERSION} >/dev/null 2>&1; then
+    skip_all='skipping mpibench tests - MPI unavailable'
+    test_done
+fi
 if ! test_have_prereq LONGTEST; then
     skip_all='skipping mpibench due to missing LONGTEST prereq'
     test_done

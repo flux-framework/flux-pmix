@@ -19,10 +19,14 @@ check_PROGRAMS = \
 	getkey \
 	abort \
 	notify \
+	mpi_version
+
+if HAVE_MPI
+check_PROGRAMS += \
 	mpi_hello \
-	mpi_version \
 	mpi_abort \
 	mpi_pingpong
+endif
 
 check_LTLIBRARIES = libtestutil.la
 

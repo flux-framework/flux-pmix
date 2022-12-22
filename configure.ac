@@ -6,11 +6,11 @@ AC_INIT([flux-pmix],
 AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_MACRO_DIR([config])
 AC_CONFIG_SRCDIR([NEWS.md])
-AC_CANONICAL_SYSTEM
+AC_CANONICAL_TARGET
 
 AM_INIT_AUTOMAKE([subdir-objects tar-pax foreign])
 AM_SILENT_RULES([yes])
-AM_CONFIG_HEADER([config/config.h])
+AC_CONFIG_HEADERS([config/config.h])
 AM_MAINTAINER_MODE([enable])
 
 AC_DEFINE([_GNU_SOURCE], 1,
@@ -32,7 +32,7 @@ PKG_PROG_PKG_CONFIG
 
 # Checks for programs
 ##
-AC_PROG_CC_C99
+m4_version_prereq(2.70, [AC_PROG_CC], [AC_PROG_CC_C99])
 AM_PROG_CC_C_O
 AX_COMPILER_VENDOR
 AX_COMPILER_VERSION
@@ -45,19 +45,19 @@ AC_SUBST([WARNING_CFLAGS])
 
 LT_INIT
 
-AC_HEADER_STDC
-
-PKG_CHECK_MODULES([ZMQ], [libczmq >= 3.0.0 libzmq >= 4.0.4])
 PKG_CHECK_MODULES([PMIX], [pmix >= 4.0.0])
 PKG_CHECK_MODULES([JANSSON], [jansson >= 2.10], [], [])
 
-PKG_CHECK_MODULES([OMPI], [ompi >= 3.0.0], [
+PKG_CHECK_MODULES([OMPI], [ompi >= 3.0.0], [have_ompi=yes], [have_ompi=no])
+if test "${have_ompi}" = "yes"; then
   OMPI_PREFIX=`pkg-config --variable=prefix ompi`
   if test -z "${OMPI_PREFIX}"; then
     AC_MSG_ERROR([failed to determine ompi prefix from pkg-config])
   fi
   AC_SUBST(OMPI_PREFIX)
-])
+  AC_DEFINE(HAVE_MPI, [1], [whether to build mpi tests])
+fi
+AM_CONDITIONAL([HAVE_MPI], [test "x$have_ompi" = "xyes"])
 
 X_AC_CHECK_PTHREADS
 

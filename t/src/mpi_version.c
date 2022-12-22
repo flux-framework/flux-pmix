@@ -11,24 +11,28 @@
 #if HAVE_CONFIG_H
 #include "config.h"
 #endif
+#if HAVE_MPI
 #include <mpi.h>
+#endif
 #include <stdio.h>
 
 int main (int argc, char *argv[])
 {
+#if HAVE_MPI
     char version[MPI_MAX_LIBRARY_VERSION_STRING];
     int len;
-    int exit_rc = -1;
 
     MPI_Get_library_version (version, &len);
     if (len < 0) {
         fprintf (stderr, "MPI_Get_library_version failed\n");
-        goto done;
+        return -1;
     }
     printf ("%s\n", version);
-    exit_rc = 0;
-done:
-    return exit_rc;
+    return 0;
+#else
+    fprintf (stderr, "MPI is not configured");
+    return -1;
+#endif
 }
 
 // vi: ts=4 sw=4 expandtab

@@ -34,6 +34,7 @@ TESTSCRIPTS = \
 	t0005-abort.t \
 	t0006-notify.t \
 	t0007-dmodex.t \
+	t0008-upmi.t \
 	t1000-ompi-basic.t \
 	t2001-osu-benchmarks.t \
 	t2002-mpibench.t

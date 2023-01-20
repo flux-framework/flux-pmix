@@ -70,6 +70,9 @@ AC_SUBST(shell_lua_mpidir)
 AS_VAR_SET(shell_plugindir, $libdir/flux/shell/plugins)
 AC_SUBST(shell_plugindir)
 
+AS_VAR_SET(upmi_plugindir, $libdir/flux/upmi/plugins)
+AC_SUBST(upmi_plugindir)
+
 fluxplugin_ldflags="-avoid-version -export-symbols-regex '^flux_plugin_init\$\$' --disable-static -shared -export-dynamic"
 AC_SUBST(fluxplugin_ldflags)
 
@@ -83,6 +86,7 @@ AC_CONFIG_FILES( \
   src/common/libutil/Makefile \
   src/shell/plugins/Makefile \
   src/shell/lua.d/Makefile \
+  src/upmi/Makefile \
   t/Makefile \
   t/sharness.d/00-setup.sh \
   t/src/Makefile \

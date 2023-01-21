@@ -66,5 +66,13 @@ test_expect_success 'flux launches flux with pmix' '
 		flux start flux getattr broker.boot-method >method.out &&
 	test_cmp method.exp method.out
 '
+test_expect_success 'flux blocks PMIX_ prefixed environment variables' '
+	cat >method.exp <<-EOT &&
+	pmix
+	EOT
+	flux mini run -opmi=off \
+		flux start printenv >blockenv.out &&
+	test_must_fail grep "^PMIX_" blockenv.out
+'
 
 test_done

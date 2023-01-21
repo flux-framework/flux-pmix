@@ -58,7 +58,7 @@ test_expect_success 'get of unknown key fails' '
 	test_must_fail flux mini run -opmi=off \
 		flux pmi -v get notakey
 '
-test_expect_success 'flux launches flux with pmi' '
+test_expect_success 'flux launches flux with pmix' '
 	cat >method.exp <<-EOT &&
 	pmix
 	EOT

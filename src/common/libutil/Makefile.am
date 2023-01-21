@@ -10,4 +10,6 @@ AM_CPPFLAGS =
 noinst_LTLIBRARIES = libutil.la
 libutil_la_SOURCES = \
 	strlcpy.c \
-	strlcpy.h
+	strlcpy.h \
+	unsetenv_glob.c \
+	unsetenv_glob.h

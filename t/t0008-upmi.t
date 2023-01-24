@@ -58,13 +58,21 @@ test_expect_success 'get of unknown key fails' '
 	test_must_fail flux mini run -opmi=off \
 		flux pmi -v get notakey
 '
-test_expect_success 'flux launches flux with pmi' '
+test_expect_success 'flux launches flux with pmix' '
 	cat >method.exp <<-EOT &&
 	pmix
 	EOT
 	flux mini run -opmi=off \
 		flux start flux getattr broker.boot-method >method.out &&
 	test_cmp method.exp method.out
+'
+test_expect_success 'flux blocks PMIX_ prefixed environment variables' '
+	cat >method.exp <<-EOT &&
+	pmix
+	EOT
+	flux mini run -opmi=off \
+		flux start printenv >blockenv.out &&
+	test_must_fail grep "^PMIX_" blockenv.out
 '
 
 test_done

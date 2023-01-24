@@ -22,6 +22,7 @@
 #include <flux/core.h>
 
 #include "src/common/libutil/strlcpy.h"
+#include "src/common/libutil/unsetenv_glob.h"
 
 static const char *plugin_name = "pmix";
 static pmix_proc_t myproc;
@@ -204,6 +205,12 @@ static int op_finalize (flux_plugin_t *p,
     rc = PMIx_Finalize (NULL, 0);
     if (rc != PMIX_SUCCESS)
         return seterror (p, args, "%s",  PMIx_Error_string (rc));
+
+    /* When the flux-broker is using this plugin to bootstrap, it is helpful
+     * to clear the pmix environment at this point to avoid leakage to jobs.
+     */
+    if (unsetenv_glob ("PMIX_*") < 0)
+        return seterror (p, args, "unsetenv PMIX_*: %s", strerror (errno));
 
     return 0;
 }

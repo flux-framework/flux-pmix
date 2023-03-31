@@ -45,7 +45,7 @@ AC_SUBST([WARNING_CFLAGS])
 
 LT_INIT
 
-PKG_CHECK_MODULES([PMIX], [pmix >= 4.0.0])
+PKG_CHECK_MODULES([PMIX], [pmix >= 3.2.3])
 PKG_CHECK_MODULES([JANSSON], [jansson >= 2.10], [], [])
 
 PKG_CHECK_MODULES([OMPI], [ompi >= 3.0.0], [have_ompi=yes], [have_ompi=no])

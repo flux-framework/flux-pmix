@@ -89,6 +89,9 @@ size_t parse_info_opts (optparse_t *p, pmix_info_t *infos, size_t ninfo)
         set_info_bool (&infos[count++], PMIX_COLLECT_DATA, flags, arg);
     }
     if (optparse_hasopt (p, "collect-job-info")) {
+#ifndef PMIX_COLLECT_GENERATED_JOB_INFO
+        log_msg ("this version of pmix does not support collect-job-info");
+#else
         const char *arg = optparse_get_str (p, "collect-job-info", "true");
         int flags = 0;
         if (*arg == '+') {
@@ -101,6 +104,7 @@ size_t parse_info_opts (optparse_t *p, pmix_info_t *infos, size_t ninfo)
                        PMIX_COLLECT_GENERATED_JOB_INFO,
                        flags,
                        arg);
+#endif
     }
     if (optparse_hasopt (p, "timeout")) {
         const char *arg = optparse_get_str (p, "timeout", "0");

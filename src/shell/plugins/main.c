@@ -21,6 +21,10 @@
 #include <pmix_server.h>
 #include <pmix.h>
 
+#ifndef PMIX_PROC_INFO_ARRAY
+#define PMIX_PROC_INFO_ARRAY PMIX_PROC_DATA // needed for pmix 3.2.3
+#endif
+
 #include "src/common/libutil/strlcpy.h"
 
 #include "infovec.h"

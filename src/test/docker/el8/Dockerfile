@@ -39,7 +39,7 @@ RUN cd /tmp \
  && git branch \
  && ./autogen.pl \
  && ./configure --prefix=/usr \
-      --enable-debug \
+      --enable-debug --disable-sphinx \
  && make -j $(nproc) \
  && sudo rm -rf /usr/lib64/pmix \
  && sudo make install \

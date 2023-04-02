@@ -42,6 +42,12 @@ jobs:
           coverage: false
           env:
             DISTCHECK: t
+        - name: "el8 - pmix v3.2.3, ompi v4.1.4"
+          image: "el8"
+          ompi_branch: "v4.1.4"
+          openpmix_branch: "v3.2.3"
+          coverage: false
+          env: {}
         - name: "coverage"
           image: "focal"
           ompi_branch: "v5.0.x"

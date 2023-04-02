@@ -25,34 +25,34 @@ jobs:
         - name: "focal - ompi v5.0.x"
           image: "focal"
           ompi_branch: "v5.0.x"
-          openpmix_branch: "v4.2.2"
+          openpmix_branch: "v4.2.3"
           coverage: false
           env: {}
         - name: "el7 - ompi v5.0.x, chain_lint"
           image: "el7"
           ompi_branch: "v5.0.x"
-          openpmix_branch: "v4.2.2"
+          openpmix_branch: "v4.2.3"
           coverage: false
           env:
             chain_lint: t
         - name: "el8 - ompi v5.0.x, distcheck"
           image: "el8"
           ompi_branch: "v5.0.x"
-          openpmix_branch: "v4.2.2"
+          openpmix_branch: "v4.2.3"
           coverage: false
           env:
             DISTCHECK: t
         - name: "coverage"
           image: "focal"
           ompi_branch: "v5.0.x"
-          openpmix_branch: "v4.2.2"
+          openpmix_branch: "v4.2.3"
           coverage: true
           env:
             COVERAGE: t
         - name: "fedora34 - ompi v5.0.x"
           image: "fedora34"
           ompi_branch: "v5.0.x"
-          openpmix_branch: "v4.2.2"
+          openpmix_branch: "v4.2.3"
           coverage: false
           env: {}
         - name: "focal - ompi v4.1.x"

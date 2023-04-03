@@ -11,7 +11,7 @@ export FLUX_SHELL_RC_PATH=${FLUX_BUILD_DIR}/t/etc
 test_under_flux 2
 
 test_expect_success '1n1p abort on rank 0 works' '
-	! run_timeout 60 flux mini run \
+	! run_timeout 60 flux run \
 		${ABORT} --status=42 --rank=0 --message=abort-test 2>abort.err
 '
 
@@ -21,17 +21,17 @@ test_expect_success 'stderr contains abort message and exit code' '
 '
 
 test_expect_success '1n2p abort on rank 1 works' '
-	! run_timeout 60 flux mini run -n2 \
+	! run_timeout 60 flux run -n2 \
 		${ABORT} --status=42 --rank=1 --message=abort-test
 '
 
 test_expect_success '2n2p abort on rank 1 works' '
-	! run_timeout 60 flux mini run -N2 -n2 \
+	! run_timeout 60 flux run -N2 -n2 \
 		${ABORT} --status=42 --rank=1 --message=abort-test
 '
 
 test_expect_success '1n1p abort on rank 0 works with no message' '
-	! run_timeout 60 flux mini run \
+	! run_timeout 60 flux run \
 		${ABORT} --status=42 --rank=0
 '
 

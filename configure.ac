@@ -85,7 +85,6 @@ AC_CONFIG_FILES( \
   src/common/libccan/Makefile \
   src/common/libutil/Makefile \
   src/shell/plugins/Makefile \
-  src/shell/lua.d/Makefile \
   src/upmi/Makefile \
   t/Makefile \
   t/sharness.d/00-setup.sh \

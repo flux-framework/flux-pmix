@@ -8,7 +8,7 @@ This repo adds basic pmix support to Flux.  It contains two main components
 
 The former is loaded by requesting it on the job submission command line, e.g.
 ```
-$ flux mini run -ompi=openmpi@5 myprogram
+$ flux run -o pmi=pmix myprogram
 ```
 
 The latter may be selected on the broker command line, e.g.

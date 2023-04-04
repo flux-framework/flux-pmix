@@ -15,6 +15,19 @@ test_expect_success 'print pmix library version' '
 	${VERSION}
 '
 
+test_expect_success 'pmix server is active' '
+	flux run printenv PMIX_RANK
+'
+test_expect_success 'pmix server is inactive with -opmi=off' '
+	test_must_fail flux run -opmi=off printenv PMIX_RANK
+'
+test_expect_success 'pmix server is active with -opmi=pmix,unknown' '
+	flux run -opmi=pmix,unknown printenv PMIX_RANK
+'
+test_expect_success 'pmix server is active with -opmi=unknown,pmix' '
+	flux run -opmi=unknown,pmix printenv PMIX_RANK
+'
+
 test_expect_success 'capture environment with plugin loaded' '
 	flux run -overbose=2 printenv >env.out
 '

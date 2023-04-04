@@ -165,6 +165,15 @@ struct notify *notify_create (flux_shell_t *shell, struct interthread *it)
         return NULL;
     notify->shell = shell;
     notify->it = it;
+#if PMIX_VERSION_MAJOR < 4
+    PMIx_Register_event_handler (NULL,
+                                 0,
+                                 NULL,
+                                 0,
+                                 notify_server_cb,
+                                 NULL,
+                                 NULL);
+#else
     if ((notify->id = PMIx_Register_event_handler (NULL,
                                                    0,
                                                    NULL,
@@ -176,6 +185,7 @@ struct notify *notify_create (flux_shell_t *shell, struct interthread *it)
                     PMIx_Error_string (-1 * notify->id));
         goto error;
     }
+#endif
     if (interthread_register (it, "notify_upcall", notify_shell_cb, notify) < 0)
         goto error;
     global_notify_ctx = notify;

@@ -35,7 +35,7 @@ RUN cd /tmp \
  && git branch \
  && ./autogen.pl \
  && ./configure --prefix=/usr \
-      --enable-debug \
+      --enable-debug --disable-sphinx \
  && make -j $(nproc) \
  && sudo make install \
  && cd .. \

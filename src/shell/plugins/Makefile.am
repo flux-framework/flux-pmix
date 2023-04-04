@@ -8,9 +8,7 @@ AM_CPPFLAGS = \
 	-DFLUX_SHELL_PLUGIN_NAME=\"pmix\"
 
 
-shell_plugin_subdir = \
-	$(shell_plugindir)/pmix
-shell_plugin_sub_LTLIBRARIES = \
+shell_plugin_LTLIBRARIES = \
 	pmix.la
 
 pmix_la_SOURCES = \

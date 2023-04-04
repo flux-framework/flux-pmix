@@ -3,7 +3,6 @@ SUBDIRS = \
 	src/common/libccan \
 	src/common/libutil \
 	src/shell/plugins \
-	src/shell/lua.d \
 	src/upmi \
 	t
 

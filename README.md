@@ -21,19 +21,6 @@ or by setting the `FLUX_PMI_CLIENT_METHODS` environment variable globally:
 FLUX_PMI_CLIENT_METHODS="simple pmix single"
 ```
 
-### installation
-
-Typically this project would be configured with the same `--prefix` as
-flux-core.  If that is not practical, for example in a spack environment,
-then flux-shell and flux-broker can be told to look elsewhere for plugins by
-setting, respectively:
-
-```sh
-FLUX_SHELL_RC_PATH=${prefix}/etc/flux/shell/lua.d:$FLUX_SHELL_RC_PATH
-FLUX_PMI_CLIENT_SEARCHPATH=${prefix}/lib/flux/upmi/plugins:$FLUX_PMI_CLIENT_SEARCHPATH
-```
-where `${prefix}` is the installation prefix of this project.
-
 ### limitations
 
 The pmix specs cover a broad range of topics.  Although the shell plugin is

@@ -1,0 +1,22 @@
+Source: flux-pmix
+Section: devel
+Priority: optional
+Maintainer: Jim Garlick <garlick.jim@gmail.com>
+Standards-Version: 4.1.2
+Build-Depends:
+  debhelper (>= 10),
+  flux-core (>= 0.49.0),
+  libjansson-dev (>= 2.10),
+  libpmix-dev (>= 3.2.3)
+
+Homepage: https://github.com/flux-framework/flux-pmix
+Package: flux-pmix
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description:  pmix support for the Flux resource manager framework
+ flux-pmix provides a Flux shell plugin that adds pmix service to the flux
+ shell for launching some versions of openmpi, and a Flux PMI client plugin
+ that enables Flux to be launched by a foreign launcher that only supports
+ pmix.
+ Note: This package is for testing purposes only and may not comply
+ with all Debian packaging guidelines.

@@ -15,8 +15,11 @@
 %:
 	dh $@
 
+# Work around broken .pc file in debian libpmix-dev-4.0.0-4.1
 override_dh_auto_configure:
-	PYTHON_VERSION=3 dh_auto_configure --
+	CFLAGS=-I$$(pkg-config --variable=libdir pmix)/pmix2/include \
+	LDFLAGS=-L$$(pkg-config --variable=libdir pmix)/pmix2/lib \
+	dh_auto_configure
 
 override_dh_autoreconf:
 	@echo not running autogen.sh on dist product

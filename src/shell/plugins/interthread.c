@@ -14,6 +14,7 @@
 #if HAVE_CONFIG_H
 #include "config.h"
 #endif
+#include <pthread.h>
 #include <jansson.h>
 #include <flux/core.h>
 
@@ -30,8 +31,8 @@ struct handler {
 };
 
 struct interthread {
-    flux_t *server_h;
-    flux_t *shell_h;
+    struct flux_msglist *queue;
+    pthread_mutex_t lock;
     flux_watcher_t *w;
     struct handler handlers[MAX_HANDLERS];
     int handler_count;
@@ -60,21 +61,42 @@ int interthread_send_pack (struct interthread *it,
                            const char *name,
                            const char *fmt, ...)
 {
-    flux_msg_t *msg = NULL;
+    flux_msg_t *msg;
     va_list ap;
-    int rc = 0;
+    int rc;
+
+    if (!(msg = flux_msg_create (FLUX_MSGTYPE_REQUEST))
+        || flux_msg_set_topic (msg, name) < 0)
+        goto error;
 
     va_start (ap, fmt);
-    if (!(msg = flux_msg_create (FLUX_MSGTYPE_REQUEST))
-        || flux_msg_set_topic (msg, name) < 0
-        || flux_msg_vpack (msg, fmt, ap) < 0
-        || flux_send (it->server_h, msg, 0) < 0) {
-        rc = -1;
-    }
+    rc = flux_msg_vpack (msg, fmt, ap);
     va_end (ap);
-    flux_msg_decref (msg);
+    if (rc < 0)
+        goto error;
 
-    return rc;
+    pthread_mutex_lock (&it->lock);
+    rc = flux_msglist_append (it->queue, msg);
+    pthread_mutex_unlock (&it->lock);
+    if (rc < 0)
+        goto error;
+
+    flux_msg_decref (msg);
+    return 0;
+error:
+    flux_msg_decref (msg);
+    return -1;
+}
+
+const flux_msg_t *pop_queue_locked (struct interthread *it)
+{
+    const flux_msg_t *msg;
+
+    pthread_mutex_lock (&it->lock);
+    msg = flux_msglist_pop (it->queue);
+    pthread_mutex_unlock (&it->lock);
+
+    return msg;
 }
 
 static void interthread_recv (flux_reactor_t *r,
@@ -83,34 +105,36 @@ static void interthread_recv (flux_reactor_t *r,
                               void *arg)
 {
     struct interthread *it = arg;
-    flux_msg_t *msg;
+    const flux_msg_t *msg;
     const char *topic;
     int i;
 
-    if (!(revents & FLUX_POLLIN)
-        || !(msg = flux_recv (it->shell_h, FLUX_MATCH_ANY, 0)))
-        return;
-    if (flux_msg_get_topic (msg, &topic) < 0) {
-        shell_warn ("interthread receive decode error - message dropped");
-        goto done;
+    /* flux_msglist_pollfd() is edge triggered so when the reactor watcher
+     * is triggered, all available messages should be consumed.
+     */
+    while ((msg = pop_queue_locked (it))) {
+        if (flux_msg_get_topic (msg, &topic) < 0) {
+            shell_warn ("interthread receive decode error - message dropped");
+            flux_msg_decref (msg);
+            continue;
+        }
+        if (it->trace_flag) {
+            const char *payload;
+            int size;
+            if (flux_msg_get_payload (msg, (const void **)&payload, &size) == 0
+                && size > 0)
+                shell_trace ("pmix server %s %.*s", topic, size - 1, payload);
+        }
+        for (i = 0; i < it->handler_count; i++) {
+            if (!strcmp (topic, it->handlers[i].topic))
+                break;
+        }
+        if (i < it->handler_count)
+            it->handlers[i].cb (msg, it->handlers[i].arg);
+        else
+            shell_warn ("unhandled interthread topic %s", topic);
+        flux_msg_decref (msg);
     }
-    if (it->trace_flag) {
-        const char *payload;
-        int size;
-        if (flux_msg_get_payload (msg, (const void **)&payload, &size) == 0
-            && size > 0)
-            shell_trace ("pmix server %s %.*s", topic, size - 1, payload);
-    }
-    for (i = 0; i < it->handler_count; i++) {
-        if (!strcmp (topic, it->handlers[i].topic))
-            break;
-    }
-    if (i < it->handler_count)
-        it->handlers[i].cb (msg, it->handlers[i].arg);
-    else
-        shell_warn ("unhandled interthread topic %s", topic);
-done:
-    flux_msg_decref (msg);
 }
 
 void interthread_destroy (struct interthread *it)
@@ -118,8 +142,8 @@ void interthread_destroy (struct interthread *it)
     if (it) {
         int saved_errno = errno;
         flux_watcher_destroy (it->w);
-        flux_close (it->server_h);
-        flux_close (it->shell_h);
+        flux_msglist_destroy (it->queue);
+        pthread_mutex_destroy (&it->lock);
         free (it);
         errno = saved_errno;
     }
@@ -129,21 +153,23 @@ struct interthread *interthread_create (flux_shell_t *shell)
 {
     flux_t *h = flux_shell_get_flux (shell);
     struct interthread *it;
+    int fd;
 
     if (!(it = calloc (1, sizeof (*it))))
         return NULL;
-    it->trace_flag = 1; // temporarily force this on
-    if (!(it->shell_h = flux_open ("shmem://pmix-interthread&bind", 0)))
+    pthread_mutex_init (&it->lock, NULL);
+    if (!(it->queue = flux_msglist_create ()))
         goto error;
-    if (!(it->server_h = flux_open ("shmem://pmix-interthread&connect", 0)))
+    if ((fd = flux_msglist_pollfd (it->queue)) < 0)
         goto error;
-    if (!(it->w = flux_handle_watcher_create (flux_get_reactor (h),
-                                              it->shell_h,
-                                              FLUX_POLLIN,
-                                              interthread_recv,
-                                              it)))
+    if (!(it->w = flux_fd_watcher_create (flux_get_reactor (h),
+                                          fd,
+                                          FLUX_POLLIN,
+                                          interthread_recv,
+                                          it)))
         goto error;
     flux_watcher_start (it->w);
+    it->trace_flag = 1; // temporarily force this on
     return it;
 error:
     interthread_destroy (it);

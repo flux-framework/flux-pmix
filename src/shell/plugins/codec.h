@@ -28,7 +28,7 @@ json_t *codec_value_encode (const pmix_value_t *value);
 int codec_value_decode (json_t *o, pmix_value_t *value); // allocs internal mem
 void codec_value_release (pmix_value_t *value); // free internal mem from decode
 
-json_t *code_info_encode (const pmix_info_t *info);
+json_t *codec_info_encode (const pmix_info_t *info);
 int codec_info_decode (json_t *o, pmix_info_t *info); // allocs internal mem
 void codec_info_release (pmix_info_t *info); // free internal mem from decode
 

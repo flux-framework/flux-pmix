@@ -5,6 +5,7 @@
 #include <pmix_server.h>
 
 #include "src/common/libtap/tap.h"
+#include "src/common/libutil/strlcpy.h"
 
 #include "codec.h"
 
@@ -160,6 +161,87 @@ void check_value ()
     codec_value_release (&val2);
 }
 
+void check_info (void)
+{
+    pmix_info_t info;
+    pmix_info_t cpy;
+    json_t *o;
+
+    strlcpy (info.key, "pmix.srvr.internal.notify", sizeof (info.key));
+    info.flags = 0;
+    info.value.type = PMIX_BOOL;
+    info.value.data.flag = true;
+
+    o = codec_info_encode (&info);
+    ok (o != NULL,
+        "codec_info_encode works for bool");
+    ok (codec_info_decode (o, &cpy) == 0,
+        "codec_info_decode works");
+    like (info.key, cpy.key,
+        "key is correct");
+    ok (info.flags == cpy.flags,
+        "flags is correct");
+    ok (info.value.data.flag == cpy.value.data.flag,
+        "data is correct");
+    json_decref (o);
+
+    strlcpy (info.key, "pmix.evtext", sizeof (info.key));
+    info.flags = 1;
+    info.value.type = PMIX_STRING;
+    info.value.data.string = "lorem ipsum";
+
+    o = codec_info_encode (&info);
+    ok (o != NULL,
+        "codec_info_encode works for string");
+    ok (codec_info_decode (o, &cpy) == 0,
+        "codec_info_decode works");
+    like (info.key, cpy.key,
+        "key is correct");
+    ok (info.flags == cpy.flags,
+        "flags is correct");
+    ok (info.value.data.string != NULL
+        && cpy.value.data.string != NULL
+        && !strcmp (info.value.data.string, cpy.value.data.string),
+        "data is correct");
+    json_decref (o);
+}
+
+void check_info_array (void)
+{
+    pmix_info_t info[2];
+    json_t *o;
+    pmix_info_t *info2;
+    size_t ninfo2;
+
+    strlcpy (info[0].key, "pmix.srvr.internal.notify", sizeof (info[0].key));
+    info[0].flags = 0;
+    info[0].value.type = PMIX_BOOL;
+    info[0].value.data.flag = true;
+
+    strlcpy (info[1].key, "pmix.evtext", sizeof (info[1].key));
+    info[1].flags = 1;
+    info[1].value.type = PMIX_STRING;
+    info[1].value.data.string = "lorem ipsum";
+
+    o = codec_info_array_encode (info, 2);
+    ok (o != NULL,
+        "codec_info_array_encode works on 2 element array");
+    ok (codec_info_array_decode (o, &info2, &ninfo2) == 0,
+        "codec_info_array_decode works");
+    ok (ninfo2 == 2,
+        "ninfo is correct");
+    ok (info2[0].flags == info[0].flags
+        && info2[0].value.type == info[0].value.type
+        && info2[0].value.data.flag == info[0].value.data.flag,
+        "info[0] is correct");
+    ok (info2[1].flags == info[1].flags
+        && info2[1].value.type == info[1].value.type
+        && !strcmp (info2[1].value.data.string, info[1].value.data.string),
+        "info[1] is correct");
+    codec_info_array_destroy (info2, ninfo2);
+    json_decref (o);
+}
+
 void check_proc_array (void)
 {
     json_t *o;
@@ -185,13 +267,11 @@ int main (int argc, char **argv)
     check_pointer ();
     check_data ();
     check_value ();
-
-    // TODO pmix_info_t
+    check_info ();
     // TODO pmix_proc_t
 
     check_proc_array ();
-
-    // TODO array of pmix_info_t
+    check_info_array ();
 
     done_testing ();
     return 0;

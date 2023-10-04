@@ -231,8 +231,10 @@ static int px_init (flux_plugin_t *p,
     if (!(px->job_tmpdir = flux_shell_getenv (shell, "FLUX_JOB_TMPDIR")))
         return -1;
 
-    if (!(px->taskmap = flux_shell_get_taskmap (shell)))
+    if (!(px->taskmap = flux_shell_get_taskmap (shell))) {
+        shell_log_error ("failed to get taskmap");
         return -1;
+    }
 
     if (px->shell_rank == 0) {
         const char *s = PMIx_Get_version ();
@@ -240,16 +242,24 @@ static int px_init (flux_plugin_t *p,
         int len = cp ? cp - s : strlen (s);
         shell_debug ("server outsourced to %.*s", len, s);
     }
-    if (!(px->it = interthread_create (shell)))
+    if (!(px->it = interthread_create (shell))) {
+        shell_log_error ("could not create interthread message channel ");
         return -1;
-    if (!(px->fence = fence_create (shell, px->it)))
+    }
+    if (!(px->fence = fence_create (shell, px->it))) {
+        shell_log_error ("could not create fence handler");
         return -1;
+    }
     server_callbacks.fence_nb = fence_server_cb;
-    if (!(px->abort = abort_create (shell, px->it)))
+    if (!(px->abort = abort_create (shell, px->it))) {
+        shell_log_error ("could not create abort handler");
         return -1;
+    }
     server_callbacks.abort = abort_server_cb;
-    if (!(px->dmodex = dmodex_create (shell, px->it)))
+    if (!(px->dmodex = dmodex_create (shell, px->it))) {
+        shell_log_error ("could not create dmodex handler");
         return -1;
+    }
     server_callbacks.direct_modex = dmodex_server_cb;
 
     strlcpy (info[0].key, PMIX_SERVER_TMPDIR, sizeof (info[0].key));
@@ -267,8 +277,10 @@ static int px_init (flux_plugin_t *p,
         return -1;
     }
 
-    if (!(px->notify = notify_create (shell, px->it)))
+    if (!(px->notify = notify_create (shell, px->it))) {
+        shell_log_error ("could not create notify handler");
         return -1;
+    }
 
     if (!(iv = infovec_create ())
         || infovec_set_str (iv, PMIX_JOBID, px->nspace) < 0
@@ -282,8 +294,10 @@ static int px_init (flux_plugin_t *p,
         || infovec_set_u32 (iv, PMIX_UNIV_SIZE, px->total_nprocs) < 0
         || infovec_set_u32 (iv, PMIX_JOB_SIZE, px->total_nprocs) < 0
         || infovec_set_u32 (iv, PMIX_APPNUM, 0) < 0
-        || set_proc_infos (iv, PMIX_PROC_INFO_ARRAY, px) < 0)
+        || set_proc_infos (iv, PMIX_PROC_INFO_ARRAY, px) < 0) {
+        shell_log_error ("error creating namespace");
         goto error;
+    }
 
     if ((rc = PMIx_server_register_nspace (px->nspace,
                                            px->local_nprocs,

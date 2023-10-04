@@ -1,3 +1,18 @@
+flux-pmix version 0.4.0 - 2023-10-04
+------------------------------------
+
+## Fixes
+
+ * plugin: pmix notification encoding problems (#93)
+ * plugin: use a simpler strategy for the interthread channel (#92)
+ * require flux-core 0.49.0 (#84)
+
+## Build/test
+
+ * ci: remove el7 build (#88)
+ * build: add ability to make test deb packages (#87)
+ * testsuite: put flux bin before ompi bin (#86)
+
 flux-pmix version 0.3.0 - 2023-04-04
 ------------------------------------
 

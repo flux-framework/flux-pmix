@@ -61,7 +61,7 @@ static void notify_shell_cb (const flux_msg_t *msg, void *arg)
     const char *message = NULL;
 
     if (flux_msg_unpack (msg,
-                         "{s:o s:i s:o s:o s:o s:o s:o}",
+                         "{s:i s:i s:o s:o s:o s:o s:o}",
                          "id", &id,
                          "status", &status,
                          "source", &xsource,

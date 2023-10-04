@@ -404,6 +404,7 @@ int codec_info_decode (json_t *o, pmix_info_t *info)
         return -1;
     if (codec_value_decode (xvalue, &info->value) < 0) // allocs mem
         return -1;
+    info->flags = flags;
     strlcpy (info->key, key, sizeof (info->key));
     info->key[PMIX_MAX_KEYLEN] = '\0';
     return 0;

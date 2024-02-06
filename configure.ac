@@ -45,7 +45,21 @@ AC_SUBST([WARNING_CFLAGS])
 
 LT_INIT
 
-PKG_CHECK_MODULES([PMIX], [pmix >= 3.2.3])
+AC_ARG_WITH([pmix],
+  AS_HELP_STRING([--with-pmix@<:@=PREFIX@:>@], [override pmix pkg-config file if any]))
+AS_IF([test -n "$with_pmix"],[
+  AS_IF([test "$with_pmix" = "yes"],[
+    PMIX_CFLAGS=""
+    PMIX_LIBS="-lpmix -lhwloc -levent -lz"
+  ],[
+    PMIX_CFLAGS="-I$with_pmix/include"
+    PMIX_LIBS="-L$with_pmix/lib -lpmix -lhwloc -levent -lz"
+  ])
+  AC_SUBST([PMIX_CFLAGS])
+  AC_SUBST([PMIX_LIBS])
+],[
+  PKG_CHECK_MODULES([PMIX], [pmix >= 3.2.3]);
+])
 PKG_CHECK_MODULES([JANSSON], [jansson >= 2.10], [], [])
 
 PKG_CHECK_MODULES([OMPI], [ompi >= 3.0.0], [have_ompi=yes], [have_ompi=no])

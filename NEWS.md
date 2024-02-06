@@ -1,3 +1,11 @@
+flux-pmix version 0.5.0 - 2024-02-06
+------------------------------------
+
+## Fixes
+
+ * plugin: set hwloc.xmlfile shell option (#95)
+
+
 flux-pmix version 0.4.0 - 2023-10-04
 ------------------------------------
 

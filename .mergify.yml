@@ -1,6 +1,6 @@
 queue_rules:
   - name: default
-    conditions:
+    queue_conditions:
       - base=main
       - label="merge-when-passing"
       - label!="work-in-progress"
@@ -8,20 +8,19 @@ queue_rules:
       - "approved-reviews-by=@flux-framework/core"
       - "#approved-reviews-by>0"
       - "#changes-requested-reviews-by=0"
+    merge_conditions:
+      - base=main
+      - label="merge-when-passing"
+      - label!="work-in-progress"
+      - -title~=^\[*[Ww][Ii][Pp]
+      - "approved-reviews-by=@flux-framework/core"
+      - "#approved-reviews-by>0"
+      - "#changes-requested-reviews-by=0"
+    update_method: rebase
+    merge_method: merge
 
 pull_request_rules:
   - name: rebase and merge when passing all checks
-    conditions:
-      - base=main
-      - label="merge-when-passing"
-      - label!="work-in-progress"
-      - -title~=^\[*[Ww][Ii][Pp]
-      - "approved-reviews-by=@flux-framework/core"
-      - "#approved-reviews-by>0"
-      - "#changes-requested-reviews-by=0"
+    conditions: []
     actions:
       queue:
-        name: default
-        method: merge
-        update_method: rebase
-

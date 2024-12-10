@@ -11,7 +11,7 @@ PROJECT=flux-pmix
 BASE_DOCKER_REPO=fluxrm/flux-core
 
 WORKDIR=/usr/src
-IMAGE=focal
+IMAGE=jammy
 JOBS=2
 MOUNT_HOME_ARGS="--volume=$HOME:/home/$USER -e HOME"
 

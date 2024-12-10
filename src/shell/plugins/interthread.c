@@ -120,10 +120,13 @@ static void interthread_recv (flux_reactor_t *r,
         }
         if (it->trace_flag) {
             const char *payload;
-            int size;
+            size_t size;
             if (flux_msg_get_payload (msg, (const void **)&payload, &size) == 0
                 && size > 0)
-                shell_trace ("pmix server %s %.*s", topic, size - 1, payload);
+                shell_trace ("pmix server %s %.*s",
+                             topic,
+                             (int)size - 1,
+                             payload);
         }
         for (i = 0; i < it->handler_count; i++) {
             if (!strcmp (topic, it->handlers[i].topic))

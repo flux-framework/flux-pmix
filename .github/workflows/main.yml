@@ -22,28 +22,28 @@ jobs:
     strategy:
       matrix:
         include:
-        - name: "focal - ompi v5.0.x, chain_lint"
-          image: "focal"
+        - name: "jammy - chain_lint"
+          image: "jammy"
           ompi_branch: "v5.0.0rc12"
           openpmix_branch: "v4.2.3"
           coverage: false
           env:
             chain_lint: t
-        - name: "el8 - ompi v5.0.x, distcheck"
+        - name: "el8 - distcheck"
           image: "el8"
           ompi_branch: "v5.0.0rc12"
           openpmix_branch: "v4.2.3"
           coverage: false
           env:
             DISTCHECK: t
-        - name: "el8 - pmix v3.2.3, ompi v4.1.4"
+        - name: "el8 - ompi v4.1.4"
           image: "el8"
           ompi_branch: "v4.1.4"
           openpmix_branch: "v3.2.3"
           coverage: false
           env: {}
-        - name: "coverage"
-          image: "focal"
+        - name: "jammy - coverage"
+          image: "jammy"
           ompi_branch: "v5.0.0rc12"
           openpmix_branch: "v4.2.3"
           coverage: true
@@ -55,26 +55,26 @@ jobs:
           openpmix_branch: "v4.2.3"
           coverage: false
           env: {}
-        - name: "focal - ompi v4.1.x"
-          image: "focal"
+        - name: "jammy - ompi v4.1.x"
+          image: "jammy"
           ompi_branch: "v4.1.x"
           openpmix_branch: "v4.2.2"
           coverage: false
           env: {}
-        - name: "focal - ompi v4.0.x"
-          image: "focal"
+        - name: "jammy - ompi v4.0.x"
+          image: "jammy"
           ompi_branch: "v4.0.x"
           openpmix_branch: "v4.2.2"
           coverage: false
           env: {}
-        - name: "focal - ompi v3.1.x"
-          image: "focal"
+        - name: "el8 - ompi v3.1.x"
+          image: "el8"
           ompi_branch: "v3.1.x"
           openpmix_branch: "v4.2.2"
           coverage: false
           env: {}
-        - name: "focal - ompi v3.0.x"
-          image: "focal"
+        - name: "el8 - ompi v3.0.x"
+          image: "el8"
           ompi_branch: "v3.0.x"
           openpmix_branch: "v4.2.2"
           coverage: false

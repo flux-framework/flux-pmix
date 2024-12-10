@@ -1,9 +1,9 @@
-FROM fluxrm/flux-core:focal
+FROM fluxrm/flux-core:jammy
 
 ARG USER=fluxuser
 ARG UID=1000
 ARG OMPI_BRANCH=v5.0.x
-ARG OPENPMIX_BRANCH=v4.2.2
+ARG OPENPMIX_BRANCH=v4.2.4
 
 RUN \
  if test "$USER" != "fluxuser"; then  \
@@ -13,10 +13,12 @@ RUN \
    && sudo adduser $USER sudo ; \
  fi
 
-# remove installed mpich / openmpi / pmix
+# remove installed mpich
 RUN sudo apt purge -yy mpich libmpich-dev \
- openmpi-bin openmpi-common libopenmpi-dev libopenmpi3 libpmix2 \
  && sudo apt clean
+
+# remove mca dir from hand-installed openpmix which will be overwritten below
+RUN sudo rm -rf /usr/lib/pmix
 
 # install ompi prereqs
 RUN sudo apt-get update \

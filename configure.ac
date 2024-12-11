@@ -41,6 +41,16 @@ AS_CASE($ax_cv_c_compiler_vendor,
     WARNING_CFLAGS="-Wall -Werror -Wno-strict-aliasing -Wno-error=deprecated-declarations"
   ]
 )
+saved_CFLAGS="$CFLAGS"
+CFLAGS="-Wstringop-overread $CFLAGS"
+AC_MSG_CHECKING([whether compiler accepts -Wstringop-overread])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([])], [
+  AC_MSG_RESULT([yes])
+  WARNING_CFLAGS="$WARNING_CFLAGS -Wno-error=stringop-overread"
+  ],[
+  AC_MSG_RESULT([no])
+])
+CFLAGS="$saved_CFLAGS"
 AC_SUBST([WARNING_CFLAGS])
 
 LT_INIT

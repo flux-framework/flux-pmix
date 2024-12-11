@@ -49,8 +49,8 @@ jobs:
           coverage: true
           env:
             COVERAGE: t
-        - name: "fedora34 - ompi v5.0.6"
-          image: "fedora34"
+        - name: "fedora40 - ompi v5"
+          image: "fedora40"
           ompi_branch: "v5.0.6"
           openpmix_branch: "v4.2.9"
           coverage: false

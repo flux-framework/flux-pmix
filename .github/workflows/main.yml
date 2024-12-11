@@ -39,7 +39,7 @@ jobs:
         - name: "el8 - ompi v4.1.4"
           image: "el8"
           ompi_branch: "v4.1.4"
-          openpmix_branch: "v3.2.3"
+          openpmix_branch: "v3.2.5"
           coverage: false
           env: {}
         - name: "jammy - coverage"

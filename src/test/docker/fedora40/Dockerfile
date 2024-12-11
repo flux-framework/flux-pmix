@@ -1,9 +1,9 @@
-FROM fluxrm/flux-core:fedora34
+FROM fluxrm/flux-core:fedora40
 
 ARG USER=fluxuser
 ARG UID=1000
 ARG OMPI_BRANCH=v5.0.x
-ARG OPENPMIX_BRANCH=v4.2.2
+ARG OPENPMIX_BRANCH=v4.2.9
 
 RUN \
  if test "$USER" != "fluxuser"; then  \
@@ -20,7 +20,7 @@ RUN sudo yum -y update \
     flex \
     libevent-devel \
     zlib-devel \
- && sudo yum -y remove mpich mpich-devel \
+ && sudo yum -y remove mpich mpich-devel pmix pmix-devel \
  && sudo yum clean all
 
  # build/install openpmix

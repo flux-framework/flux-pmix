@@ -3,7 +3,7 @@ FROM fluxrm/flux-core:el8
 ARG USER=fluxuser
 ARG UID=1000
 ARG OMPI_BRANCH=v5.0.x
-ARG OPENPMIX_BRANCH=v4.2.2
+ARG OPENPMIX_BRANCH=v4.2.9
 
 RUN \
  if test "$USER" != "fluxuser"; then  \

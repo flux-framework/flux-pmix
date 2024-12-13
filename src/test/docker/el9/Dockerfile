@@ -1,4 +1,4 @@
-FROM fluxrm/flux-core:el8
+FROM fluxrm/flux-core:el9
 
 ARG USER=fluxuser
 ARG UID=1000
@@ -14,21 +14,12 @@ RUN \
    && sudo usermod -G wheel fluxuser ; \
  fi
 
-# ompi can't coexist with mpich
-RUN cd /tmp \
- && mkdir mvapich2 \
- && cd mvapich2 \
- && wget -O - http://mvapich.cse.ohio-state.edu/download/mvapich/mv2/mvapich2-2.3.6.tar.gz | tar xvz --strip-components 1 \
- && ./configure --with-device=ch3:sock --disable-fortran --prefix=/usr \
- && sudo make uninstall \
- && cd .. \
- && rm -rf mvapich2
-
 # install ompi prereqs
 RUN sudo yum -y update \
  && sudo yum -y install \
     libevent-devel \
     zlib-devel \
+ && sudo yum -y remove mpich mpich-devel \
  && sudo yum clean all
 
  # build/install openpmix

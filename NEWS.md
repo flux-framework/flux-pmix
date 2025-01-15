@@ -1,3 +1,22 @@
+flux-pmix version 0.6.0 - 2025-01-15
+------------------------------------
+
+## Fixes
+
+ * build: fix compilation on el9 with older pmix releases (#106)
+ * track raw payload accessor API changes in core (#104)
+
+## Cleanup
+
+ * simplify interthread channel implementation (#107)
+
+## Build/test
+
+ * ci: add fedora40 and el9 builders (#105)
+ * ci: build newer openpmix / ompi releases (#103)
+ * ci: migrate from focal to jammy, el8 (#102)
+ * ci(mergify): upgrade configuration to current format (#101)
+
 flux-pmix version 0.5.0 - 2024-02-06
 ------------------------------------
 

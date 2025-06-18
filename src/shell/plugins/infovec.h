@@ -25,6 +25,7 @@ int infovec_set_rank (struct infovec *iv, const char *key, pmix_rank_t val);
 int infovec_set_infovec_new (struct infovec *iv,
                              const char *key,
                              struct infovec *val);
+int infovec_set_blob (struct infovec *iv, const char *key, void *value, size_t size);
 
 int infovec_count (struct infovec *iv);
 pmix_info_t *infovec_info (struct infovec *iv);

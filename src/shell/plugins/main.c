@@ -25,6 +25,7 @@
 #ifndef PMIX_PROC_INFO_ARRAY
 #define PMIX_PROC_INFO_ARRAY PMIX_PROC_DATA // needed for pmix 3.2.3
 #endif
+#include <sodium.h>
 
 #include "src/common/libutil/strlcpy.h"
 
@@ -188,6 +189,31 @@ static int set_proc_infos (struct infovec *iv,
     return 0;
 }
 
+static int tailor_key (const char *key,
+                       struct px *px,
+                       void **blob, size_t *blob_size)
+{
+    flux_shell_t *shell = px->shell;
+    const struct taskmap *taskmap = px->taskmap;
+    const char *b64key;
+    if (!(b64key = flux_attr_get (flux_shell_get_flux(shell), key))) {
+        shell_warn ("error getting key %s from upstream", key);
+        return -1;
+    }
+    size_t len = BASE64_DECODE_SIZE(strlen(b64key));
+
+    void *raw_key = malloc (len);
+    if (sodium_base642bin ((unsigned char *)raw_key, len,
+                           b64key, strlen(b64key),
+                           NULL, &len, NULL,
+                           sodium_base64_VARIANT_ORIGINAL) < 0) {
+        shell_warn ("could not decode value for key %s", key);
+        return -1;
+    }
+    // do the heavy lifting and end up setting *blob and *blob_size
+    return 0;
+}
+
 static int px_init (flux_plugin_t *p,
                     const char *topic,
                     flux_plugin_arg_t *arg,
@@ -198,6 +224,9 @@ static int px_init (flux_plugin_t *p,
     int rc;
     pmix_info_t info[2];
     struct infovec *iv;
+    void * blob;
+    size_t blob_size;
+    const char *vendorkey = "vendor.key";
 
     if (!(px = calloc (1, sizeof (*px)))
         || flux_plugin_aux_set (p, "px", px, (flux_free_f)px_destroy) < 0) {
@@ -294,6 +323,8 @@ static int px_init (flux_plugin_t *p,
         || infovec_set_u32 (iv, PMIX_UNIV_SIZE, px->total_nprocs) < 0
         || infovec_set_u32 (iv, PMIX_JOB_SIZE, px->total_nprocs) < 0
         || infovec_set_u32 (iv, PMIX_APPNUM, 0) < 0
+        || tailor_key (vendorkey, px, &blob, &blob_size) < 0
+        || infovec_set_blob(iv, vendorkey, blob, blob_size) < 0
         || set_proc_infos (iv, PMIX_PROC_INFO_ARRAY, px) < 0) {
         shell_log_error ("error creating namespace");
         goto error;

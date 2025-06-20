@@ -126,6 +126,24 @@ void basic (void)
     ok (info[3].value.data.rank == PMIX_RANK_WILDCARD,
         "value data is set correctly");
 
+    /* byte object */
+    char * bo_bytes = strdup("blob");
+    size_t bo_size = strlen(bo_bytes) + 1;
+    ok (infovec_set_byte_object_new (iv, "blo", bo_bytes, bo_size) == 0,
+        "infovec_set_byte_object_new blo=blog works");
+    ok (infovec_count (iv) == 5,
+        "infovec_count returns 5");
+    info = infovec_info (iv);
+    ok (strcmp (info[4].key, "blo") == 0,
+        "key is set correctly");
+    ok (info[4].value.type == PMIX_BYTE_OBJECT,
+        "value type is set correctly");
+    ok (info[4].value.data.bo.size == bo_size,
+        "size is set correctly");
+    ok (info[4].value.data.bo.bytes != NULL
+        && memcmp (info[4].value.data.bo.bytes, bo_bytes, bo_size) == 0,
+        "bytes are set correctly");
+
     infovec_destroy (iv);
 }
 

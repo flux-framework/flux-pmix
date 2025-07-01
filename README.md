@@ -21,6 +21,28 @@ or by setting the `FLUX_PMI_CLIENT_METHODS` environment variable globally:
 FLUX_PMI_CLIENT_METHODS="simple pmix single"
 ```
 
+### installation
+
+##### Building From Source
+
+```console
+./autogen.sh
+./configure --localstatedir=/var/
+make -j
+make check
+```
+
+To configure flux-pmix with a side-installed version of flux-core, you will
+need to make sure that side install's pkg-config files are exported. To do that,
+something like this will work:
+
+```console
+export PKG_CONFIG_PATH=${flux_install}/lib/pkgconfig:$(pkg-config --variable pc_path pkg-config)
+```
+
+Run that before `make`.
+
+
 ### limitations
 
 The pmix specs cover a broad range of topics.  Although the shell plugin is

@@ -58,7 +58,16 @@ LT_INIT
 PKG_CHECK_MODULES([PMIX], [pmix >= 3.2.3])
 PKG_CHECK_MODULES([JANSSON], [jansson >= 2.10], [], [])
 
-PKG_CHECK_MODULES([OMPI], [ompi >= 3.0.0], [have_ompi=yes], [have_ompi=no])
+AC_ARG_WITH([openmpi],
+  [AS_HELP_STRING([--without-openmpi],
+    [Build without Open MPI])],
+  [],
+  [with_openmpi=yes]
+)
+
+AS_IF([test "x$with_openmpi" != xno],
+  [PKG_CHECK_MODULES([OMPI], [ompi >= 3.0.0], [have_ompi=yes], [have_ompi=no])]
+)
 if test "${have_ompi}" = "yes"; then
   OMPI_PREFIX=`pkg-config --variable=prefix ompi`
   if test -z "${OMPI_PREFIX}"; then

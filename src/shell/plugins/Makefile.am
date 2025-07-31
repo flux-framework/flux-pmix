@@ -38,7 +38,8 @@ pmix_la_CPPFLAGS = \
 	$(FLUX_HOSTLIST_CFLAGS) \
 	$(FLUX_TASKMAP_CFLAGS) \
 	$(PMIX_CFLAGS) \
-	$(JANSSON_CFLAGS)
+	$(JANSSON_CFLAGS) \
+	$(LIBSODIUM_CFLAGS)
 pmix_la_LIBADD = \
 	$(FLUX_CORE_LIBS) \
 	$(PMIX_LIBS) \
@@ -46,6 +47,7 @@ pmix_la_LIBADD = \
 	$(FLUX_HOSTLIST_LIBS) \
 	$(FLUX_TASKMAP_LIBS) \
 	$(JANSSON_LIBS) \
+	$(LIBSODIUM_LIBS) \
 	$(top_builddir)/src/common/libccan/libccan.la \
 	$(top_builddir)/src/common/libutil/libutil.la
 pmix_la_LDFLAGS = \

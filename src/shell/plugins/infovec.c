@@ -173,6 +173,26 @@ int infovec_set_infovec_new (struct infovec *iv,
     return 0;
 }
 
+int infovec_set_blob (struct infovec *iv,
+                      const char *key,
+                      void *value,
+                      size_t size)
+{
+    pmix_info_t *info;
+
+    if (!iv || !key) {
+        errno = EINVAL;
+        return -1;
+    }
+    if (!(info = alloc_slot (iv)))
+        return -1;
+    strlcpy (info->key, key, sizeof (info->key));
+    info->value.type = PMIX_BYTE_OBJECT;
+    info->value.data.bo.bytes = value;
+    info->value.data.bo.size = size;
+    return 0;
+}
+
 int infovec_count (struct infovec *iv)
 {
     return iv->count;

@@ -18,6 +18,7 @@
 #include "config.h"
 #endif
 #include <stdarg.h>
+#include <sodium.h>
 #include <pmix.h>
 #include <flux/core.h>
 
@@ -164,6 +165,12 @@ static int op_initialize (flux_plugin_t *p,
     pmix_status_t rc;
     pmix_proc_t proc;
     pmix_value_t *val;
+    uint32_t jobsize;
+    const unsigned char *raw_key;
+    char * enc_key;
+    size_t raw_size, enc_size;
+    const char *vendorkey = "vendor.key";
+    int ret;
 
     rc = PMIx_Init (&myproc, NULL, 0);
     if (rc != PMIX_SUCCESS)
@@ -179,17 +186,40 @@ static int op_initialize (flux_plugin_t *p,
         PMIX_VALUE_RELEASE (val);
         return seterror (p, args, "PMIx_Get size: wrong type");
     }
+    jobsize = val->data.uint32;
+    PMIX_VALUE_RELEASE (val);
 
-    if (flux_plugin_arg_pack (args,
-                              FLUX_PLUGIN_ARG_OUT,
-                              "{s:i s:s s:i}",
-                              "rank", myproc.rank,
-                              "name", myproc.nspace,
-                              "size", val->data.uint32) < 0) {
+    rc = PMIx_Get (&proc, vendorkey, NULL, 0, &val);
+    if (rc != PMIX_SUCCESS)
+        return seterror (p, args, "PMIx_Get %s: %s", vendorkey, PMIx_Error_string (rc));
+    if (val->type != PMIX_BYTE_OBJECT) {
         PMIX_VALUE_RELEASE (val);
+        return seterror (p, args, "PMIx_Get size: wrong type");
+    }
+    raw_key = (const unsigned char *)val->data.bo.bytes;
+    raw_size = val->data.bo.size;
+    enc_size = sodium_base64_encoded_len (raw_size, sodium_base64_VARIANT_ORIGINAL);
+    if (NULL == (enc_key = malloc (enc_size))) {
+        return seterror (p, args, "could not allocate %ld bytes", enc_size);
+        PMIX_VALUE_RELEASE(val);
+    }
+    sodium_bin2base64 (enc_key, enc_size,
+                       raw_key, raw_size,
+                       sodium_base64_VARIANT_ORIGINAL);
+
+    PMIX_VALUE_RELEASE(val);
+
+    ret = flux_plugin_arg_pack (args,
+                                FLUX_PLUGIN_ARG_OUT,
+                                "{s:i s:s s:i s:{s:s}}",
+                                "rank", myproc.rank,
+                                "name", myproc.nspace,
+                                "size", jobsize,
+                                "dict", vendorkey, enc_key);
+    free(enc_key);
+    if (ret < 0) {
         return -1;
     }
-    PMIX_VALUE_RELEASE (val);
     return 0;
 }
 

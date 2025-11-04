@@ -24,15 +24,15 @@ jobs:
         include:
         - name: "jammy - chain_lint"
           image: "jammy"
-          ompi_branch: "v5.0.6"
-          openpmix_branch: "v4.2.9"
+          ompi_branch: "v5.0.9"
+          openpmix_branch: "v5.0.9"
           coverage: false
           env:
             chain_lint: t
         - name: "el8 - distcheck"
           image: "el8"
-          ompi_branch: "v5.0.6"
-          openpmix_branch: "v4.2.9"
+          ompi_branch: "v5.0.9"
+          openpmix_branch: "v5.0.9"
           coverage: false
           env:
             DISTCHECK: t
@@ -44,21 +44,21 @@ jobs:
           env: {}
         - name: "jammy - coverage"
           image: "jammy"
-          ompi_branch: "v5.0.6"
-          openpmix_branch: "v4.2.9"
+          ompi_branch: "v5.0.9"
+          openpmix_branch: "v5.0.9"
           coverage: true
           env:
             COVERAGE: t
         - name: "fedora40 - ompi v5"
           image: "fedora40"
-          ompi_branch: "v5.0.6"
-          openpmix_branch: "v4.2.9"
+          ompi_branch: "v5.0.9"
+          openpmix_branch: "v5.0.9"
           coverage: false
           env: {}
         - name: "el9 - ompi v5"
           image: "el9"
-          ompi_branch: "v5.0.6"
-          openpmix_branch: "v4.2.9"
+          ompi_branch: "v5.0.9"
+          openpmix_branch: "v5.0.9"
           coverage: false
           env: {}
         - name: "jammy - ompi v4.1.x"

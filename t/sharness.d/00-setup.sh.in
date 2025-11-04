@@ -1,2 +1,4 @@
-PATH=@OMPI_PREFIX@/bin:$PATH
+if [ -n "@OMPI_PREFIX@" ]; then
+  PATH=@OMPI_PREFIX@/bin:$PATH
+fi
 PATH=@FLUX_PREFIX@/bin:$PATH

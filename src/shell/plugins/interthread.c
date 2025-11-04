@@ -35,7 +35,7 @@ struct interthread {
     flux_watcher_t *w;
     struct handler handlers[MAX_HANDLERS];
     int handler_count;
-    bool trace_flag;
+    int verbose;
 };
 
 int interthread_register (struct interthread *it,
@@ -100,7 +100,7 @@ static void interthread_recv (flux_reactor_t *r,
         flux_msg_decref (msg);
         return;
     }
-    if (it->trace_flag) {
+    if (it->verbose > 1) {
         const char *payload;
         if (flux_msg_get_payload (msg, (const void **)&payload, NULL) == 0)
             shell_trace ("pmix server %s %s", topic, payload);
@@ -144,7 +144,7 @@ struct interthread *interthread_create (flux_shell_t *shell)
                                                  it)))
         goto error;
     flux_watcher_start (it->w);
-    it->trace_flag = 1; // temporarily force this on
+    (void)flux_shell_getopt_unpack (shell, "verbose", "i", &it->verbose);
     return it;
 error:
     interthread_destroy (it);

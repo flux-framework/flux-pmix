@@ -1,3 +1,22 @@
+flux-pmix version 0.7.0 - 2025-11-04
+------------------------------------
+
+## New features
+
+ * shell: add the `infovec_set_byte_object_new()` subroutine (#111)
+
+## Cleanup
+
+ * shell: suppress tracing if verbose < 2 (#119)
+
+## Build/test/doc
+
+ * readme: add installation instructions (#113)
+ * ci: bump ompi v5 builders to newer ompi/pmix (#118)
+ * Respect `--without-openmpi` in 00-setup.sh.in (#116)
+ * mergify: disable temporary PR branches (#117)
+ * configure: allow --without-openmpi to disable Open MPI (#115)
+
 flux-pmix version 0.6.0 - 2025-01-15
 ------------------------------------
 

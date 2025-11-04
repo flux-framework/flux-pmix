@@ -21,6 +21,37 @@ or by setting the `FLUX_PMI_CLIENT_METHODS` environment variable globally:
 FLUX_PMI_CLIENT_METHODS="simple pmix single"
 ```
 
+### installation
+
+##### Building From Source
+
+```console
+./autogen.sh
+./configure
+make -j
+make check
+```
+
+To install flux-pmix with a side-installed flux-core so that the plugins 
+provided by flux-pmix can be found on flux's default search paths, build 
+and install to the same prefix. Here is an example script that uses 
+pkg-config:
+
+```console
+#!/bin/bash
+PMIX_PREFIX=/opt/openpmix-4.2.2
+FLUX_CORE_PREFIX=/home/elvis/flux
+
+PKG_CONFIG_PATH=$(pkg-config --variable pc_path pkg-config)
+PKG_CONFIG_PATH=${PMIX_PREFIX}/lib/pkgconfig:${PKG_CONFIG_PATH}
+PKG_CONFIG_PATH=${FLUX_CORE_PREFIX}/lib/pkgconfig:${PKG_CONFIG_PATH}
+
+./autogen.sh
+PKG_CONFIG_PATH=${PKG_CONFIG_PATH} \
+     ./configure --prefix=${FLUX_CORE_PREFIX}
+make && make install
+```
+
 ### limitations
 
 The pmix specs cover a broad range of topics.  Although the shell plugin is

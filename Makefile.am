@@ -10,6 +10,8 @@ EXTRA_DIST = \
 	NEWS.md \
 	README.md \
 	NOTICE.LLNS \
+	MAINTAINERS.md \
+	CONTRIBUTING.md \
 	config/tap-driver.sh
 
 ACLOCAL_AMFLAGS = -I config

@@ -89,15 +89,10 @@ static void notify_shell_cb (const flux_msg_t *msg, void *arg)
                status,
                message ? " " : "",
                message ? message : "");
-#if 0
-    /* Calling the callback seems to cause a segfault in
-     * the server progress_local_event_hdlr().  Perhaps we're doing it wrong.
-     * In test, PMIx_Notify_event() is released anyway, contrary to v5 spec.
-     * Revisit if that test starts hanging.
-     */
+
     if (cbfunc)
-        cbfunc (PMIX_EVENT_ACTION_COMPLETE, NULL, 0, NULL, cbdata, NULL);
-#endif
+        cbfunc (PMIX_EVENT_ACTION_COMPLETE, NULL, 0, NULL, NULL, cbdata);
+
 done:
     codec_info_array_destroy (info, ninfo);
     codec_info_array_destroy (results, nresults);

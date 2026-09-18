@@ -35,6 +35,7 @@
 #include "abort.h"
 #include "notify.h"
 #include "dmodex.h"
+#include "alloc.h"
 
 struct px {
     flux_shell_t *shell;
@@ -50,6 +51,7 @@ struct px {
     struct abort *abort;
     struct notify *notify;
     struct dmodex *dmodex;
+    struct alloc *alloc;
 };
 
 static pmix_server_module_t server_callbacks;
@@ -294,6 +296,11 @@ static int px_init (flux_plugin_t *p,
         return -1;
     }
     server_callbacks.direct_modex = dmodex_server_cb;
+    if (!(px->alloc = alloc_create (shell, px->it))) {
+        shell_log_error ("could not create alloc handler");
+        return -1;
+    }
+    server_callbacks.allocate = alloc_server_cb;
 
     strlcpy (info[0].key, PMIX_SERVER_TMPDIR, sizeof (info[0].key));
     info[0].value.type = PMIX_STRING;

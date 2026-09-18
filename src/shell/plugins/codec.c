@@ -216,6 +216,9 @@ json_t *codec_value_encode (const pmix_value_t *value)
         case PMIX_UINT64:
             data = json_integer (value->data.uint64);
             break;
+        case PMIX_ALLOC_DIRECTIVE:
+            data = json_integer (value->data.adir);
+            break;
         case PMIX_PROC_RANK:
             data = json_integer (value->data.rank);
             break;

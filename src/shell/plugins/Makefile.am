@@ -30,7 +30,9 @@ pmix_la_SOURCES = \
 	notify.h \
 	notify.c \
 	dmodex.h \
-	dmodex.c
+	dmodex.c \
+	alloc.h \
+	alloc.c
 pmix_la_CPPFLAGS = \
 	$(AM_CPPFLAGS) \
 	$(FLUX_CORE_CFLAGS) \

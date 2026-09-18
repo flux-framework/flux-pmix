@@ -13,6 +13,7 @@ AM_CPPFLAGS = \
 	$(PMIX_CFLAGS)
 
 check_PROGRAMS = \
+	alloc \
 	barrier \
 	bizcard \
 	version \
@@ -43,6 +44,9 @@ test_ldadd = \
 	$(FLUX_IDSET_LIBS) \
 	$(OMPI_LIBS) \
 	$(PMIX_LIBS)
+
+alloc_SOURCES = alloc.c
+alloc_LDADD = $(test_ldadd)
 
 barrier_SOURCES = barrier.c
 barrier_LDADD = $(test_ldadd)

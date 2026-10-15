@@ -219,7 +219,7 @@ static int px_init (flux_plugin_t *p,
     const char *pmi_opt = NULL;
     struct px *px;
     int rc;
-    pmix_info_t info[2];
+    pmix_info_t info[3];
     struct infovec *iv;
 
     if (flux_shell_getopt_unpack (shell, "pmi", "s", &pmi_opt) < 0) {
@@ -308,7 +308,29 @@ static int px_init (flux_plugin_t *p,
     info[1].value.data.rank = px->shell_rank;
     info[1].flags = 0;
 
-    if ((rc = PMIx_server_init (&server_callbacks, info, 2)) != PMIX_SUCCESS) {
+    /* Ensure pmix sockets are restricted to localhost to restrict the
+     * impact of issues with psec authentication, which is not under our
+     * control.  openpmix would otherwise choose the interface based on
+     * ptl MCA parameters, which may be set in the environment or in a
+     * user owned configuration file.  This info key is applied after
+     * those and overrides them.
+     * N.B. openpmix fails init rather than letting this win if an
+     * if_exclude setting is also in effect.
+     * N.B. the subnet alone would not be safe.  openpmix resolves it by
+     * walking the addressed interfaces, so in a container namespace
+     * where loopback is down or unaddressed it matches nothing, and an
+     * include list that resolves to nothing is dropped entirely - the
+     * listener then falls back to any interface, including a routable
+     * one.  The device name is matched by link instead of by address,
+     * so it still rejects the routable interface in that case and init
+     * fails rather than quietly opening up.  Hence both forms.
+     */
+    strlcpy (info[2].key, PMIX_TCP_IF_INCLUDE, sizeof (info[2].key));
+    info[2].value.type = PMIX_STRING;
+    info[2].value.data.string = "lo,127.0.0.0/8";
+    info[2].flags = 0;
+
+    if ((rc = PMIx_server_init (&server_callbacks, info, 3)) != PMIX_SUCCESS) {
         shell_warn ("PMIx_server_init: %s", PMIx_Error_string (rc));
         return -1;
     }

@@ -51,7 +51,7 @@ static void abort_shell_cb (const flux_msg_t *msg, void *arg)
     pmix_proc_t proc;
     void *server_object;
     int status;
-    pmix_proc_t *procs;
+    pmix_proc_t *procs = NULL;
     size_t nprocs;
     const char *message;
     pmix_op_cbfunc_t cbfunc;
@@ -104,7 +104,7 @@ int abort_server_cb (const pmix_proc_t *proc,
     json_t *xserver_object = NULL;
     json_t *xprocs = NULL;
     json_t *xcbfunc = NULL;
-    json_t *xcbdata = PMIX_SUCCESS;
+    json_t *xcbdata = NULL;
     int rc = PMIX_SUCCESS;
 
     if (!(xproc = codec_proc_encode (proc))

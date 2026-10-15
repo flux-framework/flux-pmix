@@ -45,6 +45,7 @@ struct px {
     int total_nprocs;
     const struct taskmap *taskmap;
     const char *job_tmpdir;
+    bool server_initialized;
     struct interthread *it;
     struct fence *fence;
     struct abort *abort;
@@ -60,8 +61,10 @@ static void px_destroy (struct px *px)
         int rc;
         int saved_errno = errno;
         notify_destroy (px->notify);
-        if ((rc = PMIx_server_finalize ()) != PMIX_SUCCESS)
-            shell_warn ("PMIx_server_finalize: %s", PMIx_Error_string (rc));
+        if (px->server_initialized) {
+            if ((rc = PMIx_server_finalize ()) != PMIX_SUCCESS)
+                shell_warn ("PMIx_server_finalize: %s", PMIx_Error_string (rc));
+        }
         abort_destroy (px->abort);
         fence_destroy (px->fence);
         dmodex_destroy (px->dmodex);
@@ -309,6 +312,7 @@ static int px_init (flux_plugin_t *p,
         shell_warn ("PMIx_server_init: %s", PMIx_Error_string (rc));
         return -1;
     }
+    px->server_initialized = true;
 
     if (!(px->notify = notify_create (shell, px->it))) {
         shell_log_error ("could not create notify handler");

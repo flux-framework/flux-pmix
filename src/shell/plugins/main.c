@@ -392,8 +392,11 @@ static int px_task_init (flux_plugin_t *p,
         for (i = 0; env[i] != NULL; i++) {
             char *name = env[i];
             char *value = strchr (name, '=');
-            if (value)
-                *value++ = '\0';
+            if (!value) { // no '=' separator - nothing to set
+                shell_warn ("ignoring malformed environment entry %s", name);
+                continue;
+            }
+            *value++ = '\0';
             if (flux_cmd_setenvf (cmd, 1, name, "%s", value) < 0) {
                 shell_warn ("flux_cmd_setenvf %s failed", name);
                 return -1;

@@ -289,6 +289,8 @@ int codec_value_decode (json_t *o, pmix_value_t *value)
             break;
         case PMIX_STRING: {
             char *cpy;
+            if (!json_is_string (data))
+                return -1;
             if (!(cpy = strdup (json_string_value (data))))
                 return -1;
             value->data.string = cpy;

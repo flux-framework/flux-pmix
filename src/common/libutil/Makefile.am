@@ -13,9 +13,12 @@ libutil_la_SOURCES = \
 	strlcpy.c \
 	strlcpy.h \
 	unsetenv_glob.c \
-	unsetenv_glob.h
+	unsetenv_glob.h \
+	getenv_prefix.c \
+	getenv_prefix.h
 
-TESTS =	test_unsetenv_glob.t
+TESTS =	test_unsetenv_glob.t \
+	test_getenv_prefix.t
 
 test_ldadd = \
 	$(top_builddir)/src/common/libutil/libutil.la \
@@ -33,3 +36,7 @@ T_LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) \
 test_unsetenv_glob_t_SOURCES = test/unsetenv_glob.c
 test_unsetenv_glob_t_CPPFLAGS = $(test_cppflags)
 test_unsetenv_glob_t_LDADD = $(test_ldadd)
+
+test_getenv_prefix_t_SOURCES = test/getenv_prefix.c
+test_getenv_prefix_t_CPPFLAGS = $(test_cppflags)
+test_getenv_prefix_t_LDADD = $(test_ldadd)

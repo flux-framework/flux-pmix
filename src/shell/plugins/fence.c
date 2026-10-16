@@ -216,6 +216,11 @@ int fence_server_cb (const pmix_proc_t procs[],
     json_decref (xdata);
     json_decref (xcbfunc);
     json_decref (xcbdata);
+    /* Ownership of data transfers to us on this call, and openpmix
+     * provides no release function with which to hand it back.  It was
+     * copied into xdata above, so it may be freed now.
+     */
+    free (data);
     return rc;
 }
 

@@ -2,7 +2,9 @@
 /barrier
 /bizcard
 /getkey
+/mpi_abort
+/mpi_hello
+/mpi_pingpong
 /mpi_version
 /notify
 /version
-

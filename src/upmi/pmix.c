@@ -23,6 +23,7 @@
 
 #include "src/common/libutil/strlcpy.h"
 #include "src/common/libutil/unsetenv_glob.h"
+#include "src/common/libutil/getenv_prefix.h"
 
 static const char *plugin_name = "pmix";
 static pmix_proc_t myproc;
@@ -224,7 +225,14 @@ static int op_preinit (flux_plugin_t *p,
                        flux_plugin_arg_t *args,
                        void *data)
 {
-    if (!getenv ("PMIX_SERVER_URI") && !getenv ("PMIX_SERVER_URI2"))
+    /* The server advertises its URI in one variable per wire protocol it
+     * speaks, named for that protocol: PMIX_SERVER_URI<NN>.  Which ones
+     * exist depends on the openpmix build, and the set has changed across
+     * versions - v7 dropped the v12 and v20 bfrops components, and with
+     * them the PMIX_SERVER_URI2 that was probed for here.  Match the
+     * prefix so this does not have to track the component list.
+     */
+    if (!getenv_prefix ("PMIX_SERVER_URI"))
         return seterror (p, args, "PMIX_SERVER_URI* not found in environment");
     return 0;
 }

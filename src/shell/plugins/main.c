@@ -15,6 +15,10 @@
 #include "config.h"
 #endif
 #include <argz.h>
+#include <errno.h>
+#include <limits.h>
+#include <string.h>
+#include <unistd.h>
 #include <flux/shell.h>
 #include <flux/taskmap.h>
 #include <flux/idset.h>
@@ -221,6 +225,7 @@ static int px_init (flux_plugin_t *p,
     int rc;
     pmix_info_t info[3];
     struct infovec *iv;
+    char cwd[PATH_MAX + 1];
 
     if (flux_shell_getopt_unpack (shell, "pmi", "s", &pmi_opt) < 0) {
         shell_log_error ("pmi shell option must be a string");
@@ -341,8 +346,19 @@ static int px_init (flux_plugin_t *p,
         return -1;
     }
 
+    /* N.B. the shell is started in the job's working directory, so
+     * getcwd() is the value spawned processes would have inherited
+     * anyway.  Register it because the spec requires it, not to change
+     * what any process sees.
+     */
+    if (!getcwd (cwd, sizeof (cwd))) {
+        shell_log_error ("getcwd: %s", strerror (errno));
+        return -1;
+    }
+
     if (!(iv = infovec_create ())
         || infovec_set_str (iv, PMIX_JOBID, px->nspace) < 0
+        || infovec_set_str (iv, PMIX_WDIR, cwd) < 0
         || set_lpeers (iv, PMIX_LOCAL_PEERS, px->taskmap, px->shell_rank) < 0
         || set_node_map (iv, PMIX_NODE_MAP, shell) < 0
         || set_proc_map (iv, PMIX_PROC_MAP, px->taskmap) < 0

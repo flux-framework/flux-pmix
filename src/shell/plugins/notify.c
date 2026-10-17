@@ -160,6 +160,10 @@ struct notify *notify_create (flux_shell_t *shell, struct interthread *it)
         return NULL;
     notify->shell = shell;
     notify->it = it;
+    /* No handler is registered yet.  Before pmix v4 one never gets a
+     * reference, so this is the value notify_destroy() sees there.
+     */
+    notify->id = -1;
 #if PMIX_VERSION_MAJOR < 4
     PMIx_Register_event_handler (NULL,
                                  0,

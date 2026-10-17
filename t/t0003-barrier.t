@@ -114,4 +114,35 @@ test_expect_success '2n4p barrier works' '
 		${BARRIER}
 '
 
+# The server offers clients only the hash store.  The shared memory
+# stores hand every client a connection blob packed in the server's
+# own encoding, which a client that announced a different one cannot
+# read.
+#
+# A client is made to speak v3 by leaving it only the v3 server URI
+# variable.  Which variables a client looks for depends on its
+# version (RFC 54 "Encoding Selection"), so every variable but
+# PMIX_SERVER_URI3 is removed rather than a fixed list: unsetting
+# only URI41 and URI4 leaves a v6 or later client its URI61, and it
+# never drops to v3.
+test_expect_success 'server offers only the hash store' '
+	flux run -N1 -n1 printenv PMIX_GDS_MODULE >gds.out &&
+	test_cmp - gds.out <<-EOT
+	hash
+	EOT
+'
+
+test_expect_success '1n2p barrier works with a v3 client' '
+	cat >v3wrap.sh <<-EOT &&
+	#!/bin/sh
+	for v in \$(env | sed -n "s/^\\(PMIX_SERVER_URI[0-9]*\\)=.*/\\1/p"); do
+	    case \$v in PMIX_SERVER_URI3) ;; *) unset \$v ;; esac
+	done
+	exec "\$@"
+	EOT
+	chmod +x v3wrap.sh &&
+	run_timeout 30 flux run -N1 -n2 \
+		./v3wrap.sh ${BARRIER}
+'
+
 test_done

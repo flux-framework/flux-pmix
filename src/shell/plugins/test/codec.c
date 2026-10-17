@@ -31,6 +31,7 @@ void check_data (void)
         && memcmp (in_buf, out_buf, out_len) == 0,
         "codec_data_decode returned the correct value");
     free (out_buf);
+    json_decref (o);
 }
 
 void check_pointer (void)
@@ -47,6 +48,7 @@ void check_pointer (void)
         "codec_pointer_decode works");
     ok (ptr_in == ptr_out,
         "codec_pointer_decode returned the correct value");
+    json_decref (o);
 
     ptr_in = 0;
     ptr_out = (void *)0xdeadbeef;
@@ -56,6 +58,7 @@ void check_pointer (void)
         "codec_pointer_decode works");
     ok (ptr_in == ptr_out,
         "codec_pointer_decode returned the correct value");
+    json_decref (o);
 }
 
 void check_value ()
@@ -81,6 +84,7 @@ void check_value ()
         && val.type == val2.type
         && val.data.byte == val2.data.byte,
         "codec_value_encode/decode works for byte");
+    json_decref (o);
 
     val.type = PMIX_STRING;
     val.data.string = "foo";
@@ -90,6 +94,7 @@ void check_value ()
         && !strcmp (val.data.string, val2.data.string),
         "codec_value_encode/decode works for string");
     codec_value_release (&val2);
+    json_decref (o);
 
     val.type = PMIX_SIZE;
     val.data.size = 777;
@@ -98,6 +103,7 @@ void check_value ()
         && val.type == val2.type
         && val.data.size == val2.data.size,
         "codec_value_encode/decode works for size");
+    json_decref (o);
 
     val.type = PMIX_PID;
     val.data.pid = 69;
@@ -106,6 +112,7 @@ void check_value ()
         && val.type == val2.type
         && val.data.pid == val2.data.pid,
         "codec_value_encode/decode works for pid");
+    json_decref (o);
 
     // TODO INT
     // TODO INT8
@@ -124,6 +131,7 @@ void check_value ()
         && val.type == val2.type
         && val.data.uint16 == val2.data.uint16,
         "codec_value_encode/decode works for uint16");
+    json_decref (o);
 
     val.type = PMIX_UINT32;
     val.data.uint32 = 0xeeeeffff;
@@ -132,6 +140,7 @@ void check_value ()
         && val.type == val2.type
         && val.data.uint32 == val2.data.uint32,
         "codec_value_encode/decode works for uint32");
+    json_decref (o);
 
     val.type = PMIX_PROC_RANK;
     val.data.rank= 1;
@@ -140,6 +149,7 @@ void check_value ()
         && val.type == val2.type
         && val.data.rank == val2.data.rank,
         "codec_value_encode/decode works for rank");
+    json_decref (o);
 
     // TODO FLOAT
     // TODO DOUBLE
@@ -159,6 +169,7 @@ void check_value ()
         && !strcmp (val.data.proc->nspace, val2.data.proc->nspace),
         "codec_value_encode/decode works for proc");
     codec_value_release (&val2);
+    json_decref (o);
 }
 
 void check_info (void)
@@ -203,6 +214,7 @@ void check_info (void)
         && cpy.value.data.string != NULL
         && !strcmp (info.value.data.string, cpy.value.data.string),
         "data is correct");
+    codec_value_release (&cpy.value);
     json_decref (o);
 }
 
@@ -258,6 +270,8 @@ void check_proc_array (void)
         "codec_proc_array_decode works");
     ok (nprocs == 0,
         "nprocs is set to 0");
+    free (procs);
+    json_decref (o);
 }
 
 int main (int argc, char **argv)

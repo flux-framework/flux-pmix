@@ -56,7 +56,14 @@ static void abort_shell_cb (const flux_msg_t *msg, void *arg)
     const char *message;
     pmix_op_cbfunc_t cbfunc;
     void *cbdata;
+    int rc = PMIX_SUCCESS;
 
+    /* The aborting process is blocked until cbfunc is called, and this
+     * callback is the only thing that will call it: the server callback
+     * has already returned PMIX_SUCCESS, so openpmix will not run its
+     * own error path.  Decode the callback before anything that can
+     * fail, so that a bad message cannot leave the process blocked.
+     */
     if (flux_msg_unpack (msg,
                          "{s:o s:o s:i s:s s:o s:o s:o}",
                          "proc", &xproc,
@@ -66,14 +73,17 @@ static void abort_shell_cb (const flux_msg_t *msg, void *arg)
                          "procs", &xprocs,
                          "cbfunc", &xcbfunc,
                          "cbdata", &xcbdata) < 0
-        || codec_proc_decode (xproc, &proc) < 0
-        || codec_pointer_decode (xserver_object, &server_object) < 0
-        || codec_proc_array_decode (xprocs, &procs, &nprocs) < 0
         || codec_pointer_decode (xcbfunc, (void **)&cbfunc) < 0
         || codec_pointer_decode (xcbdata, &cbdata) < 0) {
         shell_warn ("error unpacking interthread abort_upcall message");
-        free (procs);
         return;
+    }
+    if (codec_proc_decode (xproc, &proc) < 0
+        || codec_pointer_decode (xserver_object, &server_object) < 0
+        || codec_proc_array_decode (xprocs, &procs, &nprocs) < 0) {
+        shell_warn ("error decoding interthread abort_upcall message");
+        rc = PMIX_ERROR;
+        goto done;
     }
 
     flux_shell_raise ("exec",
@@ -83,9 +93,9 @@ static void abort_shell_cb (const flux_msg_t *msg, void *arg)
                       proc.rank,
                       status,
                       message);
-
+done:
     if (cbfunc)
-        cbfunc (PMIX_SUCCESS, cbdata); // release the calling process
+        cbfunc (rc, cbdata); // release the calling process
 
     free (procs);
 }

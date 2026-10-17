@@ -103,6 +103,12 @@ static void dmodex_shell_cb (const flux_msg_t *msg, void *arg)
     struct dmodex_call *dxcall;
     int rc;
 
+    /* The requesting process is waiting on this blob, and the only thing
+     * that will answer it is cbfunc: the server callback has already
+     * returned PMIX_SUCCESS, so openpmix will not release the request
+     * itself.  Decode the callback before anything that can fail, so a
+     * bad message cannot leave the request outstanding.
+     */
     if (!(dxcall = dmodex_call_create ())
         || flux_msg_unpack (msg,
                             "{s:o s:o s:o s:o}",
@@ -110,11 +116,21 @@ static void dmodex_shell_cb (const flux_msg_t *msg, void *arg)
                             "info", &xinfo,
                             "cbfunc", &xcbfunc,
                             "cbdata", &xcbdata) < 0
-        || codec_proc_decode (xproc, &dxcall->proc) < 0
-        || codec_info_array_decode (xinfo, &dxcall->info, &dxcall->ninfo) < 0
         || codec_pointer_decode (xcbfunc, (void **)&dxcall->cbfunc) < 0
         || codec_pointer_decode (xcbdata, &dxcall->cbdata) < 0) {
         shell_warn ("error unpacking dmodex_upcall interthread message");
+        dmodex_call_destroy (dxcall);
+        return;
+    }
+    if (codec_proc_decode (xproc, &dxcall->proc) < 0
+        || codec_info_array_decode (xinfo, &dxcall->info, &dxcall->ninfo) < 0) {
+        /* N.B. dxcall is zeroed, so proc names nobody and shell_rank is
+         * 0.  Answer the request here rather than at the error label,
+         * which would report that unparsed proc as the one that failed.
+         */
+        shell_warn ("error decoding dmodex_upcall interthread message");
+        if (dxcall->cbfunc)
+            dxcall->cbfunc (PMIX_ERROR, NULL, 0, dxcall->cbdata, NULL, NULL);
         dmodex_call_destroy (dxcall);
         return;
     }

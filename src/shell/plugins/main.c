@@ -303,6 +303,40 @@ static int px_init (flux_plugin_t *p,
     }
     server_callbacks.direct_modex = dmodex_server_cb;
 
+    /* Offer clients only the hash store, which sends job data to each
+     * client over its socket, and not a shared memory store the client
+     * would map.
+     *
+     * The set offered is every gds component the server opens, chosen
+     * from the PMIX_MCA_gds environment variable, so that is set here
+     * before init.  The PMIX_GDS_MODULE info key does not do this: it
+     * names the server's own internal store, which is hash regardless.
+     *
+     * The shared memory stores pack the segment's connection blob once,
+     * with the server's own encoding, and hand that copy to every
+     * client.  A client that announced a different encoding - a 3.x
+     * client on a 5.x server, say - cannot read it and fails in
+     * PMIx_Init.  The hash store packs each reply for the client that
+     * asked, so it does not have this problem.  (openpmix 5.0.x,
+     * gds_shmem2.c cache_connection_info_for_job_shmem2.)
+     *
+     * This is a performance tradeoff that depends on the workload.
+     * Shared memory makes every PMIx_Get after startup a local read,
+     * at the cost of pushing the whole job data image through the
+     * socket once per client - ~186 KiB against ~800 bytes for hash
+     * in a 1-node 4-task job here.  Open MPI's bootstrap, as traced,
+     * does one or two gets per rank and otherwise fences, so for it
+     * the shared memory setup has nothing to amortize over.  A
+     * workload doing many gets per rank could see it differently.
+     *
+     * Overwrite rather than defer to an existing setting: the point
+     * is that the choice not be left to the environment.
+     */
+    if (setenv ("PMIX_MCA_gds", "hash", 1) < 0) {
+        shell_log_error ("setenv PMIX_MCA_gds: %s", strerror (errno));
+        return -1;
+    }
+
     strlcpy (info[0].key, PMIX_SERVER_TMPDIR, sizeof (info[0].key));
     info[0].value.type = PMIX_STRING;
     info[0].value.data.string = (char *)px->job_tmpdir;

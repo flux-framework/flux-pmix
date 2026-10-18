@@ -4,7 +4,8 @@ SUBDIRS = . test
 
 MAN_FILES = $(MAN7_FILES)
 
-MAN7_FILES =
+MAN7_FILES = \
+	man7/flux-shell-pmix.7
 
 RST_FILES = \
 	$(MAN7_FILES:.7=.rst)
@@ -57,7 +58,8 @@ EXTRA_DIST = \
 	index.rst \
 	domainrefs.py \
 	requirements.txt \
-	$(RST_FILES)
+	$(RST_FILES) \
+	man7/index.rst
 
 CLEANFILES = \
 	$(MAN_FILES)

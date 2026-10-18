@@ -17,4 +17,11 @@ author = "This page is maintained by the Flux community."
 # - Author (use [author])
 # - Manual section
 man_pages = [
+    (
+        "man7/flux-shell-pmix",
+        "flux-shell-pmix",
+        "Flux job shell PMIx plugin",
+        [author],
+        7,
+    ),
 ]

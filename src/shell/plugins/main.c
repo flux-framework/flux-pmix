@@ -122,6 +122,55 @@ static int set_node_map (struct infovec *iv,
     return 0;
 }
 
+/* Register this node under its real hostname as well as its node-map
+ * name.
+ *
+ * When several shells share a host, maps_node_create() makes their
+ * names unique by appending the shell rank, so the node map says
+ * "host0,host1" where the host is "host".  openpmix finds "its own"
+ * node by matching gethostname() against the registered names and
+ * aliases.  With no alias, that match fails, and the server adds a
+ * second entry for the real name on its own - so clients see three
+ * nodes for a two node job, one of them with no nodeid.  Registering
+ * the real hostname as an alias of this shell's node makes the match
+ * succeed, and the node table clients receive is the one we meant.
+ *
+ * This only matters when the names were made unique; otherwise the
+ * node-map name is the hostname and no alias is needed.
+ */
+static int set_node_info (struct infovec *iv,
+                          const char *key,
+                          flux_shell_t *shell,
+                          int shell_rank)
+{
+    char hostname[HOST_NAME_MAX + 1];
+    char *name;
+    struct infovec *ni = NULL;
+    int rc = -1;
+
+    if (!(name = maps_node_name (shell)))
+        return -1;
+    if (gethostname (hostname, sizeof (hostname)) < 0)
+        goto done;
+    hostname[sizeof (hostname) - 1] = '\0';
+    if (!strcmp (name, hostname)) {
+        rc = 0;                     // no uniquify, no alias needed
+        goto done;
+    }
+    if (!(ni = infovec_create ())
+        || infovec_set_str (ni, PMIX_HOSTNAME, name) < 0
+        || infovec_set_u32 (ni, PMIX_NODEID, shell_rank) < 0
+        || infovec_set_str (ni, PMIX_HOSTNAME_ALIASES, hostname) < 0
+        || infovec_set_infovec_new (iv, key, ni) < 0)
+        goto done;
+    ni = NULL;                      // stolen
+    rc = 0;
+done:
+    infovec_destroy (ni);
+    free (name);
+    return rc;
+}
+
 static int set_proc_map (struct infovec *iv,
                          const char *key,
                          const struct taskmap *taskmap)
@@ -359,6 +408,14 @@ static int px_init (flux_plugin_t *p,
     if (!(iv = infovec_create ())
         || infovec_set_str (iv, PMIX_JOBID, px->nspace) < 0
         || infovec_set_str (iv, PMIX_WDIR, cwd) < 0
+        /* N.B. the node info array must precede the node-realm keys
+         * passed as individual entries (PMIX_LOCAL_PEERS,
+         * PMIX_LOCAL_SIZE).  openpmix files such a key under the node
+         * its hostname resolves to, creating one if none exists;
+         * registering the aliased node first is what lets that
+         * resolution find it.
+         */
+        || set_node_info (iv, PMIX_NODE_INFO_ARRAY, shell, px->shell_rank) < 0
         || set_lpeers (iv, PMIX_LOCAL_PEERS, px->taskmap, px->shell_rank) < 0
         || set_node_map (iv, PMIX_NODE_MAP, shell) < 0
         || set_proc_map (iv, PMIX_PROC_MAP, px->taskmap) < 0

@@ -30,6 +30,20 @@ SHELL OPTIONS
   Enable the pmix plugin.  To enable other PMI implementations as
   well, separate them with commas, e.g. ``pmi=pmix,simple``.
 
+The options below restrict what the server offers, to test a client
+against a particular configuration.
+
+.. option:: pmix.auth=LIST
+
+  Offer only the listed authentication methods.  LIST is a comma
+  separated subset of the methods the server's OpenPMIx has, e.g.
+  **native** or **munge**.  The value is passed to OpenPMIx as
+  ``PMIX_MCA_psec``.
+
+  This is mainly for testing a client with a given method.  The server
+  accepts connections only from the job's own user on the local host,
+  so the method does not change who can connect.
+
 RESOURCES
 =========
 

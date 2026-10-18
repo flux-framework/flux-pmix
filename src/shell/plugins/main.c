@@ -352,6 +352,24 @@ static int px_init (flux_plugin_t *p,
     }
     server_callbacks.direct_modex = dmodex_server_cb;
 
+    /* The pmix shell option can narrow what the server offers, for
+     * clients that cannot cope with its defaults (flux-shell-pmix(7)):
+     *
+     *   -o pmix.auth=LIST    psec modules offered (default: openpmix's)
+     *
+     * auth passes through to PMIX_MCA_psec before PMIx_server_init(),
+     * so it accepts whatever this openpmix accepts.
+     */
+    const char *auth = NULL;
+    if (flux_shell_getopt_unpack (shell, "pmix", "{s?s}", "auth", &auth) < 0) {
+        shell_log_error ("pmix.auth must be a string");
+        return -1;
+    }
+    if (auth && setenv ("PMIX_MCA_psec", auth, 1) < 0) {
+        shell_log_error ("setenv PMIX_MCA_psec: %s", strerror (errno));
+        return -1;
+    }
+
     strlcpy (info[0].key, PMIX_SERVER_TMPDIR, sizeof (info[0].key));
     info[0].value.type = PMIX_STRING;
     info[0].value.data.string = (char *)px->job_tmpdir;

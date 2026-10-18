@@ -109,4 +109,16 @@ test_expect_success '2n4p barrier works' '
 		${BARRIER}
 '
 
+# The pmix.* shell options narrow what the server offers, to work
+# around version skew between a client and the server, see
+# flux-shell-pmix(7).
+
+test_expect_success 'pmix.auth=native leaves the client only native' '
+	flux run -N1 -n1 -o pmix.auth=native printenv PMIX_SECURITY_MODE \
+		>auth.out &&
+	test_cmp - auth.out <<-EOT
+	native
+	EOT
+'
+
 test_done

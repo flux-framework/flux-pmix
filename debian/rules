@@ -19,7 +19,7 @@
 override_dh_auto_configure:
 	CFLAGS=-I$$(pkg-config --variable=libdir pmix)/pmix2/include \
 	LDFLAGS=-L$$(pkg-config --variable=libdir pmix)/pmix2/lib \
-	dh_auto_configure
+	dh_auto_configure -- --enable-docs
 
 override_dh_autoreconf:
 	@echo not running autogen.sh on dist product

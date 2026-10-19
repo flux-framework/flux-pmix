@@ -67,6 +67,16 @@ jobs:
           openpmix_branch: "v7.0.0rc1"
           coverage: false
           env: {}
+        - name: "el9 - native ompi 4.1 pmix 3.2"
+          image: "el9"
+          native: "1"
+          coverage: false
+          env: {}
+        - name: "el10 - native ompi 5.0 pmix 4.2"
+          image: "el10"
+          native: "1"
+          coverage: false
+          env: {}
         - name: "jammy - ompi v4.1.x"
           image: "jammy"
           ompi_branch: "v4.1.x"
@@ -109,6 +119,7 @@ jobs:
         -i ${{ matrix.image }}
         --build-arg OMPI_BRANCH=${{ matrix.ompi_branch }}
         --build-arg OPENPMIX_BRANCH=${{ matrix.openpmix_branch }}
+        --build-arg NATIVE=${{ matrix.native }}
         --
 
     - name: annotate errors

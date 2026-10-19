@@ -4,6 +4,7 @@ SUBDIRS = \
 	src/common/libutil \
 	src/shell/plugins \
 	src/upmi \
+	doc \
 	t
 
 EXTRA_DIST = \

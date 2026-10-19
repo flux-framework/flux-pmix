@@ -7,7 +7,8 @@ Build-Depends:
   debhelper (>= 10),
   flux-core (>= 0.49.0),
   libjansson-dev (>= 2.10),
-  libpmix-dev (>= 3.2.3)
+  libpmix-dev (>= 3.2.3),
+  python3-sphinx
 
 Homepage: https://github.com/flux-framework/flux-pmix
 Package: flux-pmix

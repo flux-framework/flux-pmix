@@ -39,3 +39,10 @@ Makefile
 # Rules to ignore auto-generated test harness scripts
 test_*.t
 
+
+# sphinx
+doc/man
+doc/man7/*.7
+doc/html
+doc/doctrees
+__pycache__/

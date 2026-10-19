@@ -5,6 +5,11 @@ ARG UID=1000
 ARG OMPI_BRANCH=v5.0.x
 ARG OPENPMIX_BRANCH=v4.2.9
 
+# Set NATIVE=1 to use the distribution's openmpi and pmix packages
+# instead of building the branches above.  That tests the versions a
+# stock el9 system has, which Open MPI links against the system pmix.
+ARG NATIVE=
+
 RUN \
  if test "$USER" != "fluxuser"; then  \
       sudo groupadd -g $UID $USER \
@@ -22,8 +27,18 @@ RUN sudo yum -y update \
  && sudo yum -y remove mpich mpich-devel \
  && sudo yum clean all
 
+# native: install the distribution packages.  They put Open MPI under
+# /usr/lib64/openmpi, which the ENV below puts on the paths.
+RUN if test -n "$NATIVE"; then \
+      sudo yum -y install pmix-devel openmpi-devel \
+   && sudo yum clean all; \
+    fi
+ENV PATH=/usr/lib64/openmpi/bin:$PATH \
+    PKG_CONFIG_PATH=/usr/lib64/openmpi/lib/pkgconfig:/usr/lib64/pkgconfig:/usr/share/pkgconfig
+
  # build/install openpmix
-RUN cd /tmp \
+RUN if test -z "$NATIVE"; then \
+    cd /tmp \
  && git clone -b ${OPENPMIX_BRANCH} \
       --recursive --depth=1 https://github.com/openpmix/openpmix \
  && cd openpmix \
@@ -35,10 +50,12 @@ RUN cd /tmp \
  && sudo rm -rf /usr/lib64/pmix \
  && sudo make install \
  && cd .. \
- && rm -rf openpmix
+ && rm -rf openpmix; \
+    fi
 
 # build/install ompi
-RUN cd /tmp \
+RUN if test -z "$NATIVE"; then \
+    cd /tmp \
  && git clone -b ${OMPI_BRANCH} \
       --recursive --depth=1 https://github.com/open-mpi/ompi \
  && cd ompi \
@@ -50,8 +67,8 @@ RUN cd /tmp \
  && make -j $(nproc) \
  && sudo make install \
  && cd .. \
- && rm -rf ompi
+ && rm -rf ompi; \
+    fi
 
 USER $USER
 WORKDIR /home/$USER
-

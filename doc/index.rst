@@ -22,6 +22,12 @@ PMI client plugin
 
 .. toctree::
    :maxdepth: 2
+   :caption: Guides
+
+   guide/openpmix_interop
+
+.. toctree::
+   :maxdepth: 2
    :caption: Manual Pages
 
    man7/index

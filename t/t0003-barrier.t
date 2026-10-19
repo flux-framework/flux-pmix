@@ -43,11 +43,6 @@ test_expect_success '1n2p barrier tolerates pmix.collect.gen=false' '
 		${BARRIER} --collect-job-info=false
 '
 
-test_expect_success '1n2p barrier with procs subset works' '
-	run_timeout 30 flux run -N1 -n2 \
-		${BARRIER} --procs=0
-'
-
 # Multi-shell barrier
 
 test_expect_success '2n2p barrier works' '

@@ -1,3 +1,27 @@
+flux-pmix version 0.8.0 - 2026-10-20
+------------------------------------
+
+## New Features
+
+ * add -o pmix.auth, -o pmix.store, and -o pmix.wire options (#145)
+ * doc: add flux-shell-pmix(7) (#144)
+
+## Fixes
+
+ * address minor namespace issues (#143)
+ * fix minor error path bugs and test memory leaks (#140)
+ * restrict socket to localhost and fix various nits (#138)
+ * plugin: fix segfault issue in handler completion callback (#137)
+ * plugin: parse config in shell init callback (#136)
+
+## Build/Test
+
+ * CI: update actions, use `CODECOV_TOKEN`, and add job step to create
+   release (#148)
+ * testsuite: match the bfrops error on openpmix 7.0 (#147)
+ * build: add CI checks for native el9 and el10 pmix and ompi package (#142)
+ * add ci builder for openpmix v7 (#139)
+
 flux-pmix version 0.7.1 - 2026-07-13
 ------------------------------------
 

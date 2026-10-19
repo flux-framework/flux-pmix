@@ -33,6 +33,15 @@ SHELL OPTIONS
 The options below restrict what the server offers, to test a client
 against a particular configuration.
 
+.. option:: pmix.store=LIST
+
+  Offer only the listed data stores.  LIST is a comma separated
+  subset of the stores the server's OpenPMIx has, e.g. **hash**.  The
+  value is passed to OpenPMIx as ``PMIX_MCA_gds``.  If **hash** is in
+  LIST, it must be last, e.g. **shmem2,hash**.  The stores are
+  **ds21** in 3.x and 4.x, **shmem2** in 5.x and 6.x, **shmem3** in
+  7.x, and **hash** in all versions.
+
 .. option:: pmix.auth=LIST
 
   Offer only the listed authentication methods.  LIST is a comma

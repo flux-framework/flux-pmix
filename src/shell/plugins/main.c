@@ -356,13 +356,25 @@ static int px_init (flux_plugin_t *p,
      * clients that cannot cope with its defaults (flux-shell-pmix(7)):
      *
      *   -o pmix.auth=LIST    psec modules offered (default: openpmix's)
+     *   -o pmix.store=LIST   gds modules offered (default: openpmix's)
      *
-     * auth passes through to PMIX_MCA_psec before PMIx_server_init(),
-     * so it accepts whatever this openpmix accepts.
+     * Both pass through to MCA settings before PMIx_server_init(), so
+     * they accept whatever this openpmix accepts.  The PMIX_GDS_MODULE
+     * info key would not do for store: it names the server's internal
+     * store, not what is offered.
      */
     const char *auth = NULL;
-    if (flux_shell_getopt_unpack (shell, "pmix", "{s?s}", "auth", &auth) < 0) {
-        shell_log_error ("pmix.auth must be a string");
+    const char *store = NULL;
+    if (flux_shell_getopt_unpack (shell,
+                                  "pmix",
+                                  "{s?s s?s}",
+                                  "auth", &auth,
+                                  "store", &store) < 0) {
+        shell_log_error ("pmix.auth and pmix.store must be strings");
+        return -1;
+    }
+    if (store && setenv ("PMIX_MCA_gds", store, 1) < 0) {
+        shell_log_error ("setenv PMIX_MCA_gds: %s", strerror (errno));
         return -1;
     }
     if (auth && setenv ("PMIX_MCA_psec", auth, 1) < 0) {

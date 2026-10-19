@@ -113,12 +113,42 @@ test_expect_success '2n4p barrier works' '
 # around version skew between a client and the server, see
 # flux-shell-pmix(7).
 
+test_expect_success 'pmix.store=hash offers only the hash store' '
+	flux run -N1 -n1 -o pmix.store=hash printenv PMIX_GDS_MODULE \
+		>store.out &&
+	test_cmp - store.out <<-EOT
+	hash
+	EOT
+'
+
 test_expect_success 'pmix.auth=native leaves the client only native' '
 	flux run -N1 -n1 -o pmix.auth=native printenv PMIX_SECURITY_MODE \
 		>auth.out &&
 	test_cmp - auth.out <<-EOT
 	native
 	EOT
+'
+
+# A shared memory store hands every client a blob in the server's
+# encoding, so a client that has the store but selected an older
+# encoding fails in PMIx_Init.  The hash store packs in the client's
+# encoding and avoids that.  No real client is in this position: the
+# encoding a client selects is the newest it knows, and every client
+# that has a shared memory store knows the server's.  It is imitated
+# by leaving a newer client only the v3 URI.  Which URI variables a
+# client looks for depends on its version, so every variable but
+# PMIX_SERVER_URI3 is removed rather than a fixed list.
+test_expect_success '1n2p barrier works with a v3-only client and hash' '
+	cat >v3wrap.sh <<-EOT &&
+	#!/bin/sh
+	for v in \$(env | sed -n "s/^\\(PMIX_SERVER_URI[0-9]*\\)=.*/\\1/p"); do
+	    case \$v in PMIX_SERVER_URI3) ;; *) unset \$v ;; esac
+	done
+	exec "\$@"
+	EOT
+	chmod +x v3wrap.sh &&
+	run_timeout 30 flux run -N1 -n2 -o pmix.store=hash \
+		./v3wrap.sh ${BARRIER}
 '
 
 test_done

@@ -33,6 +33,15 @@ SHELL OPTIONS
 The options below restrict what the server offers, to test a client
 against a particular configuration.
 
+.. option:: pmix.wire=LIST
+
+  Offer only the listed wire encodings.  LIST is a comma separated
+  subset of **v2**, **v21**, **v3**, **v4**, **v41**, **v51**, and
+  **v61**.  The value is passed to OpenPMIx as ``PMIX_MCA_bfrops``, so
+  the server loads only those encodings.  Each task sees only the
+  server URIs for them, so a client can select only those.  The job
+  fails at startup if the server has none of them.
+
 .. option:: pmix.store=LIST
 
   Offer only the listed data stores.  LIST is a comma separated

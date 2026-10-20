@@ -55,6 +55,7 @@ struct px {
     struct abort *abort;
     struct notify *notify;
     struct dmodex *dmodex;
+    const char *wire;       // pmix.wire option, or NULL
 };
 
 static pmix_server_module_t server_callbacks;
@@ -244,6 +245,90 @@ static int set_proc_infos (struct infovec *iv,
     return 0;
 }
 
+/* The pmix.wire option names the encodings a client may select.  A
+ * client picks one by which server URI variables it finds, in its
+ * own fixed order, so hiding every variable but these leaves it the
+ * listed ones.  The names are the encodings openpmix has shipped; a
+ * release that adds one needs an entry here.
+ */
+static const struct {
+    const char *name;
+    const char *var;
+} wire_encodings[] = {
+    { "v2",  "PMIX_SERVER_URI2" },
+    { "v21", "PMIX_SERVER_URI21" },
+    { "v3",  "PMIX_SERVER_URI3" },
+    { "v4",  "PMIX_SERVER_URI4" },
+    { "v41", "PMIX_SERVER_URI41" },
+    { "v51", "PMIX_SERVER_URI51" },
+    { "v61", "PMIX_SERVER_URI61" },
+};
+
+static bool wire_known (const char *name)
+{
+    for (size_t i = 0; i < sizeof (wire_encodings) / sizeof (wire_encodings[0]); i++) {
+        if (!strcmp (wire_encodings[i].name, name))
+            return true;
+    }
+    return false;
+}
+
+/* Check that every name in a comma separated list is an encoding we
+ * know how to select.  Returns 0 if so, -1 if not.
+ */
+static int wire_list_check (const char *list)
+{
+    char *argz = NULL;
+    size_t argz_len;
+    const char *entry = NULL;
+    int rc = 0;
+
+    if (argz_create_sep (list, ',', &argz, &argz_len) != 0)
+        return -1;
+    while ((entry = argz_next (argz, argz_len, entry))) {
+        if (!wire_known (entry)) {
+            rc = -1;
+            break;
+        }
+    }
+    free (argz);
+    return rc;
+}
+
+/* Leave the task only the URI variables for the encodings in 'list',
+ * so that it selects among those.  Returns -1 if the server offered
+ * none of them, since the task would then have no server to find.
+ */
+static int wire_list_apply (const char *list, flux_cmd_t *cmd)
+{
+    size_t n = sizeof (wire_encodings) / sizeof (wire_encodings[0]);
+    bool keep[sizeof (wire_encodings) / sizeof (wire_encodings[0])];
+    bool any = false;
+    char *argz = NULL;
+    size_t argz_len;
+    const char *entry = NULL;
+
+    memset (keep, 0, sizeof (keep));
+    if (argz_create_sep (list, ',', &argz, &argz_len) != 0)
+        return -1;
+    while ((entry = argz_next (argz, argz_len, entry))) {
+        for (size_t i = 0; i < n; i++) {
+            if (!strcmp (wire_encodings[i].name, entry))
+                keep[i] = true;
+        }
+    }
+    free (argz);
+    for (size_t i = 0; i < n; i++) {
+        if (keep[i]) {
+            if (flux_cmd_getenv (cmd, wire_encodings[i].var))
+                any = true;
+        }
+        else
+            flux_cmd_unsetenv (cmd, wire_encodings[i].var);
+    }
+    return any ? 0 : -1;
+}
+
 static bool member_of_csv (const char *list, const char *name)
 {
     char *argz = NULL;
@@ -355,22 +440,35 @@ static int px_init (flux_plugin_t *p,
     /* The pmix shell option can narrow what the server offers, for
      * clients that cannot cope with its defaults (flux-shell-pmix(7)):
      *
-     *   -o pmix.auth=LIST    psec modules offered (default: openpmix's)
      *   -o pmix.store=LIST   gds modules offered (default: openpmix's)
+     *   -o pmix.auth=LIST    psec modules offered (default: openpmix's)
+     *   -o pmix.wire=LIST    encodings offered (default: openpmix's)
      *
-     * Both pass through to MCA settings before PMIx_server_init(), so
-     * they accept whatever this openpmix accepts.  The PMIX_GDS_MODULE
-     * info key would not do for store: it names the server's internal
-     * store, not what is offered.
+     * store and auth pass through to PMIX_MCA_gds and PMIX_MCA_psec
+     * before PMIx_server_init(), so they accept whatever this openpmix
+     * accepts.  The PMIX_GDS_MODULE info key would not do for store:
+     * it names the server's internal store, not what is offered.
+     *
+     * wire passes through to PMIX_MCA_bfrops the same way, but that
+     * alone is not enough.  A client selects its encoding from which
+     * server URI variables it finds, not from any MCA setting, and
+     * a server of 5.0.9 or earlier advertises every encoding it was
+     * built with whether active or not; a client that picks an
+     * inactive one cannot connect.  So px_task_init() also hides the variables
+     * for the encodings not listed.  The names must be known here to
+     * do that, so an unknown one fails the job at init rather than
+     * leaving a task with no server to find.
      */
-    const char *auth = NULL;
     const char *store = NULL;
+    const char *auth = NULL;
     if (flux_shell_getopt_unpack (shell,
                                   "pmix",
-                                  "{s?s s?s}",
+                                  "{s?s s?s s?s}",
+                                  "store", &store,
                                   "auth", &auth,
-                                  "store", &store) < 0) {
-        shell_log_error ("pmix.auth and pmix.store must be strings");
+                                  "wire", &px->wire) < 0) {
+        shell_log_error ("pmix.store, pmix.auth, and pmix.wire"
+                         " must be strings");
         return -1;
     }
     if (store && setenv ("PMIX_MCA_gds", store, 1) < 0) {
@@ -380,6 +478,16 @@ static int px_init (flux_plugin_t *p,
     if (auth && setenv ("PMIX_MCA_psec", auth, 1) < 0) {
         shell_log_error ("setenv PMIX_MCA_psec: %s", strerror (errno));
         return -1;
+    }
+    if (px->wire) {
+        if (wire_list_check (px->wire) < 0) {
+            shell_log_error ("pmix.wire=%s: unknown encoding", px->wire);
+            return -1;
+        }
+        if (setenv ("PMIX_MCA_bfrops", px->wire, 1) < 0) {
+            shell_log_error ("setenv PMIX_MCA_bfrops: %s", strerror (errno));
+            return -1;
+        }
     }
 
     strlcpy (info[0].key, PMIX_SERVER_TMPDIR, sizeof (info[0].key));
@@ -528,6 +636,14 @@ static int px_task_init (flux_plugin_t *p,
             }
         }
         free (env);
+    }
+
+    /* pmix.wire: leave the task only the URI variables for the listed
+     * encodings, so it selects among those (see px_init).
+     */
+    if (px->wire && wire_list_apply (px->wire, cmd) < 0) {
+        shell_warn ("pmix.wire=%s: server offered none of these", px->wire);
+        return -1;
     }
 
     /* Allow task rank and uid/gid (same as ours) to connect to

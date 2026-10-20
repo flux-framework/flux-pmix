@@ -5,7 +5,10 @@ AM_LDFLAGS = \
 	$(CODE_COVERAGE_LIBS)
 AM_CPPFLAGS = \
 	-I$(top_srcdir) \
-	-DFLUX_SHELL_PLUGIN_NAME=\"pmix\"
+	-DFLUX_SHELL_PLUGIN_NAME=\"pmix\" \
+	-DABS_TOP_BUILDDIR=\"$(abs_top_builddir)\" \
+	-DPMIX_CAPTURE_SHIM=\"$(pmix_libexecdir)/pmix-capture.so\" \
+	-DPMIX_CAPTURE_SHIM_INTREE=\"$(abs_top_builddir)/src/capture/.libs/pmix-capture.so\"
 
 
 shell_plugin_LTLIBRARIES = \
@@ -30,7 +33,9 @@ pmix_la_SOURCES = \
 	notify.h \
 	notify.c \
 	dmodex.h \
-	dmodex.c
+	dmodex.c \
+	capture.h \
+	capture.c
 pmix_la_CPPFLAGS = \
 	$(AM_CPPFLAGS) \
 	$(FLUX_CORE_CFLAGS) \
@@ -40,6 +45,7 @@ pmix_la_CPPFLAGS = \
 	$(PMIX_CFLAGS) \
 	$(JANSSON_CFLAGS)
 pmix_la_LIBADD = \
+	$(top_builddir)/src/common/libpcapng/libpcapng.la \
 	$(FLUX_CORE_LIBS) \
 	$(PMIX_LIBS) \
 	$(FLUX_IDSET_LIBS) \

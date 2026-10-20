@@ -128,6 +128,6 @@ jobs:
 
     - name: coverage report
       if: success() && matrix.coverage
-      env:
-        DOCKER_REPO:
       uses: codecov/codecov-action@v7
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}

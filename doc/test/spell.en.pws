@@ -1,7 +1,14 @@
 personal_ws-1.1 en 0
+auth
+ds
 encodings
+gds
+Init
+KiB
 maxdepth
+MCA
 MPI
+munge
 OpenPMIx
 OpenPMIx's
 opmi
@@ -10,4 +17,13 @@ pmi
 PMI
 pmix
 PMIx
+psec
+shmem
 toctree
+URI
+URIs
+PRRTE
+ABI
+el
+suboptimal
+bfrops

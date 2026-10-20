@@ -30,6 +30,38 @@ SHELL OPTIONS
   Enable the pmix plugin.  To enable other PMI implementations as
   well, separate them with commas, e.g. ``pmi=pmix,simple``.
 
+The options below restrict what the server offers, to test a client
+against a particular configuration.
+
+.. option:: pmix.wire=LIST
+
+  Offer only the listed wire encodings.  LIST is a comma separated
+  subset of **v2**, **v21**, **v3**, **v4**, **v41**, **v51**, and
+  **v61**.  The value is passed to OpenPMIx as ``PMIX_MCA_bfrops``, so
+  the server loads only those encodings.  Each task sees only the
+  server URIs for them, so a client can select only those.  The job
+  fails at startup if the server has none of them.
+
+.. option:: pmix.store=LIST
+
+  Offer only the listed data stores.  LIST is a comma separated
+  subset of the stores the server's OpenPMIx has, e.g. **hash**.  The
+  value is passed to OpenPMIx as ``PMIX_MCA_gds``.  If **hash** is in
+  LIST, it must be last, e.g. **shmem2,hash**.  The stores are
+  **ds21** in 3.x and 4.x, **shmem2** in 5.x and 6.x, **shmem3** in
+  7.x, and **hash** in all versions.
+
+.. option:: pmix.auth=LIST
+
+  Offer only the listed authentication methods.  LIST is a comma
+  separated subset of the methods the server's OpenPMIx has, e.g.
+  **native** or **munge**.  The value is passed to OpenPMIx as
+  ``PMIX_MCA_psec``.
+
+  This is mainly for testing a client with a given method.  The server
+  accepts connections only from the job's own user on the local host,
+  so the method does not change who can connect.
+
 RESOURCES
 =========
 

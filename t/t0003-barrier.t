@@ -109,4 +109,88 @@ test_expect_success '2n4p barrier works' '
 		${BARRIER}
 '
 
+# The pmix.* shell options narrow what the server offers, to work
+# around version skew between a client and the server, see
+# flux-shell-pmix(7).
+
+test_expect_success 'pmix.store=hash offers only the hash store' '
+	flux run -N1 -n1 -o pmix.store=hash printenv PMIX_GDS_MODULE \
+		>store.out &&
+	test_cmp - store.out <<-EOT
+	hash
+	EOT
+'
+
+test_expect_success 'pmix.wire=v3 leaves the client only the v3 URI' '
+	flux run -N1 -n1 -o pmix.wire=v3 printenv >wire.out &&
+	grep ^PMIX_SERVER_URI3= wire.out &&
+	test_must_fail grep ^PMIX_SERVER_URI41= wire.out
+'
+
+# Every client of 4.0 or later also speaks v3, so a v3-only server
+# bootstraps any client version.  This one is whatever we were built
+# against.
+test_expect_success '1n2p barrier works with pmix.wire=v3' '
+	run_timeout 30 flux run -N1 -n2 -o pmix.wire=v3 ${BARRIER}
+'
+
+test_expect_success 'pmix.wire rejects an encoding it does not know' '
+	test_must_fail flux run -N1 -n1 -o pmix.wire=v99 ${BARRIER} \
+		2>bad.err &&
+	grep "unknown encoding" bad.err
+'
+
+# A known encoding this server does not have fails the job at init,
+# since openpmix refuses to select a bfrops component it cannot find.
+# Which ones a server has depends on its version, so pick by asking.
+test_expect_success 'pmix.wire fails if the server does not have it' '
+	flux run -N1 -n1 printenv >uris.out &&
+	if grep -q ^PMIX_SERVER_URI61= uris.out; then
+		missing=v2
+	else
+		missing=v61
+	fi &&
+	test_must_fail flux run -N1 -n1 -o pmix.wire=$missing ${BARRIER} \
+		2>none.err &&
+	grep "Component: $missing" none.err
+'
+
+test_expect_success 'pmix.auth=native leaves the client only native' '
+	flux run -N1 -n1 -o pmix.auth=native printenv PMIX_SECURITY_MODE \
+		>auth.out &&
+	test_cmp - auth.out <<-EOT
+	native
+	EOT
+'
+
+# A shared memory store hands every client a blob in the server's
+# encoding, so a client that has the store but selected an older
+# encoding fails in PMIx_Init.  The hash store packs in the client's
+# encoding and avoids that.  No real client is in this position: the
+# encoding a client selects is the newest it knows, and every client
+# that has a shared memory store knows the server's.  It is imitated
+# by leaving a newer client only the v3 URI.  Which URI variables a
+# client looks for depends on its version, so every variable but
+# PMIX_SERVER_URI3 is removed rather than a fixed list.
+test_expect_success '1n2p barrier works with a v3-only client and hash' '
+	cat >v3wrap.sh <<-EOT &&
+	#!/bin/sh
+	for v in \$(env | sed -n "s/^\\(PMIX_SERVER_URI[0-9]*\\)=.*/\\1/p"); do
+	    case \$v in PMIX_SERVER_URI3) ;; *) unset \$v ;; esac
+	done
+	exec "\$@"
+	EOT
+	chmod +x v3wrap.sh &&
+	run_timeout 30 flux run -N1 -n2 -o pmix.store=hash \
+		./v3wrap.sh ${BARRIER}
+'
+
+# pmix.wire=v3 avoids the same failure from the other side: the
+# server then packs in v3, which the client selected, whatever store
+# it offers.
+test_expect_success '1n2p barrier works with a v3-only client and wire=v3' '
+	run_timeout 30 flux run -N1 -n2 -o pmix.wire=v3 \
+		./v3wrap.sh ${BARRIER}
+'
+
 test_done

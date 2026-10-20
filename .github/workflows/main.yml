@@ -131,3 +131,18 @@ jobs:
       uses: codecov/codecov-action@v7
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
+
+    - name: create release
+      if: |
+        success()
+        && github.ref_type == 'tag'
+        && matrix.env.DISTCHECK == 't'
+        && github.repository == 'flux-framework/flux-pmix'
+      uses: softprops/action-gh-release@v3
+      with:
+        tag_name: ${{ github.ref_name }}
+        name: flux-pmix ${{ github.ref_name }}
+        prerelease: true
+        files: flux-pmix*.tar.gz
+        body: |
+          View [Release Notes](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/NEWS.md) for flux-pmix ${{ github.ref_name }}

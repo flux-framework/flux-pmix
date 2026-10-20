@@ -36,3 +36,9 @@ pmix_capture_la_LIBADD = \
 	$(top_builddir)/src/common/libutil/libutil.la \
 	-ldl \
 	-lpthread
+
+# Wireshark, tshark, and the rest load Lua plugins from this directory
+# at startup, so the dissector is active wherever the package is
+# installed.  Configure with --with-wireshark-plugindir to change it.
+wiresharkplugindir = $(wireshark_plugindir)
+dist_wiresharkplugin_DATA = pmix.lua

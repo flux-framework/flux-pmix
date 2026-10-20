@@ -122,6 +122,15 @@ AC_SUBST(upmi_plugindir)
 AS_VAR_SET(pmix_libexecdir, $libexecdir/flux-pmix)
 AC_SUBST(pmix_libexecdir)
 
+# Wireshark loads Lua plugins from an unversioned directory under
+# libdir, so the dissector installed there is found without setup.
+AC_ARG_WITH([wireshark-plugindir],
+  [AS_HELP_STRING([--with-wireshark-plugindir=DIR],
+    [install the Wireshark dissector in DIR [LIBDIR/wireshark/plugins]])],
+  [wireshark_plugindir=$withval],
+  [wireshark_plugindir=$libdir/wireshark/plugins])
+AC_SUBST(wireshark_plugindir)
+
 fluxplugin_ldflags="-avoid-version -export-symbols-regex '^flux_plugin_init\$\$' --disable-static -shared -export-dynamic"
 AC_SUBST(fluxplugin_ldflags)
 

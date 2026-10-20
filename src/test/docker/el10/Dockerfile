@@ -19,11 +19,12 @@ RUN \
    && sudo usermod -G wheel fluxuser ; \
  fi
 
-# install ompi prereqs
+# install ompi prereqs, and tshark for the capture tests
 RUN sudo yum -y update \
  && sudo yum -y install \
     libevent-devel \
     zlib-devel \
+    wireshark-cli \
  && sudo yum -y remove mpich mpich-devel \
  && sudo yum clean all
 

@@ -19,6 +19,7 @@ check_PROGRAMS = \
 	getkey \
 	abort \
 	notify \
+	requests \
 	mpi_version
 
 if HAVE_MPI
@@ -61,6 +62,9 @@ abort_LDADD = $(test_ldadd)
 
 notify_SOURCES = notify.c
 notify_LDADD = $(test_ldadd)
+
+requests_SOURCES = requests.c
+requests_LDADD = $(test_ldadd)
 
 mpi_hello_SOURCES = mpi_hello.c
 mpi_hello_LDADD = $(test_ldadd)

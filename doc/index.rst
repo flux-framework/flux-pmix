@@ -25,6 +25,7 @@ PMI client plugin
    :caption: Guides
 
    guide/openpmix_interop
+   guide/tracing
 
 .. toctree::
    :maxdepth: 2

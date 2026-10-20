@@ -119,6 +119,9 @@ AC_SUBST(shell_plugindir)
 AS_VAR_SET(upmi_plugindir, $libdir/flux/upmi/plugins)
 AC_SUBST(upmi_plugindir)
 
+AS_VAR_SET(pmix_libexecdir, $libexecdir/flux-pmix)
+AC_SUBST(pmix_libexecdir)
+
 fluxplugin_ldflags="-avoid-version -export-symbols-regex '^flux_plugin_init\$\$' --disable-static -shared -export-dynamic"
 AC_SUBST(fluxplugin_ldflags)
 
@@ -130,6 +133,8 @@ AC_CONFIG_FILES( \
   src/common/libtap/Makefile \
   src/common/libccan/Makefile \
   src/common/libutil/Makefile \
+  src/common/libpcapng/Makefile \
+  src/capture/Makefile \
   src/shell/plugins/Makefile \
   src/upmi/Makefile \
   t/Makefile \

@@ -53,7 +53,8 @@ html: conf.py $(RST_FILES) $(GUIDE_FILES)
 		$(STDERR_DEVNULL)
 
 GUIDE_FILES = \
-	guide/openpmix_interop.rst
+	guide/openpmix_interop.rst \
+	guide/tracing.rst
 
 EXTRA_DIST = \
 	conf.py \

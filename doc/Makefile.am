@@ -46,11 +46,14 @@ $(MAN_FILES): manpages.py conf.py $(RST_FILES)
 	done
 
 .PHONY: html
-html: conf.py $(RST_FILES)
+html: conf.py $(RST_FILES) $(GUIDE_FILES)
 	$(sphinx_html) \
 	SPHINX_BUILDDIR=$(abs_builddir) $(PYTHON) \
 		-m sphinx $(sphinx_verbose_flags) -b html $(srcdir) ./html \
 		$(STDERR_DEVNULL)
+
+GUIDE_FILES = \
+	guide/openpmix_interop.rst
 
 EXTRA_DIST = \
 	conf.py \
@@ -59,6 +62,7 @@ EXTRA_DIST = \
 	domainrefs.py \
 	requirements.txt \
 	$(RST_FILES) \
+	$(GUIDE_FILES) \
 	man7/index.rst
 
 CLEANFILES = \

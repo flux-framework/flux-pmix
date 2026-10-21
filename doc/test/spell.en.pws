@@ -88,6 +88,7 @@ deregister
 DEVTYPE
 DSTORE
 egid
+envvar
 ENVAR
 euid
 gid
@@ -165,3 +166,5 @@ fd
 lrank
 nlist
 nrank
+MiB
+bufsize

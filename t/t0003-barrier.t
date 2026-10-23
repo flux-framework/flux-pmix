@@ -164,6 +164,36 @@ test_expect_success 'pmix.auth=native leaves the client only native' '
 	EOT
 '
 
+# A method this server does not have is like a missing encoding: with
+# none of the list left, openpmix fails init and names the framework.
+test_expect_success 'pmix.auth fails if the server does not have it' '
+	test_must_fail flux run -N1 -n1 -o pmix.auth=bogus ${BARRIER} \
+		2>noauth.err &&
+	grep -i "psec" noauth.err
+'
+
+# openpmix offers the none method only when asked for by name, and
+# a version may drop it, so find out rather than assume.  The probe
+# may fail only for that reason.
+test_expect_success 'probe for the none auth method' '
+	if flux run -N1 -n1 -o pmix.auth=none printenv PMIX_SECURITY_MODE \
+		>none.out 2>none.err; then
+		test_set_prereq PSEC_NONE
+	else
+		grep -i "psec" none.err
+	fi
+'
+
+test_expect_success PSEC_NONE 'pmix.auth=none leaves the client only none' '
+	test_cmp - none.out <<-EOT
+	none
+	EOT
+'
+
+test_expect_success PSEC_NONE '1n2p barrier works with pmix.auth=none' '
+	run_timeout 30 flux run -N1 -n2 -o pmix.auth=none ${BARRIER}
+'
+
 # A shared memory store hands every client a blob in the server's
 # encoding, so a client that has the store but selected an older
 # encoding fails in PMIx_Init.  The hash store packs in the client's

@@ -247,10 +247,11 @@ When a client connects, it selects the newest encoding that it and
 the server both have.  Every version from 2.1 on has **v21**, so
 there is always one, and the encoding is not a consideration in
 pairing.
-The server then selects the data store that it prefers from the
-stores that it and the client both have.  Only **hash** is in every
-version.  Thus, a client and a server that do not share a shared
-memory store use **hash**.
+The client also selects the data store.  The server lists the stores
+it has in the client's environment, and the client takes the one it
+prefers from those it also has.  Only **hash** is in every version.
+Thus, a client and a server that do not share a shared memory store
+use **hash**.
 
 **hash** is suboptimal.  It sends a copy of the job information to
 each client at startup.  The job information has an entry for each
@@ -265,8 +266,8 @@ Thus, pair clients with a server that has the same shared memory
 store: **ds21** in 3.x and 4.x, **shmem2** in 5.x and 6.x, or
 **shmem3** in 7.x.
 
-The tables that follow show the store that each server version
-selects for each client version.
+The tables that follow show the store that each client version
+selects with each server version.
 
 OpenPMIx 3.2 server:
 

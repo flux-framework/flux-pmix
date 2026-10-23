@@ -213,22 +213,27 @@ select.  Each OpenPMIx version has these:
    * - 3.2
      - v3, v21, v20, v12
      - ds21, ds12, hash
+     -
 
    * - 4.2
      - v41, v4, v3, v21, v20, v12
      - ds21, ds12, hash
+     -
 
    * - 5.0
      - v41, v4, v3, v21, v20, v12
      - shmem2, hash
+     -
 
    * - 6.0
      - v51, v41, v4, v3, v21, v20, v12
      - shmem2, hash
+     -
 
    * - 6.1
      - v61, v51, v41, v4, v3, v21, v20, v12
      - shmem2, hash
+     -
 
    * - 7.0
      - v61, v51, v41, v4, v3, v21

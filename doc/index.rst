@@ -42,13 +42,13 @@ Related Information
      - Links
 
    * - Main Flux Documentation Pages
-     - `Docs <https://flux-framework.readthedocs.io/en/latest/index.html>`_
+     - `Docs <https://flux-framework.readthedocs.io/en/latest/index.html>`__
 
    * - flux-core, the base Flux framework
-     - `Docs <https://flux-framework.readthedocs.io/projects/flux-core>`_
+     - `Docs <https://flux-framework.readthedocs.io/projects/flux-core>`__
 
    * - OpenPMIx, the PMIx reference implementation
-     - `Docs <https://docs.openpmix.org>`_
+     - `Docs <https://docs.openpmix.org>`__
 
    * - flux-pmix source and issues
      - `GitHub <https://github.com/flux-framework/flux-pmix>`_

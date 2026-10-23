@@ -61,6 +61,7 @@ EXTRA_DIST = \
 	index.rst \
 	domainrefs.py \
 	requirements.txt \
+	_static/css/custom.css \
 	$(RST_FILES) \
 	$(GUIDE_FILES) \
 	man7/index.rst

@@ -55,12 +55,41 @@ against a particular configuration.
 
   Offer only the listed authentication methods.  LIST is a comma
   separated subset of the methods the server's OpenPMIx has, e.g.
-  **native** or **munge**.  The value is passed to OpenPMIx as
-  ``PMIX_MCA_psec``.
+  **native**, **munge**, or **none**.  The value is passed to OpenPMIx
+  as ``PMIX_MCA_psec``.  A method the server does not have is ignored.
 
-  This is mainly for testing a client with a given method.  The server
-  accepts connections only from the job's own user on the local host,
-  so the method does not change who can connect.
+  The client chooses any one of the offered methods, and fails to
+  connect if it has no method in common with the server.  What is
+  offered by default depends on the OpenPMIx version and build
+  options, but is usually **native** or **munge,native**.  This option
+  is mainly for testing a client with a given method.
+
+  The method authenticates: it establishes who the connecting process
+  is.  The server then authorizes, admitting only the job's own user,
+  and that does not vary with the method.  What varies is how well the
+  claim is established.
+
+  **munge**
+    The client presents a credential signed by the local munge daemon,
+    which names its user and group.  Available when OpenPMIx was built
+    with munge support and the daemon is running.
+
+  **native**
+    OpenPMIx's built-in method, with no external dependency.  What it
+    verifies about the client depends on the OpenPMIx version.
+
+  **none**
+    The client's word is taken.  This is a deliberate bypass, so
+    OpenPMIx offers it only when it is listed here, and newer versions
+    may not have it.  It is for when the other methods cannot work,
+    as they may for a client in a container.  **none** does not change
+    what the server listens on; the client must still reach it.
+
+  The server is the user's own: it runs in the job shell with the
+  user's credentials and no more.  What a weak method risks is that
+  another user on the same node connects as the job's user and gains
+  control of the job.  On a node the job has to itself, there is no
+  such user.
 
 RESOURCES
 =========

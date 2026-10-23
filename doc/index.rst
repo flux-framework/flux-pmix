@@ -26,6 +26,7 @@ PMI client plugin
 
    guide/openpmix_interop
    guide/tracing
+   guide/wire_protocol
 
 .. toctree::
    :maxdepth: 2

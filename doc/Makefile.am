@@ -54,7 +54,8 @@ html: conf.py $(RST_FILES) $(GUIDE_FILES)
 
 GUIDE_FILES = \
 	guide/openpmix_interop.rst \
-	guide/tracing.rst
+	guide/tracing.rst \
+	guide/wire_protocol.rst
 
 EXTRA_DIST = \
 	conf.py \

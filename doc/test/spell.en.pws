@@ -65,6 +65,7 @@ opsawg
 cmd
 datadir
 hname
+hdr
 io
 jobid
 ietf
@@ -77,6 +78,7 @@ tcpdump
 usr
 PDU
 appnum
+alloc
 BFROP
 bool
 BOOL
@@ -89,6 +91,7 @@ DEVTYPE
 DSTORE
 egid
 envvar
+envar
 ENVAR
 euid
 gid
@@ -166,3 +169,21 @@ fd
 lrank
 nlist
 nrank
+ipv
+uri
+ABNF
+func
+UTF
+XEKsV
+prun
+DESC
+nb
+OMPI
+TMPDIR
+pset
+PSET
+psets
+WO
+mutexes
+allocator
+HADR

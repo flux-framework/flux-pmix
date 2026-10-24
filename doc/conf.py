@@ -53,6 +53,10 @@ source_suffix = ".rst"
 extensions = ["sphinx.ext.intersphinx", "sphinx.ext.napoleon", "domainrefs"]
 
 domainrefs = {
+    "linux:man1": {
+        "text": "%s(1)",
+        "url": "http://man7.org/linux/man-pages/man1/%s.1.html",
+    },
     "linux:man5": {
         "text": "%s(5)",
         "url": "http://man7.org/linux/man-pages/man5/%s.5.html",
@@ -119,7 +123,8 @@ html_theme = "sphinx_rtd_theme"
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-# html_static_path = ['_static']
+html_static_path = ["_static"]
+html_css_files = ["css/custom.css"]
 
 # -- Options for Intersphinx -------------------------------------------------
 

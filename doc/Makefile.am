@@ -53,7 +53,9 @@ html: conf.py $(RST_FILES) $(GUIDE_FILES)
 		$(STDERR_DEVNULL)
 
 GUIDE_FILES = \
-	guide/openpmix_interop.rst
+	guide/openpmix_interop.rst \
+	guide/tracing.rst \
+	guide/wire_protocol.rst
 
 EXTRA_DIST = \
 	conf.py \
@@ -61,6 +63,7 @@ EXTRA_DIST = \
 	index.rst \
 	domainrefs.py \
 	requirements.txt \
+	_static/css/custom.css \
 	$(RST_FILES) \
 	$(GUIDE_FILES) \
 	man7/index.rst

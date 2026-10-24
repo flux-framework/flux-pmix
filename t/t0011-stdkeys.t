@@ -107,6 +107,16 @@ test_expect_success 'job: pmix.tdir.rmclean (provided)' '
 	echo true >rmclean.exp &&
 	test_cmp rmclean.exp rmclean.out
 '
+# The PMI-1 process mapping of RFC 13.  Optional in the Standard;
+# MPICH uses it for its node map when present and resolves the map
+# itself otherwise.  Passed through unchanged by openpmix.  For 2
+# nodes x 3 tasks the blocks are (start 0, 1 node, 2 tasks) and
+# (start 1, 1 node, 1 task).
+test_expect_success 'job: pmix.anlmap (provided)' '
+	echo "(vector,(0,1,2),(1,1,1))" >anlmap.exp &&
+	run2n3p ${GETKEY} --proc=* --rank=0 pmix.anlmap >anlmap.out &&
+	test_cmp anlmap.exp anlmap.out
+'
 # The maps are the compact form the plugin hands openpmix, which
 # expands them into the per-node and per-rank keys below.  They are
 # not themselves retrievable, and nothing asks for them.
@@ -213,9 +223,25 @@ test_expect_success 'proc: pmix.nodeid (provided)' '
 test_expect_success 'proc: pmix.appnum (provided)' '
 	getkey_cmp pmix.appnum appnum.exp
 '
-test_expect_success 'proc: pmix.hname (derived from the proc map)' '
-	run2n3p ${GETKEY} --label-io pmix.hname | sort -n >phname.out &&
-	test $(wc -l <phname.out) -eq 3
+# The Standard lists a rank's hostname as optional, and the plugin does
+# not register it; openpmix derives it from the proc map.  MPICH
+# requires it for every rank: its init queries a node realm key for
+# each rank in turn, which the client answers by first looking up that
+# rank's hostname, and 5.0 through 6.1 clients crash if the lookup
+# misses (see the MPICH pattern below).  So it is checked for every
+# rank from every rank, not just the caller's own.  See #153.
+#
+test_expect_success 'proc: pmix.hname (derived; required by MPICH)' '
+	cat >phname.exp <<-EOT &&
+	0: 0 1 2
+	1: 0 1 2
+	2: 0 1 2
+	EOT
+	for r in 0 1 2; do
+		run2n3p ${GETKEY} --label-io --proc=$r pmix.hname || return 1
+	done | sort -n | awk "{print \$1}" | uniq -c \
+		| awk "\$1 == 3 {print \$2, \"0 1 2\"}" >phname.out &&
+	test_cmp phname.exp phname.out
 '
 
 #
@@ -237,8 +263,31 @@ test_expect_success 'proc: remote pmix.appnum' '
 	echo "2: 0" >rappnum.exp &&
 	getkey_cmp pmix.appnum rappnum.exp --rank=2 --proc=0
 '
-test_expect_success 'proc: remote pmix.hname' '
-	run2n3p ${GETKEY} --rank=2 --proc=0 pmix.hname
+# A rank's own hostname is the real one; another rank's is its name
+# in the node map, which the testsuite uniquifies when shells share
+# a host (see maps.c).  So compare against the node list, not against
+# what rank 0 says of itself.
+test_expect_success 'proc: remote pmix.hname is its node in the node list' '
+	run2n3p ${GETKEY} --rank=2 --proc=0 pmix.hname >rhname.out &&
+	run2n3p ${GETKEY} --proc=* --rank=0 pmix.nlist | cut -d, -f1 >node0.exp &&
+	test_cmp node0.exp rhname.out
+'
+
+#
+# The MPICH init pattern: a node realm key asked of every rank in the
+# job with no qualifiers (src/util/mpir_pmix.inc, PMIX_FABRIC_COORDINATES),
+# expecting NOT_FOUND where the server has nothing.  On 5.0 through
+# 6.1 clients the lookup crashes in libpmix if the target rank has no
+# cached hostname, so this is also what the hostname check above
+# protects.  getkey exits 1 on NOT_FOUND; anything else is a failure.
+#
+test_expect_success 'MPICH pattern: node realm key for every rank is NOT_FOUND, not a crash' '
+	for r in 0 1 2; do
+		run2n3p ${GETKEY} --label-io --proc=$r pmix.fab.coord \
+			>fab.$r.out 2>&1
+		test $? -eq 1 || return 1
+		test $(grep -c NOT_FOUND fab.$r.out) -eq 3 || return 1
+	done
 '
 
 #

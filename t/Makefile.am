@@ -36,6 +36,7 @@ TESTSCRIPTS = \
 	t0007-dmodex.t \
 	t0008-upmi.t \
 	t0009-localhost.t \
+	t0011-stdkeys.t \
 	t1000-ompi-basic.t \
 	t2001-osu-benchmarks.t \
 	t2002-mpibench.t

@@ -107,6 +107,28 @@ static int set_lpeers (struct infovec *iv,
     return 0;
 }
 
+/* MPICH builds its node map from this key, the PMI-1 process mapping
+ * of RFC 13, when the server provides it.  Without it, MPICH falls
+ * back to PMIx_Resolve_peers() for each node, which on OpenPMIx 5.0
+ * through 7.0 clients cannot resolve any node but the caller's own,
+ * so MPI_Init fails on multi-node jobs.
+ */
+static int set_anl_map (struct infovec *iv,
+                        const char *key,
+                        const struct taskmap *taskmap)
+{
+    char *s;
+
+    if (!(s = taskmap_encode (taskmap, TASKMAP_ENCODE_PMI)))
+        return -1;
+    shell_debug ("anl_map = %s", s);
+    if (infovec_set_str_new (iv, key, s) < 0) { // steals s
+        free (s);
+        return -1;
+    }
+    return 0;
+}
+
 static int set_node_list (struct infovec *iv,
                           const char *key,
                           char **nodenames)
@@ -674,6 +696,7 @@ static int px_init (flux_plugin_t *p,
         || set_node_list (iv, PMIX_NODE_LIST, nodenames) < 0
         || set_node_map (iv, PMIX_NODE_MAP, shell) < 0
         || set_proc_map (iv, PMIX_PROC_MAP, px->taskmap) < 0
+        || set_anl_map (iv, PMIX_ANL_MAP, px->taskmap) < 0
         || infovec_set_bool (iv, PMIX_TDIR_RMCLEAN, true) < 0
         || infovec_set_u32 (iv, PMIX_JOB_NUM_APPS, 1) < 0
         || infovec_set_str (iv, PMIX_TMPDIR, px->job_tmpdir) < 0

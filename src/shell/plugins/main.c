@@ -29,6 +29,9 @@
 #ifndef PMIX_PROC_INFO_ARRAY
 #define PMIX_PROC_INFO_ARRAY PMIX_PROC_DATA // needed for pmix 3.2.3
 #endif
+#ifndef PMIX_REINCARNATION
+#define PMIX_REINCARNATION "pmix.reinc" // added in pmix 4.0
+#endif
 
 #include "src/common/libutil/strlcpy.h"
 
@@ -285,9 +288,18 @@ static int get_local_rank (const struct taskmap *taskmap,
     return -1;
 }
 
+/* Register the process realm for every rank, as the Standard lists
+ * for PMIx_server_register_nspace().  The global and app ranks are the
+ * rank, since a job is one application with no rank offset; nothing
+ * is spawned or restarted.  The hostname is optional in the Standard
+ * but MPICH needs it for every rank: its init asks a node realm key of
+ * each rank, and openpmix 5.0 through 6.1 clients crash if the
+ * hostname of the target rank is not in their cache.
+ */
 static int set_proc_infos (struct infovec *iv,
                            const char *key,
-                           struct px *px)
+                           struct px *px,
+                           char **nodenames)
 {
     struct infovec *ri;
 
@@ -301,9 +313,14 @@ static int set_proc_infos (struct infovec *iv,
 
         if (!(ri = infovec_create ())
             || infovec_set_rank (ri, PMIX_RANK, i) < 0
+            || infovec_set_rank (ri, PMIX_GLOBAL_RANK, i) < 0
+            || infovec_set_rank (ri, PMIX_APP_RANK, i) < 0
             || infovec_set_u32 (ri, PMIX_NODEID, nodeid) < 0
             || infovec_set_u16 (ri, PMIX_LOCAL_RANK, local_rank) < 0
             || infovec_set_u16 (ri, PMIX_NODE_RANK, local_rank) < 0
+            || infovec_set_str (ri, PMIX_HOSTNAME, nodenames[nodeid]) < 0
+            || infovec_set_bool (ri, PMIX_SPAWNED, false) < 0
+            || infovec_set_u32 (ri, PMIX_REINCARNATION, 0) < 0
             || infovec_set_infovec_new (iv, key, ri) < 0) {
             shell_warn ("error setting %s for rank %d", key, i);
             infovec_destroy (ri);
@@ -648,7 +665,7 @@ static int px_init (flux_plugin_t *p,
         || infovec_set_u32 (iv, PMIX_UNIV_SIZE, px->total_nprocs) < 0
         || infovec_set_u32 (iv, PMIX_JOB_SIZE, px->total_nprocs) < 0
         || infovec_set_u32 (iv, PMIX_APPNUM, 0) < 0
-        || set_proc_infos (iv, PMIX_PROC_INFO_ARRAY, px) < 0) {
+        || set_proc_infos (iv, PMIX_PROC_INFO_ARRAY, px, nodenames) < 0) {
         shell_log_error ("error creating namespace");
         goto error;
     }

@@ -662,6 +662,16 @@ static int px_init (flux_plugin_t *p,
         || infovec_set_u32 (iv, PMIX_JOB_NUM_APPS, 1) < 0
         || infovec_set_str (iv, PMIX_TMPDIR, px->job_tmpdir) < 0
         || infovec_set_u32 (iv, PMIX_LOCAL_SIZE, px->local_nprocs) < 0
+        /* A PMIx session is a scheduler allocation, which a server
+         * hosting several jobs uses to tell them apart; the Standard
+         * requires the id only then, and assigns no meaning to any
+         * value.  A shell hosts one job, so there is no session.
+         * UINT32_MAX is what openpmix means by that: its store treats
+         * it as the default session and any other value, including 0,
+         * as a real one.  openpmix 5.0 and later fill it in when none
+         * is given; set it so earlier versions see the same.
+         */
+        || infovec_set_u32 (iv, PMIX_SESSION_ID, UINT32_MAX) < 0
         || infovec_set_u32 (iv, PMIX_UNIV_SIZE, px->total_nprocs) < 0
         || infovec_set_u32 (iv, PMIX_JOB_SIZE, px->total_nprocs) < 0
         || infovec_set_u32 (iv, PMIX_APPNUM, 0) < 0

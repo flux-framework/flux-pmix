@@ -33,6 +33,15 @@ static struct optparse_option opts[] = {
     { .name = "label-io", .has_arg = 0,
       .usage = "Add rank labels",
     },
+    { .name = "node", .has_arg = 1, .arginfo = "HOSTNAME",
+      .usage = "Get a node realm key for HOSTNAME (default=own node)",
+    },
+    { .name = "app", .has_arg = 0,
+      .usage = "Get an application realm key (PMIX_APP_INFO)",
+    },
+    { .name = "session", .has_arg = 0,
+      .usage = "Get a session realm key (PMIX_SESSION_INFO)",
+    },
     OPTPARSE_TABLE_END,
 };
 
@@ -42,13 +51,33 @@ static void getkey (pmix_proc_t *self,
                     optparse_t *p)
 {
     pmix_value_t *val;
+    pmix_info_t info[2];
+    size_t ninfo = 0;
     int rc;
     char prefix[16] = { 0 };
+    const char *node;
 
     if (optparse_hasopt (p, "label-io"))
         snprintf (prefix, sizeof (prefix), "%d: ", self->rank);
 
-    if ((rc = PMIx_Get (proc, key, NULL, 0, &val)) != PMIX_SUCCESS)
+    /* A node realm key for another node is selected by PMIX_NODE_INFO
+     * plus PMIX_HOSTNAME (standard, Node realm keys).
+     */
+    if ((node = optparse_get_str (p, "node", NULL))) {
+        PMIX_INFO_LOAD (&info[0], PMIX_NODE_INFO, NULL, PMIX_BOOL);
+        PMIX_INFO_LOAD (&info[1], PMIX_HOSTNAME, node, PMIX_STRING);
+        ninfo = 2;
+    }
+    else if (optparse_hasopt (p, "app")) {
+        PMIX_INFO_LOAD (&info[0], PMIX_APP_INFO, NULL, PMIX_BOOL);
+        ninfo = 1;
+    }
+    else if (optparse_hasopt (p, "session")) {
+        PMIX_INFO_LOAD (&info[0], PMIX_SESSION_INFO, NULL, PMIX_BOOL);
+        ninfo = 1;
+    }
+
+    if ((rc = PMIx_Get (proc, key, info, ninfo, &val)) != PMIX_SUCCESS)
         log_msg_exit ("PMIx_Get %s: %s", key, PMIx_Error_string (rc));
 
     switch (val->type) {
@@ -66,6 +95,29 @@ static void getkey (pmix_proc_t *self,
             break;
         case PMIX_STRING:
             printf ("%s%s\n", prefix, val->data.string);
+            break;
+        case PMIX_INT:
+            printf ("%s%d\n", prefix, val->data.integer);
+            break;
+        case PMIX_SIZE:
+            printf ("%s%zu\n", prefix, val->data.size);
+            break;
+        case PMIX_PROC:
+            printf ("%s%s.%lu\n", prefix, val->data.proc->nspace,
+                    (unsigned long)val->data.proc->rank);
+            break;
+        case PMIX_DATA_ARRAY:
+            if (val->data.darray->type == PMIX_PROC) {
+                pmix_proc_t *procs = val->data.darray->array;
+                printf ("%s", prefix);
+                for (size_t i = 0; i < val->data.darray->size; i++)
+                    printf ("%s%lu", i > 0 ? "," : "",
+                            (unsigned long)procs[i].rank);
+                printf ("\n");
+            }
+            else
+                log_msg_exit ("Error: unhandled array type %d",
+                              val->data.darray->type);
             break;
         default:
             log_msg_exit ("Error: I don't know this type yet: %d", val->type);

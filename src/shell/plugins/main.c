@@ -29,6 +29,12 @@
 #ifndef PMIX_PROC_INFO_ARRAY
 #define PMIX_PROC_INFO_ARRAY PMIX_PROC_DATA // needed for pmix 3.2.3
 #endif
+#ifndef PMIX_REINCARNATION
+#define PMIX_REINCARNATION "pmix.reinc" // added in pmix 4.0
+#endif
+#ifndef PMIX_NODE_OVERSUBSCRIBED
+#define PMIX_NODE_OVERSUBSCRIBED "pmix.ndosub" // added in pmix 4.0
+#endif
 
 #include "src/common/libutil/strlcpy.h"
 
@@ -101,6 +107,49 @@ static int set_lpeers (struct infovec *iv,
     return 0;
 }
 
+/* MPICH builds its node map from this key, the PMI-1 process mapping
+ * of RFC 13, when the server provides it.  Without it, MPICH falls
+ * back to PMIx_Resolve_peers() for each node, which on OpenPMIx 5.0
+ * through 7.0 clients cannot resolve any node but the caller's own,
+ * so MPI_Init fails on multi-node jobs.
+ */
+static int set_anl_map (struct infovec *iv,
+                        const char *key,
+                        const struct taskmap *taskmap)
+{
+    char *s;
+
+    if (!(s = taskmap_encode (taskmap, TASKMAP_ENCODE_PMI)))
+        return -1;
+    shell_debug ("anl_map = %s", s);
+    if (infovec_set_str_new (iv, key, s) < 0) { // steals s
+        free (s);
+        return -1;
+    }
+    return 0;
+}
+
+static int set_node_list (struct infovec *iv,
+                          const char *key,
+                          char **nodenames)
+{
+    char *s = NULL;
+    size_t len = 0;
+
+    for (int i = 0; nodenames[i]; i++) {
+        if (argz_add (&s, &len, nodenames[i]) != 0) {
+            free (s);
+            return -1;
+        }
+    }
+    argz_stringify (s, len, ',');
+    if (infovec_set_str_new (iv, key, s) < 0) { // steals s
+        free (s);
+        return -1;
+    }
+    return 0;
+}
+
 static int set_node_map (struct infovec *iv,
                          const char *key,
                          flux_shell_t *shell)
@@ -126,53 +175,110 @@ static int set_node_map (struct infovec *iv,
     return 0;
 }
 
-/* Register this node under its real hostname as well as its node-map
- * name.
+/* Register the node realm for every node in the job: hostname, nodeid,
+ * local peers (as a string and as procs), local size, local leader,
+ * and whether the node is oversubscribed, as the Standard lists for
+ * PMIx_server_register_nspace().  openpmix can derive all of this
+ * from the node and proc maps, but what each version derives differs,
+ * so it is set here from the taskmap and openpmix passes it through.
  *
- * When several shells share a host, maps_node_create() makes their
- * names unique by appending the shell rank, so the node map says
- * "host0,host1" where the host is "host".  openpmix finds "its own"
- * node by matching gethostname() against the registered names and
- * aliases.  With no alias, that match fails, and the server adds a
- * second entry for the real name on its own - so clients see three
- * nodes for a two node job, one of them with no nodeid.  Registering
- * the real hostname as an alias of this shell's node makes the match
- * succeed, and the node table clients receive is the one we meant.
- *
- * This only matters when the names were made unique; otherwise the
- * node-map name is the hostname and no alias is needed.
+ * This node is also registered under its real hostname.  When several
+ * shells share a host, maps_node_create() makes their names unique by
+ * appending the shell rank, so the node map says "host0,host1" where
+ * the host is "host".  openpmix finds "its own" node by matching
+ * gethostname() against the registered names and aliases.  With no
+ * alias, that match fails, and the server adds a second entry for the
+ * real name on its own - so clients see three nodes for a two node
+ * job, one of them with no nodeid.  Registering the real hostname as
+ * an alias of this shell's node makes the match succeed.
  */
-static int set_node_info (struct infovec *iv,
-                          const char *key,
-                          flux_shell_t *shell,
-                          int shell_rank)
+static int set_node_infos (struct infovec *iv,
+                           const char *key,
+                           flux_shell_t *shell,
+                           const char *nspace,
+                           char **nodenames,
+                           const struct taskmap *taskmap,
+                           int shell_rank)
 {
     char hostname[HOST_NAME_MAX + 1];
-    char *name;
-    struct infovec *ni = NULL;
-    int rc = -1;
 
-    if (!(name = maps_node_name (shell)))
-        return -1;
     if (gethostname (hostname, sizeof (hostname)) < 0)
-        goto done;
+        return -1;
     hostname[sizeof (hostname) - 1] = '\0';
-    if (!strcmp (name, hostname)) {
-        rc = 0;                     // no uniquify, no alias needed
-        goto done;
+
+    for (int nodeid = 0; nodenames[nodeid]; nodeid++) {
+        struct infovec *ni = NULL;
+        const struct idset *ids;
+        char *peers = NULL;
+        int ncores;
+        bool alias = nodeid == shell_rank
+                     && strcmp (nodenames[nodeid], hostname) != 0;
+
+        if (flux_shell_rank_info_unpack (shell,
+                                         nodeid,
+                                         "{s:{s:i}}",
+                                         "resources",
+                                         "ncores", &ncores) < 0)
+            return -1;
+        if (!(ids = taskmap_taskids (taskmap, nodeid))
+            || !(peers = idset_encode (ids, 0))
+            || !(ni = infovec_create ())
+            || infovec_set_str (ni, PMIX_HOSTNAME, nodenames[nodeid]) < 0
+            || infovec_set_u32 (ni, PMIX_NODEID, nodeid) < 0
+            || (alias
+                && infovec_set_str (ni, PMIX_HOSTNAME_ALIASES, hostname) < 0)
+            || infovec_set_str (ni, PMIX_LOCAL_PEERS, peers) < 0
+            || infovec_set_u32 (ni, PMIX_LOCAL_SIZE, idset_count (ids)) < 0
+            || infovec_set_rank (ni, PMIX_LOCALLDR, idset_first (ids)) < 0
+            || infovec_set_procs (ni, PMIX_LOCAL_PROCS, nspace, ids) < 0
+            || infovec_set_bool (ni, PMIX_NODE_OVERSUBSCRIBED,
+                                 idset_count (ids) > ncores) < 0
+            || infovec_set_infovec_new (iv, key, ni) < 0) {
+            shell_warn ("error setting %s for node %d", key, nodeid);
+            infovec_destroy (ni);
+            free (peers);
+            return -1;
+        }
+        free (peers);
     }
-    if (!(ni = infovec_create ())
-        || infovec_set_str (ni, PMIX_HOSTNAME, name) < 0
-        || infovec_set_u32 (ni, PMIX_NODEID, shell_rank) < 0
-        || infovec_set_str (ni, PMIX_HOSTNAME_ALIASES, hostname) < 0
-        || infovec_set_infovec_new (iv, key, ni) < 0)
-        goto done;
-    ni = NULL;                      // stolen
-    rc = 0;
-done:
-    infovec_destroy (ni);
-    free (name);
-    return rc;
+    return 0;
+}
+
+static void nodenames_destroy (char **names)
+{
+    for (int i = 0; names && names[i]; i++)
+        free (names[i]);
+    free (names);
+}
+
+/* Split the node map into a NULL-terminated array indexed by nodeid.
+ */
+static char **nodenames_create (flux_shell_t *shell, int *countp)
+{
+    char *list;
+    char **names;
+    int count = 1;
+
+    if (!(list = maps_node_create (shell)))
+        return NULL;
+    for (const char *s = list; *s; s++)
+        if (*s == ',')
+            count++;
+    if (!(names = calloc (count + 1, sizeof (*names)))) {
+        free (list);
+        return NULL;
+    }
+    count = 0;
+    for (char *s = strtok (list, ","); s; s = strtok (NULL, ",")) {
+        if (!(names[count++] = strdup (s))) {
+            nodenames_destroy (names);
+            free (list);
+            return NULL;
+        }
+    }
+    free (list);
+    *countp = count;
+    return names;
 }
 
 static int set_proc_map (struct infovec *iv,
@@ -220,9 +326,18 @@ static int get_local_rank (const struct taskmap *taskmap,
     return -1;
 }
 
+/* Register the process realm for every rank, as the Standard lists
+ * for PMIx_server_register_nspace().  The global and app ranks are the
+ * rank, since a job is one application with no rank offset; nothing
+ * is spawned or restarted.  The hostname is optional in the Standard
+ * but MPICH needs it for every rank: its init asks a node realm key of
+ * each rank, and openpmix 5.0 through 6.1 clients crash if the
+ * hostname of the target rank is not in their cache.
+ */
 static int set_proc_infos (struct infovec *iv,
                            const char *key,
-                           struct px *px)
+                           struct px *px,
+                           char **nodenames)
 {
     struct infovec *ri;
 
@@ -236,9 +351,14 @@ static int set_proc_infos (struct infovec *iv,
 
         if (!(ri = infovec_create ())
             || infovec_set_rank (ri, PMIX_RANK, i) < 0
+            || infovec_set_rank (ri, PMIX_GLOBAL_RANK, i) < 0
+            || infovec_set_rank (ri, PMIX_APP_RANK, i) < 0
             || infovec_set_u32 (ri, PMIX_NODEID, nodeid) < 0
             || infovec_set_u16 (ri, PMIX_LOCAL_RANK, local_rank) < 0
             || infovec_set_u16 (ri, PMIX_NODE_RANK, local_rank) < 0
+            || infovec_set_str (ri, PMIX_HOSTNAME, nodenames[nodeid]) < 0
+            || infovec_set_bool (ri, PMIX_SPAWNED, false) < 0
+            || infovec_set_u32 (ri, PMIX_REINCARNATION, 0) < 0
             || infovec_set_infovec_new (iv, key, ri) < 0) {
             shell_warn ("error setting %s for rank %d", key, i);
             infovec_destroy (ri);
@@ -362,6 +482,8 @@ static int px_init (flux_plugin_t *p,
     int rc;
     pmix_info_t info[3];
     struct infovec *iv;
+    char **nodenames;
+    int nnodes;
     char cwd[PATH_MAX + 1];
 
     if (flux_shell_getopt_unpack (shell, "pmi", "s", &pmi_opt) < 0) {
@@ -552,28 +674,47 @@ static int px_init (flux_plugin_t *p,
         return -1;
     }
 
+    if (!(nodenames = nodenames_create (shell, &nnodes))) {
+        shell_log_error ("error creating node list");
+        return -1;
+    }
+
     if (!(iv = infovec_create ())
         || infovec_set_str (iv, PMIX_JOBID, px->nspace) < 0
         || infovec_set_str (iv, PMIX_WDIR, cwd) < 0
-        /* N.B. the node info array must precede the node-realm keys
+        /* N.B. the node info arrays must precede the node-realm keys
          * passed as individual entries (PMIX_LOCAL_PEERS,
          * PMIX_LOCAL_SIZE).  openpmix files such a key under the node
          * its hostname resolves to, creating one if none exists;
          * registering the aliased node first is what lets that
          * resolution find it.
          */
-        || set_node_info (iv, PMIX_NODE_INFO_ARRAY, shell, px->shell_rank) < 0
+        || set_node_infos (iv, PMIX_NODE_INFO_ARRAY, shell, px->nspace,
+                           nodenames, px->taskmap, px->shell_rank) < 0
         || set_lpeers (iv, PMIX_LOCAL_PEERS, px->taskmap, px->shell_rank) < 0
+        || infovec_set_u32 (iv, PMIX_NUM_NODES, nnodes) < 0
+        || set_node_list (iv, PMIX_NODE_LIST, nodenames) < 0
         || set_node_map (iv, PMIX_NODE_MAP, shell) < 0
         || set_proc_map (iv, PMIX_PROC_MAP, px->taskmap) < 0
+        || set_anl_map (iv, PMIX_ANL_MAP, px->taskmap) < 0
         || infovec_set_bool (iv, PMIX_TDIR_RMCLEAN, true) < 0
         || infovec_set_u32 (iv, PMIX_JOB_NUM_APPS, 1) < 0
         || infovec_set_str (iv, PMIX_TMPDIR, px->job_tmpdir) < 0
         || infovec_set_u32 (iv, PMIX_LOCAL_SIZE, px->local_nprocs) < 0
+        /* A PMIx session is a scheduler allocation, which a server
+         * hosting several jobs uses to tell them apart; the Standard
+         * requires the id only then, and assigns no meaning to any
+         * value.  A shell hosts one job, so there is no session.
+         * UINT32_MAX is what openpmix means by that: its store treats
+         * it as the default session and any other value, including 0,
+         * as a real one.  openpmix 5.0 and later fill it in when none
+         * is given; set it so earlier versions see the same.
+         */
+        || infovec_set_u32 (iv, PMIX_SESSION_ID, UINT32_MAX) < 0
         || infovec_set_u32 (iv, PMIX_UNIV_SIZE, px->total_nprocs) < 0
         || infovec_set_u32 (iv, PMIX_JOB_SIZE, px->total_nprocs) < 0
         || infovec_set_u32 (iv, PMIX_APPNUM, 0) < 0
-        || set_proc_infos (iv, PMIX_PROC_INFO_ARRAY, px) < 0) {
+        || set_proc_infos (iv, PMIX_PROC_INFO_ARRAY, px, nodenames) < 0) {
         shell_log_error ("error creating namespace");
         goto error;
     }
@@ -588,9 +729,11 @@ static int px_init (flux_plugin_t *p,
         goto error;
     }
     infovec_destroy (iv);
+    nodenames_destroy (nodenames);
     return 0;
 error:
     infovec_destroy (iv);
+    nodenames_destroy (nodenames);
     return -1;
 }
 

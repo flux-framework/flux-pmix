@@ -130,6 +130,49 @@ int infovec_set_bool (struct infovec *iv, const char *key, bool value)
     return 0;
 }
 
+int infovec_set_procs (struct infovec *iv,
+                       const char *key,
+                       const char *nspace,
+                       const struct idset *ranks)
+{
+    pmix_info_t *info;
+    pmix_data_array_t *darray;
+    pmix_proc_t *procs;
+    size_t count;
+    size_t i = 0;
+    unsigned int rank;
+
+    if (!iv || !key || !nspace || !ranks) {
+        errno = EINVAL;
+        return -1;
+    }
+    count = idset_count (ranks);
+    if (!(darray = calloc (1, sizeof (*darray)))
+        || !(procs = calloc (count, sizeof (*procs)))) {
+        free (darray);
+        return -1;
+    }
+    rank = idset_first (ranks);
+    while (rank != IDSET_INVALID_ID) {
+        strlcpy (procs[i].nspace, nspace, sizeof (procs[i].nspace));
+        procs[i].rank = rank;
+        i++;
+        rank = idset_next (ranks, rank);
+    }
+    darray->type = PMIX_PROC;
+    darray->size = count;
+    darray->array = procs;
+    if (!(info = alloc_slot (iv))) {
+        free (procs);
+        free (darray);
+        return -1;
+    }
+    strlcpy (info->key, key, sizeof (info->key));
+    info->value.type = PMIX_DATA_ARRAY;
+    info->value.data.darray = darray;
+    return 0;
+}
+
 int infovec_set_rank (struct infovec *iv,
                       const char *key,
                       pmix_rank_t value)
@@ -213,9 +256,12 @@ static void destroy_info_array (pmix_info_t *info, int count)
                     free (value->data.string);
                     break;
                 case PMIX_DATA_ARRAY:
-                    if (value->data.darray) { // recurse
-                        destroy_info_array (value->data.darray->array,
-                                            value->data.darray->size);
+                    if (value->data.darray) {
+                        if (value->data.darray->type == PMIX_INFO) // recurse
+                            destroy_info_array (value->data.darray->array,
+                                                value->data.darray->size);
+                        else
+                            free (value->data.darray->array);
                         free (value->data.darray);
                     }
                     break;

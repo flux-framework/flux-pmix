@@ -61,6 +61,7 @@ struct chan {
     uint8_t *buf;
     size_t len;
     size_t size;
+    bool stopped;               // records are no longer framed
     struct chan *next;
 };
 
@@ -247,6 +248,11 @@ static int handle_record (struct capture *cap,
 /* Data arrived on a task's capture channel.  Take as many whole records
  * as the buffer holds; anything left is the front of a record whose
  * rest has not arrived, and stays for the next read.
+ *
+ * The read must happen on every call, whatever is done with the data:
+ * the shim keeps writing, and an unread channel fills and blocks the
+ * task on its next write.  So after the capture stops, for this task
+ * or for the file, the data is read and dropped.
  */
 static void capture_chan_cb (flux_shell_task_t *task,
                            const char *stream,
@@ -258,23 +264,26 @@ static void capture_chan_cb (flux_shell_task_t *task,
     const char *buf;
     int len;
 
-    if (!cap->writer)
-        return;
     if (!(sp = flux_shell_task_subprocess (task)))
         return;
     if ((len = flux_subprocess_read (sp, stream, &buf)) <= 0)
+        return;
+    if (!cap->writer)
         return;
     if (!(ch = chan_lookup (cap, task))) {
         shell_warn ("out of memory tracing rank");
         return;
     }
+    if (ch->stopped)
+        return;
     if (chan_append (ch, buf, len) < 0) {
         /* A record longer than any the shim sends, or the shim is not
          * writing records at all.  Nothing after this point can be
-         * framed, so stop reading rather than grow without bound.
+         * framed.
          */
         shell_warn ("%d: capture channel overflow, capture stopped", ch->rank);
         chan_reset (ch);
+        ch->stopped = true;
         return;
     }
     while (ch->len >= PMIX_CAPTURE_HDR_SIZE) {
@@ -285,6 +294,7 @@ static void capture_chan_cb (flux_shell_task_t *task,
             shell_warn ("%d: capture channel out of sync, capture stopped",
                         ch->rank);
             chan_reset (ch);
+            ch->stopped = true;
             return;
         }
         if (ch->len < PMIX_CAPTURE_HDR_SIZE + rlen) {

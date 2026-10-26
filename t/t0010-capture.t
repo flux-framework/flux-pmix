@@ -109,6 +109,18 @@ test_expect_success HAVE_TSHARK 'capture holds the raw bytes of each message' '
 	test "$(cut -c1-8 first.hex)" = "ffffffff"
 '
 
+# A task that writes something other than records to the channel
+# puts it out of sync, and the capture for that task stops.  The
+# shell must go on reading the channel regardless, or the task blocks
+# on its next write and never exits: here the task writes 8 MiB of
+# garbage, twice the channel buffer, and must still finish.
+test_expect_success 'a task that corrupts its channel still exits' '
+	run_timeout 30 flux run -N1 -n1 -o pmix.wirecapture=sync.pcapng \
+		bash -c "head -c 8388608 /dev/zero >&\$FLUX_PMIX_CAPTURE_FD" \
+		2>sync.err &&
+	grep "out of sync, capture stopped" sync.err
+'
+
 # Tasks' records reach the shell in no particular order, so the
 # plugin sorts them, which mergecap needs its inputs to be.  Two
 # tasks is what a CI node has cores for.

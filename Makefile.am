@@ -2,6 +2,8 @@ SUBDIRS = \
 	src/common/libtap \
 	src/common/libccan \
 	src/common/libutil \
+	src/common/libpcapng \
+	src/capture \
 	src/shell/plugins \
 	src/upmi \
 	doc \

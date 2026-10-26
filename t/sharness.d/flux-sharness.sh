@@ -167,7 +167,7 @@ skip_all_unless_have()
     export SHARNESS_test_skip_all_prereq="$SHARNESS_test_skip_all_prereq,$1"
 }
 
-GLOBAL_PROGRAM_PREREQS="HAVE_JQ:jq"
+GLOBAL_PROGRAM_PREREQS="HAVE_JQ:jq HAVE_TSHARK:tshark HAVE_MERGECAP:mergecap HAVE_CAPINFOS:capinfos"
 
 #
 #  Check for programs in GLOBAL_PROGRAM_PREREQS and set prereq and

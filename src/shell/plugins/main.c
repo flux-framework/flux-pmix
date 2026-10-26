@@ -39,6 +39,7 @@
 #include "abort.h"
 #include "notify.h"
 #include "dmodex.h"
+#include "capture.h"
 
 struct px {
     flux_shell_t *shell;
@@ -56,6 +57,7 @@ struct px {
     struct notify *notify;
     struct dmodex *dmodex;
     const char *wire;       // pmix.wire option, or NULL
+    struct capture *capture;
 };
 
 static pmix_server_module_t server_callbacks;
@@ -73,6 +75,7 @@ static void px_destroy (struct px *px)
         abort_destroy (px->abort);
         fence_destroy (px->fence);
         dmodex_destroy (px->dmodex);
+        capture_destroy (px->capture);
         interthread_destroy (px->it);
         free (px);
         errno = saved_errno;
@@ -436,6 +439,12 @@ static int px_init (flux_plugin_t *p,
         return -1;
     }
     server_callbacks.direct_modex = dmodex_server_cb;
+    /* Capture is off unless asked for, and a failure to set it up is
+     * reported but does not stop the job: it is a diagnostic.
+     */
+    errno = 0;
+    if (!(px->capture = capture_create (shell)) && errno != 0)
+        shell_warn ("could not enable pmix capture: %s", strerror (errno));
 
     /* The pmix shell option can narrow what the server offers, for
      * clients that cannot cope with its defaults (flux-shell-pmix(7)):
@@ -609,6 +618,9 @@ static int px_task_init (flux_plugin_t *p,
 
     proc.rank = rank;
     snprintf (proc.nspace, sizeof (proc.nspace), "%s", px->nspace);
+
+    if (px->capture && capture_task_init (px->capture, task) < 0)
+        shell_warn ("could not capture rank %d: %s", rank, strerror (errno));
 
     /* Fetch this task's PMIX_* environment and add to task's
      * subprocess command.

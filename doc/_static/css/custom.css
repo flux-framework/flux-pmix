@@ -1,0 +1,7 @@
+/* The theme forbids wrapping in table cells, so a table wider than the
+ * page gets a scroll bar instead of wrapping its text.  Let cells wrap.
+ */
+.wy-table-responsive table td,
+.wy-table-responsive table th {
+    white-space: normal;
+}

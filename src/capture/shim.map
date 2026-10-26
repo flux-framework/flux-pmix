@@ -1,0 +1,18 @@
+/* The shim is LD_PRELOADed, so anything it exports takes precedence
+ * over the same name anywhere else in the client.  Export only the
+ * libc calls it interposes; the helpers linked in from libutil must
+ * not be visible.
+ */
+{
+    global:
+        connect;
+        close;
+        read;
+        write;
+        readv;
+        writev;
+        recv;
+        send;
+    local:
+        *;
+};

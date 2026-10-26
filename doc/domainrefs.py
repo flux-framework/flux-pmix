@@ -35,6 +35,7 @@ import re
 
 import docutils.nodes
 import docutils.utils
+from sphinx.domains import Domain
 
 
 CUSTOM_RE = re.compile("(.*) <(.*)>")
@@ -61,5 +62,23 @@ def role(config, role, rawtext, text, lineno, inliner, options={}, content=[]):
 
 
 def setup(app):
+    # Sphinx reads "prefix:name" as a domain lookup, and warns about an
+    # unknown domain before it falls back to the global role of that
+    # name, so a prefixed role needs a domain to be found quietly.
+    # Register one per prefix, holding the roles that use it.
+    domains = {}
     for name, info in app.config._raw_config["domainrefs"].items():
-        app.add_role(name, functools.partial(role, info))
+        func = functools.partial(role, info)
+        if ":" in name:
+            prefix, suffix = name.split(":", 1)
+            domains.setdefault(prefix, {})[suffix] = func
+        else:
+            app.add_role(name, func)
+    for prefix, roles in domains.items():
+        app.add_domain(
+            type(
+                f"{prefix.capitalize()}RefsDomain",
+                (Domain,),
+                {"name": prefix, "label": prefix, "roles": roles},
+            )
+        )

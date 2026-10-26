@@ -106,6 +106,19 @@ static void getkey (pmix_proc_t *self,
             printf ("%s%s.%lu\n", prefix, val->data.proc->nspace,
                     (unsigned long)val->data.proc->rank);
             break;
+        case PMIX_DATA_ARRAY:
+            if (val->data.darray->type == PMIX_PROC) {
+                pmix_proc_t *procs = val->data.darray->array;
+                printf ("%s", prefix);
+                for (size_t i = 0; i < val->data.darray->size; i++)
+                    printf ("%s%lu", i > 0 ? "," : "",
+                            (unsigned long)procs[i].rank);
+                printf ("\n");
+            }
+            else
+                log_msg_exit ("Error: unhandled array type %d",
+                              val->data.darray->type);
+            break;
         default:
             log_msg_exit ("Error: I don't know this type yet: %d", val->type);
     }

@@ -32,6 +32,9 @@
 #ifndef PMIX_REINCARNATION
 #define PMIX_REINCARNATION "pmix.reinc" // added in pmix 4.0
 #endif
+#ifndef PMIX_NODE_OVERSUBSCRIBED
+#define PMIX_NODE_OVERSUBSCRIBED "pmix.ndosub" // added in pmix 4.0
+#endif
 
 #include "src/common/libutil/strlcpy.h"
 
@@ -151,8 +154,9 @@ static int set_node_map (struct infovec *iv,
 }
 
 /* Register the node realm for every node in the job: hostname, nodeid,
- * local peers, local size, and local leader, as the Standard lists
- * for PMIx_server_register_nspace().  openpmix can derive all of this
+ * local peers (as a string and as procs), local size, local leader,
+ * and whether the node is oversubscribed, as the Standard lists for
+ * PMIx_server_register_nspace().  openpmix can derive all of this
  * from the node and proc maps, but what each version derives differs,
  * so it is set here from the taskmap and openpmix passes it through.
  *
@@ -168,6 +172,8 @@ static int set_node_map (struct infovec *iv,
  */
 static int set_node_infos (struct infovec *iv,
                            const char *key,
+                           flux_shell_t *shell,
+                           const char *nspace,
                            char **nodenames,
                            const struct taskmap *taskmap,
                            int shell_rank)
@@ -182,9 +188,16 @@ static int set_node_infos (struct infovec *iv,
         struct infovec *ni = NULL;
         const struct idset *ids;
         char *peers = NULL;
+        int ncores;
         bool alias = nodeid == shell_rank
                      && strcmp (nodenames[nodeid], hostname) != 0;
 
+        if (flux_shell_rank_info_unpack (shell,
+                                         nodeid,
+                                         "{s:{s:i}}",
+                                         "resources",
+                                         "ncores", &ncores) < 0)
+            return -1;
         if (!(ids = taskmap_taskids (taskmap, nodeid))
             || !(peers = idset_encode (ids, 0))
             || !(ni = infovec_create ())
@@ -195,6 +208,9 @@ static int set_node_infos (struct infovec *iv,
             || infovec_set_str (ni, PMIX_LOCAL_PEERS, peers) < 0
             || infovec_set_u32 (ni, PMIX_LOCAL_SIZE, idset_count (ids)) < 0
             || infovec_set_rank (ni, PMIX_LOCALLDR, idset_first (ids)) < 0
+            || infovec_set_procs (ni, PMIX_LOCAL_PROCS, nspace, ids) < 0
+            || infovec_set_bool (ni, PMIX_NODE_OVERSUBSCRIBED,
+                                 idset_count (ids) > ncores) < 0
             || infovec_set_infovec_new (iv, key, ni) < 0) {
             shell_warn ("error setting %s for node %d", key, nodeid);
             infovec_destroy (ni);
@@ -651,8 +667,8 @@ static int px_init (flux_plugin_t *p,
          * registering the aliased node first is what lets that
          * resolution find it.
          */
-        || set_node_infos (iv, PMIX_NODE_INFO_ARRAY, nodenames,
-                           px->taskmap, px->shell_rank) < 0
+        || set_node_infos (iv, PMIX_NODE_INFO_ARRAY, shell, px->nspace,
+                           nodenames, px->taskmap, px->shell_rank) < 0
         || set_lpeers (iv, PMIX_LOCAL_PEERS, px->taskmap, px->shell_rank) < 0
         || infovec_set_u32 (iv, PMIX_NUM_NODES, nnodes) < 0
         || set_node_list (iv, PMIX_NODE_LIST, nodenames) < 0

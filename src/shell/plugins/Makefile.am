@@ -83,9 +83,11 @@ test_infovec_t_SOURCES = \
 	test/infovec.c
 test_infovec_t_CPPFLAGS = \
 	$(PMIX_CFLAGS) \
+	$(FLUX_IDSET_CFLAGS) \
 	$(test_cppflags)
 test_infovec_t_LDADD = \
-	$(test_ldadd)
+	$(test_ldadd) \
+	$(FLUX_IDSET_LIBS)
 test_infovec_t_LDFLAGS = \
 	$(test_ldflags)
 

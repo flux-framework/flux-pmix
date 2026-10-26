@@ -144,6 +144,48 @@ void basic (void)
         && memcmp (info[4].value.data.bo.bytes, bo_bytes, bo_size) == 0,
         "bytes are set correctly");
 
+    /* proc array */
+    struct idset *ids = idset_decode ("0,2-3");
+    if (!ids)
+        BAIL_OUT ("idset_decode failed");
+    ok (infovec_set_procs (iv, "pa", "ns", ids) == 0,
+        "infovec_set_procs pa=ns.{0,2,3} works");
+    ok (infovec_count (iv) == 6,
+        "infovec_count returns 6");
+    info = infovec_info (iv);
+    ok (strcmp (info[5].key, "pa") == 0,
+        "key is set correctly");
+    ok (info[5].value.type == PMIX_DATA_ARRAY
+        && info[5].value.data.darray != NULL
+        && info[5].value.data.darray->type == PMIX_PROC,
+        "value is a PMIX_PROC array");
+    ok (info[5].value.data.darray->size == 3,
+        "array size is 3");
+    pmix_proc_t *procs = info[5].value.data.darray->array;
+    ok (procs != NULL
+        && strcmp (procs[0].nspace, "ns") == 0 && procs[0].rank == 0
+        && strcmp (procs[1].nspace, "ns") == 0 && procs[1].rank == 2
+        && strcmp (procs[2].nspace, "ns") == 0 && procs[2].rank == 3,
+        "procs are set correctly");
+    idset_destroy (ids);
+
+    infovec_destroy (iv);
+}
+
+void empty_procs (void)
+{
+    struct infovec *iv;
+    struct idset *ids;
+    pmix_info_t *info;
+
+    if (!(iv = infovec_create ()) || !(ids = idset_create (0, 0)))
+        BAIL_OUT ("setup failed");
+    ok (infovec_set_procs (iv, "pa", "ns", ids) == 0,
+        "infovec_set_procs with an empty idset works");
+    info = infovec_info (iv);
+    ok (info[0].value.data.darray->size == 0,
+        "array size is 0");
+    idset_destroy (ids);
     infovec_destroy (iv);
 }
 
@@ -209,6 +251,19 @@ void badarg (void)
     errno = 0;
     ok (infovec_set_str (iv, "foo", NULL) < 0 && errno == EINVAL,
         "infovec_set_str value=NULL fails with EINVAL");
+
+    struct idset *ids = idset_create (0, 0);
+    if (!ids)
+        BAIL_OUT ("idset_create failed");
+    ok (infovec_set_procs (NULL, "foo", "ns", ids) < 0 && errno == EINVAL,
+        "infovec_set_procs iv=NULL fails with EINVAL");
+    ok (infovec_set_procs (iv, NULL, "ns", ids) < 0 && errno == EINVAL,
+        "infovec_set_procs key=NULL fails with EINVAL");
+    ok (infovec_set_procs (iv, "foo", NULL, ids) < 0 && errno == EINVAL,
+        "infovec_set_procs nspace=NULL fails with EINVAL");
+    ok (infovec_set_procs (iv, "foo", "ns", NULL) < 0 && errno == EINVAL,
+        "infovec_set_procs ranks=NULL fails with EINVAL");
+    idset_destroy (ids);
     errno = 0;
     ok (infovec_set_infovec_new (NULL, "foo", iv) < 0 && errno == EINVAL,
         "infovec_set_infovec_new iv=NULL fails with EINVAL");
@@ -228,6 +283,7 @@ int main (int argc, char **argv)
 
     basic ();
     nested ();
+    empty_procs ();
     expansion (32); // make it > INFOVEC_CHUNK (8)
     badarg ();
 

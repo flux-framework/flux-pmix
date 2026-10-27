@@ -30,9 +30,6 @@ SHELL OPTIONS
   Enable the pmix plugin.  To enable other PMI implementations as
   well, separate them with commas, e.g. ``pmi=pmix,simple``.
 
-The options below restrict what the server offers, to test a client
-against a particular configuration.
-
 .. option:: pmix.wire=LIST
 
   Offer only the listed wire encodings.  LIST is a comma separated
@@ -116,6 +113,42 @@ against a particular configuration.
   through, in bytes.  The default is 4 MiB, large enough that a
   record is nearly always read whole.  A smaller size forces records
   to arrive in pieces, to exercise reassembly in a test.
+
+.. option:: pmix.log-dedup=off
+
+  Write a tagged log message every time it is sent, instead of once
+  per job (see LOGGING).  The default is **on**.
+
+LOGGING
+=======
+
+:c:func:`PMIx_Log` writes a message to one or more channels.  The
+server is part of the job, so each channel is a part of the job's
+output:
+
+PMIX_LOG_STDERR, PMIX_LOG_STDOUT
+  The calling task's stderr or stdout.
+
+PMIX_LOG_SYSLOG, PMIX_LOG_LOCAL_SYSLOG, PMIX_LOG_GLOBAL_SYSLOG
+  The shell log, at the PMIX_LOG_SYSLOG_PRI priority (default
+  LOG_ERR).  Nothing is written to the node's syslog.
+
+PMIX_LOG_JOB_RECORD
+  The shell log, at LOG_NOTICE.
+
+The shell log is in the job's output eventlog.  A message on both a
+syslog channel and the job record is written once, at the syslog
+priority.  Other channels fail.  PMIX_LOG_ONCE writes the first
+channel that is supported and ignores the rest.
+
+A message tagged with PMIX_LOG_KEY and PMIX_LOG_VAL is written once
+per job.  At exit, the shell logs one line per tag that was dropped,
+for example::
+
+  0.045s: flux-shell[0]: pmix: 1 more node sent help message help-mpi-btl-tcp.txt / invalid minimum port
+
+Open MPI tags its help messages.  To see them from every rank, run
+with ``--env=OMPI_MCA_opal_base_help_aggregate=0``.
 
 EXAMPLE
 =======

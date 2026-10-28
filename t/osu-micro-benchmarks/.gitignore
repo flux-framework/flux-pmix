@@ -1,4 +1,0 @@
-# Benchmark programs are built with no suffix alongside their sources
-osu_*
-!osu_*.c
-!osu_*.h

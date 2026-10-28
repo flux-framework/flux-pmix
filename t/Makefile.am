@@ -1,9 +1,5 @@
 SUBDIRS = src .
 
-if HAVE_MPI
-SUBDIRS += osu-micro-benchmarks
-endif
-
 AM_CFLAGS = \
 	$(WARNING_CFLAGS) \
 	$(CODE_COVERAGE_CFLAGS)
@@ -39,9 +35,7 @@ TESTSCRIPTS = \
 	t0010-capture.t \
 	t0011-stdkeys.t \
 	t1000-ompi-basic.t \
-	t1002-ompi-abort.t \
-	t2001-osu-benchmarks.t \
-	t2002-mpibench.t
+	t1002-ompi-abort.t
 
 # make check runs these TAP tests directly (both scripts and programs)
 TESTS = \
@@ -50,20 +44,8 @@ TESTS = \
 dist_check_SCRIPTS = \
 	$(TESTSCRIPTS)
 
-if HAVE_MPI
-check_PROGRAMS = \
-	mpibench/mpibench
-endif
-
 check-prep:
 	$(MAKE)
-
-mpibench_mpibench_SOURCES = mpibench/mpiBench.c
-mpibench_mpibench_CPPFLAGS = \
-	-Wno-error=unused-variable \
-	-Wno-error=format= \
-	$(OMPI_CFLAGS)
-mpibench_mpibench_LDADD = $(OMPI_LIBS)
 
 EXTRA_DIST= \
 	aggregate-results.sh \
@@ -71,6 +53,4 @@ EXTRA_DIST= \
 	sharness.d \
 	$(T) \
 	scripts/run_timeout.py \
-	mpibench/README.md \
-	mpibench/crunch_mpiBench \
 	etc/rc.lua.in

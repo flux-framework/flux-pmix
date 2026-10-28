@@ -292,15 +292,20 @@ test_expect_success TSHARK_LUA 'dissector display filters select messages' '
 # A record arriving split across reads of the channel must be
 # reassembled, not dropped.  Splits are a scheduling race in normal
 # use, so force them by shrinking the channel's read buffer below the
-# size of any record, and check the plugin reports that it reassembled
-# some and that the capture decodes whole.
+# size of any record: every record then arrives in pieces.  What
+# proves the reassembly is that the capture still decodes whole,
+# since a dropped or misframed record would leave the rest of the
+# connection unreadable.  The shell says nothing about any of this -
+# reassembly is ordinary stream handling, not an event.
 test_expect_success TSHARK_LUA 'capture reassembles split records' '
-	run_timeout 30 flux run -N1 -n1 -o verbose=1 -o pmix.store=hash \
+	run_timeout 30 flux run -N1 -n1 -o pmix.store=hash \
 		-o pmix.wirecapture=split.pcapng -o pmix.wirecapture-bufsize=16 \
 		${BARRIER} 2>split.err &&
-	grep "reassembled [1-9][0-9]* split records" split.err &&
+	test_must_fail grep "pmix:" split.err &&
 	tshark_pmix -r split.pcapng >splitdis.out &&
+	grep "> connect .*storage=hash" splitdis.out &&
 	grep "job-info-reply nspace=.* keys$" splitdis.out &&
+	grep "> tag=103 len=2 finalize$" splitdis.out &&
 	grep "finalize-reply status=0" splitdis.out
 '
 # The dissector reassembles too: a message split across TCP segments

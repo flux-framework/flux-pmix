@@ -4,3 +4,15 @@ end
 plugin.load ("@abs_top_builddir@/src/shell/plugins/.libs/pmix.so")
 shell.env_strip ("^OMPI_MCA_pmix", "^OMPI_MCA_schizo")
 shell.setenv ("OMPI_MCA_btl_tcp_if_include", "lo")
+-- The el9 CI image inherits PSM3_HAL=loopback from fluxrm/flux-core:el9,
+-- but its PSM3 rejects that value ("no matching HAL found Using: 'any'")
+-- and searches the host for a NIC instead.  In a container there is none
+-- it can use, and libfabric faults with SIGBUS during MPI_Init while the
+-- ofi components are being selected.  Exclude them: the testsuite runs
+-- over loopback, so ofi has nothing to offer here anyway.  Naming only
+-- the broken component keeps this version-safe - the shared memory btl
+-- is vader before ompi 5 and sm after, and ompi picks the right one -
+-- and excluding a component that an older ompi does not have is not an
+-- error.
+shell.setenv ("OMPI_MCA_btl", "^ofi")
+shell.setenv ("OMPI_MCA_mtl", "^ofi")

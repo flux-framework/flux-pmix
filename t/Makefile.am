@@ -34,6 +34,7 @@ TESTSCRIPTS = \
 	t0009-localhost.t \
 	t0010-capture.t \
 	t0011-stdkeys.t \
+	t0012-log.t \
 	t1000-ompi-basic.t \
 	t1002-ompi-abort.t
 

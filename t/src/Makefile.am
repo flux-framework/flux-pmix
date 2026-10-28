@@ -19,6 +19,7 @@ check_PROGRAMS = \
 	getkey \
 	abort \
 	notify \
+	pmixlog \
 	requests \
 	mpi_version
 
@@ -62,6 +63,9 @@ abort_LDADD = $(test_ldadd)
 
 notify_SOURCES = notify.c
 notify_LDADD = $(test_ldadd)
+
+pmixlog_SOURCES = pmixlog.c
+pmixlog_LDADD = $(test_ldadd)
 
 requests_SOURCES = requests.c
 requests_LDADD = $(test_ldadd)

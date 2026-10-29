@@ -11,6 +11,7 @@ AM_CPPFLAGS = \
 	$(FLUX_IDSET_CFLAGS) \
 	$(OMPI_CFLAGS) \
 	$(PMIX_CLIENT_CFLAGS)
+	$(HWLOC_CFLAGS)
 
 check_PROGRAMS = \
 	barrier \
@@ -21,6 +22,7 @@ check_PROGRAMS = \
 	notify \
 	pmixlog \
 	requests \
+	topo \
 	mpi_version
 
 if HAVE_MPI
@@ -69,6 +71,9 @@ pmixlog_LDADD = $(test_ldadd)
 
 requests_SOURCES = requests.c
 requests_LDADD = $(test_ldadd)
+
+topo_SOURCES = topo.c
+topo_LDADD = $(test_ldadd) $(HWLOC_LIBS)
 
 mpi_hello_SOURCES = mpi_hello.c
 mpi_hello_LDADD = $(test_ldadd)

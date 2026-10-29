@@ -72,7 +72,6 @@ struct capture {
     struct pcapng_writer *writer;
     char *path;
     int bufsize;                // channel read buffer, or 0 for default
-    unsigned int nsplit;        // records that arrived in pieces
 };
 
 static struct conn *conn_lookup (struct capture *cap,
@@ -297,10 +296,8 @@ static void capture_chan_cb (flux_shell_task_t *task,
             ch->stopped = true;
             return;
         }
-        if (ch->len < PMIX_CAPTURE_HDR_SIZE + rlen) {
-            cap->nsplit++;
+        if (ch->len < PMIX_CAPTURE_HDR_SIZE + rlen)
             return;                 // wait for the rest
-        }
         if (handle_record (cap,
                            h,
                            h + PMIX_CAPTURE_HDR_SIZE,
@@ -407,8 +404,6 @@ void capture_destroy (struct capture *cap)
         }
         if (cap->writer && pcapng_writer_destroy (cap->writer) < 0)
             shell_warn ("%s: %s", cap->path, strerror (errno));
-        if (cap->nsplit > 0)
-            shell_debug ("capture reassembled %u split records", cap->nsplit);
         free (cap->path);
         free (cap);
         errno = saved_errno;

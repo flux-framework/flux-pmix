@@ -76,6 +76,20 @@ SHELL OPTIONS
     as they may for a client in a container.  **none** does not change
     what the server listens on; the client must still reach it.
 
+.. option:: pmix.topo=restrict|node|none
+
+  Select what the server shares as the node topology (see TOPOLOGY).
+
+  **restrict**
+    The node, restricted to the cores allocated to the job on it.
+    This is the default.
+
+  **node**
+    The whole node.
+
+  **none**
+    Nothing.  Clients discover the node for themselves.
+
 .. option:: pmix.wirecapture=PATH
 
   Record every message between the tasks and the server in the file
@@ -162,6 +176,25 @@ socket is restricted to localhost, the risk of weak authentication is
 that another user on the same node connects as the job owner and
 gains control of the job.  On a node the job has to itself, there is
 no such user.
+
+=======
+TOPOLOGY
+========
+
+The server shares the node's hardware topology with its clients, so
+that a client which asks its PMIx library for the topology (as Open
+MPI and MPICH do at startup) gets it without discovering the node for
+itself.  Discovery can take seconds per process on a large node.  The
+topology is the one the job shell already holds, restricted by default
+to the cores allocated to the job on that node, so a client sees the
+job's slice of the node, whatever its CPU binding.  The topology is
+marked as describing the local system, so CPU binding works against
+it.
+
+MPI implementations vary in how they handle a topology shared through
+PMIx.  :option:`pmix.topo` set to **none** disables sharing, and
+**hwloc.xmlfile** in :core:man7:`flux-shell-options` is another way
+to spare tasks the discovery.
 
 EXAMPLE
 =======

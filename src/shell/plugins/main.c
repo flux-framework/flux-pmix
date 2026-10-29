@@ -47,6 +47,7 @@
 #include "dmodex.h"
 #include "capture.h"
 #include "log.h"
+#include "topo.h"
 
 struct px {
     flux_shell_t *shell;
@@ -66,6 +67,7 @@ struct px {
     const char *wire;       // pmix.wire option, or NULL
     struct capture *capture;
     struct log *log;
+    struct topo *topo;      // topology shared with clients, or NULL
 };
 
 static pmix_server_module_t server_callbacks;
@@ -86,6 +88,7 @@ static void px_destroy (struct px *px)
         log_destroy (px->log);
         capture_destroy (px->capture);
         interthread_destroy (px->it);
+        topo_destroy (px->topo); // after finalize: the server borrows it
         free (px);
         errno = saved_errno;
     }
@@ -530,7 +533,8 @@ static int px_init (flux_plugin_t *p,
     const char *pmi_opt = NULL;
     struct px *px;
     int rc;
-    pmix_info_t info[3];
+    pmix_info_t info[5];
+    int ninfo = 0;
     struct infovec *iv;
     char **nodenames;
     int nnodes;
@@ -551,6 +555,39 @@ static int px_init (flux_plugin_t *p,
         return -1;
     }
     px->shell = shell;
+
+    /* -o pmix.topo=restrict|node|none selects what the server shares
+     * with clients as the node topology (flux-shell-pmix(7)):
+     *
+     *   restrict  the shell's cached hwloc XML, cut down to the
+     *             cores R allocates to this shell (default)
+     *   node      the same, uncut
+     *   none      nothing; clients discover the node themselves
+     *
+     * Like the shell's affinity builtin, this plugin builds its own
+     * topology from the shell's cached XML and shapes it for its own
+     * consumer.  The hwloc.* shell options belong to the hwloc builtin
+     * and control the task environment; they have no bearing on what
+     * the server shares.
+     *
+     */
+    const char *topo_opt = "restrict";
+    if (flux_shell_getopt_unpack (shell, "pmix", "{s?s}", "topo", &topo_opt) < 0) {
+        shell_log_error ("pmix.topo must be a string");
+        return -1;
+    }
+    if (!strcmp (topo_opt, "restrict") || !strcmp (topo_opt, "node")) {
+        bool do_restrict = !strcmp (topo_opt, "restrict");
+        if (!(px->topo = topo_create (shell, do_restrict))) {
+            shell_log_error ("pmix.topo=%s: %s", topo_opt, strerror (errno));
+            return -1;
+        }
+    }
+    else if (strcmp (topo_opt, "none") != 0) {
+        shell_log_error ("pmix.topo=%s: expected restrict, node, or none",
+                         topo_opt);
+        return -1;
+    }
 
     if (flux_shell_info_unpack (shell,
                                 "{s:I s:i s:i}",
@@ -693,15 +730,17 @@ static int px_init (flux_plugin_t *p,
         }
     }
 
-    strlcpy (info[0].key, PMIX_SERVER_TMPDIR, sizeof (info[0].key));
-    info[0].value.type = PMIX_STRING;
-    info[0].value.data.string = (char *)px->job_tmpdir;
-    info[0].flags = 0;
+    strlcpy (info[ninfo].key, PMIX_SERVER_TMPDIR, sizeof (info[ninfo].key));
+    info[ninfo].value.type = PMIX_STRING;
+    info[ninfo].value.data.string = (char *)px->job_tmpdir;
+    info[ninfo].flags = 0;
+    ninfo++;
 
-    strlcpy (info[1].key, PMIX_SERVER_RANK, sizeof (info[1].key));
-    info[1].value.type = PMIX_PROC_RANK;
-    info[1].value.data.rank = px->shell_rank;
-    info[1].flags = 0;
+    strlcpy (info[ninfo].key, PMIX_SERVER_RANK, sizeof (info[ninfo].key));
+    info[ninfo].value.type = PMIX_PROC_RANK;
+    info[ninfo].value.data.rank = px->shell_rank;
+    info[ninfo].flags = 0;
+    ninfo++;
 
     /* Ensure pmix sockets are restricted to localhost to restrict the
      * impact of issues with psec authentication, which is not under our
@@ -720,12 +759,24 @@ static int px_init (flux_plugin_t *p,
      * so it still rejects the routable interface in that case and init
      * fails rather than quietly opening up.  Hence both forms.
      */
-    strlcpy (info[2].key, PMIX_TCP_IF_INCLUDE, sizeof (info[2].key));
-    info[2].value.type = PMIX_STRING;
-    info[2].value.data.string = "lo,127.0.0.0/8";
-    info[2].flags = 0;
+    strlcpy (info[ninfo].key, PMIX_TCP_IF_INCLUDE, sizeof (info[ninfo].key));
+    info[ninfo].value.type = PMIX_STRING;
+    info[ninfo].value.data.string = "lo,127.0.0.0/8";
+    info[ninfo].flags = 0;
+    ninfo++;
 
-    if ((rc = PMIx_server_init (&server_callbacks, info, 3)) != PMIX_SUCCESS) {
+    if (px->topo) {
+        int n = topo_server_info (px->topo,
+                                  &info[ninfo],
+                                  sizeof (info) / sizeof (info[0]) - ninfo);
+        if (n < 0) {
+            shell_log_error ("error setting up topology sharing");
+            return -1;
+        }
+        ninfo += n;
+    }
+
+    if ((rc = PMIx_server_init (&server_callbacks, info, ninfo)) != PMIX_SUCCESS) {
         shell_warn ("PMIx_server_init: %s", PMIx_Error_string (rc));
         return -1;
     }

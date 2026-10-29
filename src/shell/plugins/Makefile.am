@@ -37,7 +37,9 @@ pmix_la_SOURCES = \
 	capture.h \
 	capture.c \
 	log.h \
-	log.c
+	log.c \
+	topo.h \
+	topo.c
 pmix_la_CPPFLAGS = \
 	$(AM_CPPFLAGS) \
 	$(FLUX_CORE_CFLAGS) \
@@ -45,11 +47,13 @@ pmix_la_CPPFLAGS = \
 	$(FLUX_HOSTLIST_CFLAGS) \
 	$(FLUX_TASKMAP_CFLAGS) \
 	$(PMIX_CFLAGS) \
+	$(HWLOC_CFLAGS) \
 	$(JANSSON_CFLAGS)
 pmix_la_LIBADD = \
 	$(top_builddir)/src/common/libpcapng/libpcapng.la \
 	$(FLUX_CORE_LIBS) \
 	$(PMIX_LIBS) \
+	$(HWLOC_LIBS) \
 	$(FLUX_IDSET_LIBS) \
 	$(FLUX_HOSTLIST_LIBS) \
 	$(FLUX_TASKMAP_LIBS) \

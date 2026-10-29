@@ -93,6 +93,13 @@ AC_DEFUN([PMIX_CHECK], [
 ])
 PMIX_CHECK([client], [PMIX_CLIENT], [$with_pmix_client], [$PMIX_CLIENT_MIN])
 PMIX_CHECK([server], [PMIX], [$with_pmix_server], [$PMIX_SERVER_MIN])
+
+# The plugin loads a topology that libpmix then walks, and both resolve
+# hwloc through the one copy flux-shell already loaded, so all three must
+# share a soname.  hwloc 2.x is one soname; its struct layout has been
+# stable since 2.4.  Keep topo.c on 2.0-era API so an older runtime
+# hwloc than the build one still has every symbol.
+PKG_CHECK_MODULES([HWLOC], [hwloc >= 2.0 hwloc < 3.0])
 PKG_CHECK_MODULES([JANSSON], [jansson >= 2.10], [], [])
 
 AC_ARG_WITH([openmpi],

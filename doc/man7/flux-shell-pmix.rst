@@ -196,8 +196,8 @@ PMIx.  :option:`pmix.topo` set to **none** disables sharing, and
 **hwloc.xmlfile** in :core:man7:`flux-shell-options` is another way
 to spare tasks the discovery.
 
-EXAMPLE
-=======
+WIRE CAPTURE EXAMPLE
+====================
 
 Capture a four task Open MPI job on two nodes.  Each node writes a
 file, and ``mergecap`` combines them into one::

@@ -55,7 +55,44 @@ AC_SUBST([WARNING_CFLAGS])
 
 LT_INIT
 
-PKG_CHECK_MODULES([PMIX], [pmix >= 3.2.3])
+# The server is the openpmix the shell plugin links; the clients are
+# the test programs and the upmi plugin.  Each may be pinned to a prefix.
+# A pinned server with no pinned client still takes the default client,
+# which stands in for the MPIs the server will meet in production.
+PMIX_SERVER_MIN=3.2.3
+PMIX_CLIENT_MIN=3.2.3
+AC_ARG_WITH([pmix-server],
+  [AS_HELP_STRING([--with-pmix-server=PREFIX],
+    [Build the server against the openpmix installed under PREFIX])],
+  [],
+  [with_pmix_server=yes]
+)
+AC_ARG_WITH([pmix-client],
+  [AS_HELP_STRING([--with-pmix-client=PREFIX],
+    [Build PMIx clients against the openpmix installed under PREFIX])],
+  [],
+  [with_pmix_client=yes]
+)
+AS_IF([test "$with_pmix_server" = no -o "$with_pmix_client" = no],
+  [AC_MSG_ERROR([flux-pmix requires openpmix])])
+
+# PMIX_CHECK(side, VARIABLE, prefix-or-yes, min-version)
+AC_DEFUN([PMIX_CHECK], [
+  saved_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
+  AS_IF([test "$3" != yes],
+    [AS_IF([test ! -d "$3"], [AC_MSG_ERROR([$3: not a directory])])
+     PKG_CONFIG_PATH="$3/lib/pkgconfig:$3/lib64/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+     export PKG_CONFIG_PATH])
+  PKG_CHECK_MODULES([$2], [pmix >= $4], [],
+    [AC_MSG_ERROR([no openpmix >= $4 for the $1; see --with-pmix-$1=PREFIX])])
+  m4_toupper(pmix_$1_version)=$(pkg-config --modversion pmix)
+  AC_SUBST(m4_toupper(pmix_$1_version))
+  AC_MSG_NOTICE([$1 openpmix $(pkg-config --modversion pmix) in $(pkg-config --variable=prefix pmix)])
+  PKG_CONFIG_PATH="$saved_PKG_CONFIG_PATH"
+  export PKG_CONFIG_PATH
+])
+PMIX_CHECK([client], [PMIX_CLIENT], [$with_pmix_client], [$PMIX_CLIENT_MIN])
+PMIX_CHECK([server], [PMIX], [$with_pmix_server], [$PMIX_SERVER_MIN])
 PKG_CHECK_MODULES([JANSSON], [jansson >= 2.10], [], [])
 
 AC_ARG_WITH([openmpi],

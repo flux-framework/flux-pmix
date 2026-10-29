@@ -59,9 +59,8 @@ getkey_cmp() {
 # same one, and PMIx_Get_version() returns "3.2.5a1" or "OpenPMIx
 # 5.0.7a1 (...)".  The server library is what the shell plugin links;
 # PMIx_server_setup_fork() puts its version in each task's environment
-# as PMIX_VERSION.  Today both are the same library, but they are
-# recorded separately so that a run's output says which was which.
-# Each is also emitted as a TAP diagnostic, which the automake TAP
+# as PMIX_VERSION.  The two may differ (--with-pmix-server), so each
+# is recorded, and emitted as a TAP diagnostic, which the automake TAP
 # driver copies into the .log that CI keeps.  Anything the test
 # commands print goes to the .output file instead, which CI does not
 # show.
@@ -72,14 +71,14 @@ test_expect_success 'identify the openpmix client library' '
 	${FLUX_BUILD_DIR}/t/src/version >openpmix-client.version
 '
 diag "openpmix client: $(cat openpmix-client.version)"
-# The version tool and the plugin are built against the same library,
-# so the server version must match it.  If it does not, another
-# flux-pmix (an installed package, loaded by the system initrc) is
-# answering instead of this tree, and nothing below would be testing
-# what it claims to.
+# OPENPMIX_SERVER_VERSION is the version configure found for the plugin,
+# so the server must report it.  If it does not, another flux-pmix
+# (an installed package, loaded by the system initrc) is answering
+# instead of this tree, and nothing below would be testing what it
+# claims to.
 test_expect_success 'identify the openpmix server library' '
 	run_timeout 30 flux run printenv PMIX_VERSION >openpmix-server.version &&
-	grep -q "$(cat openpmix-server.version)" openpmix-client.version
+	test "$(cat openpmix-server.version)" = "$OPENPMIX_SERVER_VERSION"
 '
 diag "openpmix server: $(cat openpmix-server.version)"
 # The server also tells each task which data stores it offers, in

@@ -545,14 +545,6 @@ static int px_init (flux_plugin_t *p,
 
     shell_debug ("server is enabled");
 
-    /* flux-pmix does not yet share hwloc with MPI, which forces MPI to
-     * go looking for it, sometimes at great cost to performance.
-     * Until we can address flux-framework/flux-pmix#31 properly,
-     * tell flux-core to share a hwloc xml file instead.
-     */
-    if (flux_shell_setopt_pack (shell, "hwloc", "{s:i}", "xmlfile", 1) < 0)
-        shell_warn ("unable to set Flux hwloc.xmlfile shell option");
-
     if (!(px = calloc (1, sizeof (*px)))
         || flux_plugin_aux_set (p, "px", px, (flux_free_f)px_destroy) < 0) {
         px_destroy (px);

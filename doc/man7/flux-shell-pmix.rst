@@ -102,6 +102,13 @@ SHELL OPTIONS
   Write a tagged log message every time it is sent, instead of once
   per job (see LOGGING).  The default is **on**.
 
+.. option:: pmix.version-check=off
+
+  Do not warn when the OpenPMIx the plugin loaded is not the one it
+  was built against.  The default is **on**.  The comparison is of
+  :c:macro:`PMIX_VERSION_MAJOR`, ``MINOR``, and ``RELEASE`` at build
+  time with :c:func:`PMIx_Get_version` at run time.
+
 LOGGING
 =======
 

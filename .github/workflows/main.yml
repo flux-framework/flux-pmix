@@ -89,18 +89,6 @@ jobs:
           openpmix_branch: "v4.2.2"
           coverage: false
           env: {}
-        - name: "el8 - ompi v3.1.x"
-          image: "el8"
-          ompi_branch: "v3.1.x"
-          openpmix_branch: "v4.2.2"
-          coverage: false
-          env: {}
-        - name: "el8 - ompi v3.0.x"
-          image: "el8"
-          ompi_branch: "v3.0.x"
-          openpmix_branch: "v4.2.2"
-          coverage: false
-          env: {}
 
       fail-fast: false
     name: ${{ matrix.name }}

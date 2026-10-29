@@ -192,3 +192,16 @@ HADR
 nmap
 pmap
 unparsed
+btl
+dedup
+eventlog
+mpi
+PRI
+stderr
+STDERR
+stdout
+STDOUT
+syslog
+SYSLOG
+tcp
+txt

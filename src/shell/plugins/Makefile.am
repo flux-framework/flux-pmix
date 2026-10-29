@@ -35,7 +35,9 @@ pmix_la_SOURCES = \
 	dmodex.h \
 	dmodex.c \
 	capture.h \
-	capture.c
+	capture.c \
+	log.h \
+	log.c
 pmix_la_CPPFLAGS = \
 	$(AM_CPPFLAGS) \
 	$(FLUX_CORE_CFLAGS) \

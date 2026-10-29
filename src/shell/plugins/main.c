@@ -46,6 +46,7 @@
 #include "notify.h"
 #include "dmodex.h"
 #include "capture.h"
+#include "log.h"
 
 struct px {
     flux_shell_t *shell;
@@ -64,6 +65,7 @@ struct px {
     struct dmodex *dmodex;
     const char *wire;       // pmix.wire option, or NULL
     struct capture *capture;
+    struct log *log;
 };
 
 static pmix_server_module_t server_callbacks;
@@ -81,6 +83,7 @@ static void px_destroy (struct px *px)
         abort_destroy (px->abort);
         fence_destroy (px->fence);
         dmodex_destroy (px->dmodex);
+        log_destroy (px->log);
         capture_destroy (px->capture);
         interthread_destroy (px->it);
         free (px);
@@ -561,6 +564,28 @@ static int px_init (flux_plugin_t *p,
         return -1;
     }
     server_callbacks.direct_modex = dmodex_server_cb;
+    if (!(px->log = log_create (shell, px->it))) {
+        shell_log_error ("could not create log handler");
+        return -1;
+    }
+    server_callbacks.log = log_server_cb;
+    /* openpmix's own syslog plog module claims the syslog channels
+     * before the log callback is reached, and writes them to the
+     * node's syslog instead of the job.  In 3.x it then marks each
+     * entry complete, so the callback never sees it and the message
+     * is lost from the job's output; in 4.x and later the mark is
+     * gone, so the entry arrives here as well and the message is
+     * written twice, once to each place.  Neither is wanted: the
+     * server belongs to the job, so its log is the job's record.
+     * Exclude the module so the channels reach the callback and are
+     * written only there.  This overrides any PMIX_MCA_plog in the
+     * environment: the node's syslog is not the job's, so there is no
+     * setting of it that is right here.
+     */
+    if (setenv ("PMIX_MCA_plog", "^syslog", 1) < 0) {
+        shell_log_error ("setenv PMIX_MCA_plog: %s", strerror (errno));
+        return -1;
+    }
     /* Capture is off unless asked for, and a failure to set it up is
      * reported but does not stop the job: it is a diagnostic.
      */
@@ -822,11 +847,25 @@ static int px_task_init (flux_plugin_t *p,
     return 0;
 }
 
+static int px_exit (flux_plugin_t *p,
+                    const char *topic,
+                    flux_plugin_arg_t *args,
+                    void *arg)
+{
+    struct px *px;
+
+    if (!(px = flux_plugin_aux_get (p, "px")))
+        return 0; // plugin disabled
+    log_summary (px->log);
+    return 0;
+}
+
 int flux_plugin_init (flux_plugin_t *p)
 {
     if (flux_plugin_set_name (p, FLUX_SHELL_PLUGIN_NAME) < 0
         || flux_plugin_add_handler (p, "shell.init", px_init, NULL) < 0
-        || flux_plugin_add_handler (p, "task.init",  px_task_init, NULL) < 0) {
+        || flux_plugin_add_handler (p, "task.init",  px_task_init, NULL) < 0
+        || flux_plugin_add_handler (p, "shell.exit",  px_exit, NULL) < 0) {
         return -1;
     }
 

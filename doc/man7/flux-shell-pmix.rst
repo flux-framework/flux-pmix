@@ -49,6 +49,9 @@ SHELL OPTIONS
   **ds21** in 3.x and 4.x, **shmem2** in 5.x and 6.x, **shmem3** in
   7.x, and **hash** in all versions.
 
+  Offering only **hash** may help when the client's OpenPMIx version
+  does not interoperate with the server's.
+
 .. option:: pmix.auth=LIST
 
   Offer the listed authentication methods (see AUTHENTICATION).  LIST

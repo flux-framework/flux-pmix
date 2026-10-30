@@ -51,22 +51,11 @@ SHELL OPTIONS
 
 .. option:: pmix.auth=LIST
 
-  Offer only the listed authentication methods.  LIST is a comma
-  separated subset of the methods the server's OpenPMIx has, e.g.
-  **native**, **munge**, or **none**.  The value is passed to OpenPMIx
-  as :envvar:`PMIX_MCA_psec`.  A method the server does not have is
-  ignored.
-
-  The client chooses any one of the offered methods, and fails to
-  connect if it has no method in common with the server.  What is
-  offered by default depends on the OpenPMIx version and build
-  options, but is usually **native** or **munge,native**.  This option
-  is mainly for testing a client with a given method.
-
-  The method authenticates: it establishes who the connecting process
-  is.  The server then authorizes, admitting only the job's own user,
-  and that does not vary with the method.  What varies is how well the
-  claim is established.
+  Offer the listed authentication methods (see AUTHENTICATION).  LIST
+  is a comma separated subset of the methods the server's OpenPMIx
+  has.  The value is passed to OpenPMIx as :envvar:`PMIX_MCA_psec`.
+  A method the server does not have is ignored.  The default is
+  **native**.
 
   **munge**
     The client presents a credential signed by the local munge daemon,
@@ -83,12 +72,6 @@ SHELL OPTIONS
     may not have it.  It is for when the other methods cannot work,
     as they may for a client in a container.  **none** does not change
     what the server listens on; the client must still reach it.
-
-  The server is the user's own: it runs in the job shell with the
-  user's credentials and no more.  What a weak method risks is that
-  another user on the same node connects as the job's user and gains
-  control of the job.  On a node the job has to itself, there is no
-  such user.
 
 .. option:: pmix.wirecapture=PATH
 
@@ -149,6 +132,26 @@ for example::
 
 Open MPI tags its help messages.  To see them from every rank, run
 with ``--env=OMPI_MCA_opal_base_help_aggregate=0``.
+
+AUTHENTICATION
+==============
+
+A client authenticates when it connects to the server, which admits
+only the job owner.  The method, one of those listed under
+:option:`pmix.auth`, establishes who the connecting process is.
+
+The server accepts any of the offered methods selected by the client.
+This means that setting :option:`pmix.auth` to **munge,native** does
+not improve security over the default **native**.  In addition, when
+the server offers a method that the client does not have, some clients
+abort, even though they may have a method in common.  It is therefore
+not usually helpful to offer multiple methods.
+
+Since the PMIx server runs with the user's credentials, and the PMIx
+socket is restricted to localhost, the risk of weak authentication is
+that another user on the same node connects as the job owner and
+gains control of the job.  On a node the job has to itself, there is
+no such user.
 
 EXAMPLE
 =======

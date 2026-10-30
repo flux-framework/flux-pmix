@@ -364,6 +364,38 @@ static void shell_write (int rank, int pri, const char *msg)
                     msg);
 }
 
+/* The progress thread could not send a log request: complete it
+ * with an error and say so in the shell log.
+ */
+static void log_error_cb (const flux_msg_t *msg, void *arg)
+{
+    json_t *xclient;
+    json_t *xcbfunc;
+    json_t *xcbdata;
+    pmix_proc_t client;
+    pmix_op_cbfunc_t cbfunc;
+    void *cbdata;
+
+    if (flux_msg_unpack (msg,
+                         "{s:o s:o s:o}",
+                         "client", &xclient,
+                         "cbfunc", &xcbfunc,
+                         "cbdata", &xcbdata) < 0
+        || codec_pointer_decode (xcbfunc, (void **)&cbfunc) < 0
+        || codec_pointer_decode (xcbdata, &cbdata) < 0) {
+        shell_warn ("error unpacking interthread log_error message");
+        return;
+    }
+    if (codec_proc_decode (xclient, &client) == 0)
+        shell_warn ("log request from %s.%u failed",
+                    client.nspace,
+                    (unsigned)client.rank);
+    else
+        shell_warn ("log request failed");
+    if (cbfunc)
+        cbfunc (PMIX_ERROR, cbdata);
+}
+
 static void log_shell_cb (const flux_msg_t *msg, void *arg)
 {
     struct log *log = arg;
@@ -506,11 +538,21 @@ void log_server_cb (const pmix_proc_t *client,
     json_t *xcbfunc = NULL;
     json_t *xcbdata = NULL;
 
-    if (!(xclient = codec_proc_encode (client))
+    /* This callback returns void, so the only way to complete the
+     * request is through cbfunc.  It must not be called from here:
+     * openpmix before 6.1 holds a non-recursive lock across this
+     * upcall that cbfunc reacquires, so an inline call deadlocks the
+     * progress thread.  On failure, send the shell thread only what
+     * it needs to call cbfunc and say who failed, encoded first so
+     * that it survives a failure in the larger encodes.  If even
+     * that cannot be sent, drop the request; its completion never
+     * arrives.
+     */
+    if (!(xcbfunc = codec_pointer_encode (cbfunc))
+        || !(xcbdata = codec_pointer_encode (cbdata))
+        || !(xclient = codec_proc_encode (client))
         || !(xdata = codec_info_array_encode (data, ndata))
         || !(xdirs = codec_info_array_encode (directives, ndirs))
-        || !(xcbfunc = codec_pointer_encode (cbfunc))
-        || !(xcbdata = codec_pointer_encode (cbdata))
         || interthread_send_pack (log->it,
                                   "log_upcall",
                                   "{s:O s:O s:O s:O s:O}",
@@ -519,12 +561,19 @@ void log_server_cb (const pmix_proc_t *client,
                                   "dirs", xdirs,
                                   "cbfunc", xcbfunc,
                                   "cbdata", xcbdata) < 0) {
-        fprintf (stderr, "error sending log_upcall interthread message\n");
-        /* This callback returns void, so the only way to release the
-         * process is through cbfunc.
-         */
-        if (cbfunc)
-            cbfunc (PMIX_ERROR, cbdata);
+        if (!xcbfunc
+            || !xcbdata
+            || !xclient
+            || interthread_send_pack (log->it,
+                                      "log_error",
+                                      "{s:O s:O s:O}",
+                                      "client", xclient,
+                                      "cbfunc", xcbfunc,
+                                      "cbdata", xcbdata) < 0)
+            fprintf (stderr,
+                     "pmix log request from %s.%u dropped\n",
+                     client->nspace,
+                     (unsigned)client->rank);
     }
     json_decref (xclient);
     json_decref (xdata);
@@ -590,7 +639,8 @@ struct log *log_create (flux_shell_t *shell, struct interthread *it)
     }
     if (dedup && !strcmp (dedup, "off"))
         log->dedup = false;
-    if (interthread_register (it, "log_upcall", log_shell_cb, log) < 0)
+    if (interthread_register (it, "log_upcall", log_shell_cb, log) < 0
+        || interthread_register (it, "log_error", log_error_cb, log) < 0)
         goto error;
     if (log->shell_rank == 0
         && flux_shell_service_register (shell,

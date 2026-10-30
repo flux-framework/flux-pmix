@@ -106,6 +106,11 @@ fi
 if test "${OPENPMIX_CLIENT_MAJOR:-0}" -ge 5; then
 	test_set_prereq OPENPMIX5_CLIENT
 fi
+OPENPMIX_SERVER_MAJOR=$(echo "$OPENPMIX_SERVER_VERSION" | cut -d. -f1)
+if test "${OPENPMIX_CLIENT_MAJOR:-0}" -ge 4 \
+	|| test "${OPENPMIX_SERVER_MAJOR:-0}" -lt 4; then
+	test_set_prereq APP_REALM_WDIR
+fi
 
 #
 # Session realm ("Session realm attributes"): PMIX_UNIV_SIZE and
@@ -208,6 +213,11 @@ test_expect_success 'job: pmix.nmap and pmix.pmap are not retrievable' '
 # misses on a 4.x client using ds21, and a qualified get naming the
 # caller's own rank makes a 4.x server wait for a commit that never
 # comes; neither is the documented form.)
+#
+# pmix.wdir is skipped for a 3.2 client on a 4.x server, where it is
+# not found: a 4.x server hands a ds21 client its app keys only inside
+# PMIX_APP_INFO_ARRAY (dstore_base.c, _store_job_info), which that
+# client's store does not unpack.  pmix.appnum is still found.
 test_expect_success 'app: pmix.appnum (provided)' '
 	cat >appnum.exp <<-EOT &&
 	0: 0
@@ -216,7 +226,7 @@ test_expect_success 'app: pmix.appnum (provided)' '
 	EOT
 	getkey_cmp pmix.appnum appnum.exp --app --proc=*
 '
-test_expect_success 'app: pmix.wdir (provided) is the job cwd' '
+test_expect_success APP_REALM_WDIR 'app: pmix.wdir (provided) is the job cwd' '
 	run2n3p ${GETKEY} --app --proc=* --rank=0 pmix.wdir >wdir.out &&
 	pwd >wdir.exp &&
 	test_cmp wdir.exp wdir.out

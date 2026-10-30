@@ -325,5 +325,11 @@ test_expect_success '2n4p pmix.jobid is set' '
 	run_timeout 30 flux run -N2 -n4 \
 		${GETKEY} --proc=* --label-io pmix.jobid
 '
+test_expect_success '1n1p the server offers only native auth by default' '
+	run_timeout 30 flux run printenv PMIX_SECURITY_MODE >auth.out &&
+	test_cmp - auth.out <<-EOT
+	native
+	EOT
+'
 
 test_done

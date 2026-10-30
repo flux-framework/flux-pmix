@@ -29,6 +29,19 @@ RUN \
    && sudo adduser $USER sudo ; \
  fi
 
+# The base image carries an openpmix and a prrte from 2021 that nothing
+# uses (flux-framework/flux-core#7870 drops them); clear them so that a
+# client ref built below is the only openpmix in the system prefix.
+RUN sudo rm -rf /usr/lib/libpmix.* /usr/lib/pmix /usr/lib/pkgconfig/pmix.pc \
+      /usr/include/pmix*.h /usr/include/pmix /usr/share/pmix \
+      /usr/etc/pmix-mca-params.conf /usr/bin/pmix_info /usr/bin/pmixcc \
+      /usr/bin/pattrs /usr/bin/pevent /usr/bin/plookup /usr/bin/pps \
+      /usr/bin/pquery \
+      /usr/lib/libprrte.* /usr/lib/prte /usr/include/prte* /usr/share/prte \
+      /usr/bin/prte /usr/bin/prterun /usr/bin/prun /usr/bin/pterm \
+      /usr/bin/prte_info \
+ && sudo ldconfig
+
 # prereqs for building openpmix and Open MPI, plus the distribution's
 # pmix when no client ref is given and its Open MPI when no Open MPI
 # ref is given.  A built library and a distribution one have the same

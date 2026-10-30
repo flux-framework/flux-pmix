@@ -18,7 +18,7 @@ jobs:
     env:
       TAP_DRIVER_QUIET: 1
       FLUX_TEST_TIMEOUT: 300
-    timeout-minutes: 20
+    timeout-minutes: 30
     strategy:
       matrix:
         include:
@@ -65,20 +65,20 @@ jobs:
           configure_args: ""
           coverage: false
           env: {}
-        - name: "el9 - ompi v5"
+        - name: "el9 - server 4.2 / native client 3.2 ompi 4.1"
           image: "el9"
-          openpmix_server: ""
-          openpmix_client: "v5.0.9"
-          ompi: "v5.0.9"
-          configure_args: ""
+          openpmix_server: "v4.2*"
+          openpmix_client: ""
+          ompi: ""
+          configure_args: "--with-pmix-server=/opt/openpmix-server"
           coverage: false
           env: {}
-        - name: "jammy - openpmix v7.0.0rc1"
-          image: "jammy"
-          openpmix_server: ""
-          openpmix_client: "v7.0.0rc1"
-          ompi: "v6.0.0rc2"
-          configure_args: ""
+        - name: "el10 - server 7.0 / native client 4.2 ompi 5.0"
+          image: "el10"
+          openpmix_server: "v7.0*"
+          openpmix_client: ""
+          ompi: ""
+          configure_args: "--with-pmix-server=/opt/openpmix-server"
           coverage: false
           env: {}
         - name: "el9 - native ompi 4.1 pmix 3.2"
@@ -97,12 +97,12 @@ jobs:
           configure_args: ""
           coverage: false
           env: {}
-        - name: "jammy - ompi v4.1.x"
+        - name: "jammy - server 3.2 / client 5.0 ompi 5.0"
           image: "jammy"
-          openpmix_server: ""
-          openpmix_client: "v4.2.2"
-          ompi: "v4.1.x"
-          configure_args: ""
+          openpmix_server: "v3.2.5"
+          openpmix_client: "v5.0.11"
+          ompi: "v5.0.9"
+          configure_args: "--with-pmix-server=/opt/openpmix-server"
           coverage: false
           env: {}
         - name: "jammy - ompi v4.0.x"
@@ -129,8 +129,8 @@ jobs:
         ./src/test/docker/docker-run-checks.sh
         -j $(nproc)
         -i ${{ matrix.image }}
-        --build-arg OPENPMIX_SERVER=${{ matrix.openpmix_server }}
-        --build-arg OPENPMIX_CLIENT=${{ matrix.openpmix_client }}
+        --build-arg "OPENPMIX_SERVER=${{ matrix.openpmix_server }}"
+        --build-arg "OPENPMIX_CLIENT=${{ matrix.openpmix_client }}"
         --build-arg OMPI=${{ matrix.ompi }}
         -- ${{ matrix.configure_args }}
 

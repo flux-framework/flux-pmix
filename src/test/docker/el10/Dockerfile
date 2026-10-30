@@ -4,11 +4,13 @@ ARG USER=fluxuser
 ARG UID=1000
 
 # Each of these names a git ref to build, or is empty to use the
-# distribution's package instead.  OPENPMIX_CLIENT and OMPI install in
+# distribution's package instead.  An openpmix ref containing * names
+# the newest tag that matches it.  OPENPMIX_CLIENT and OMPI install in
 # the system prefix, where flux-pmix's test clients, its upmi plugin,
 # and Open MPI find them as they would on any system.  OPENPMIX_SERVER
 # installs under /opt/openpmix-server, and the matrix row passes
-# --with-pmix-server pointing there.
+# --with-pmix-server pointing there.  Neither is built with debug,
+# which would make buffers fully described.
 ARG OPENPMIX_SERVER=
 ARG OPENPMIX_CLIENT=
 ARG OMPI=
@@ -57,13 +59,17 @@ RUN for side in client server; do \
       if test $side = client; then prefix=/usr; \
       else prefix=/opt/openpmix-server; fi; \
       sudo rm -rf $prefix/lib64/pmix $prefix/lib/pmix; \
+      case $ref in *\**) ref=$(git ls-remote --tags --refs \
+        https://github.com/openpmix/openpmix "$ref" \
+        | sed 's,.*/,,; s/rc/~rc/' | sort -V | tail -1 | sed 's/~//'); \
+        echo "openpmix $side: newest tag is $ref";; esac; \
       cd /tmp \
    && git clone -b $ref --recursive --depth=1 \
         https://github.com/openpmix/openpmix \
    && cd openpmix \
    && ./autogen.pl \
    && ./configure --prefix=$prefix \
-        --enable-debug --disable-sphinx \
+        --disable-sphinx \
    && make -j $(nproc) \
    && sudo make install \
    && cd .. \

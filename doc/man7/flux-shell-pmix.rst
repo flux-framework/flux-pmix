@@ -49,6 +49,9 @@ SHELL OPTIONS
   **ds21** in 3.x and 4.x, **shmem2** in 5.x and 6.x, **shmem3** in
   7.x, and **hash** in all versions.
 
+  Offering only **hash** may help when the client's OpenPMIx version
+  does not interoperate with the server's.
+
 .. option:: pmix.auth=LIST
 
   Offer the listed authentication methods (see AUTHENTICATION).  LIST
@@ -72,6 +75,20 @@ SHELL OPTIONS
     may not have it.  It is for when the other methods cannot work,
     as they may for a client in a container.  **none** does not change
     what the server listens on; the client must still reach it.
+
+.. option:: pmix.topo=restrict|node|none
+
+  Select what the server shares as the node topology (see TOPOLOGY).
+
+  **restrict**
+    The node, restricted to the cores allocated to the job on it.
+    This is the default.
+
+  **node**
+    The whole node.
+
+  **none**
+    Nothing.  Clients discover the node for themselves.
 
 .. option:: pmix.wirecapture=PATH
 
@@ -101,6 +118,13 @@ SHELL OPTIONS
 
   Write a tagged log message every time it is sent, instead of once
   per job (see LOGGING).  The default is **on**.
+
+.. option:: pmix.version-check=off
+
+  Do not warn when the OpenPMIx the plugin loaded is not the one it
+  was built against.  The default is **on**.  The comparison is of
+  :c:macro:`PMIX_VERSION_MAJOR`, ``MINOR``, and ``RELEASE`` at build
+  time with :c:func:`PMIx_Get_version` at run time.
 
 LOGGING
 =======
@@ -153,8 +177,27 @@ that another user on the same node connects as the job owner and
 gains control of the job.  On a node the job has to itself, there is
 no such user.
 
-EXAMPLE
 =======
+TOPOLOGY
+========
+
+The server shares the node's hardware topology with its clients, so
+that a client which asks its PMIx library for the topology (as Open
+MPI and MPICH do at startup) gets it without discovering the node for
+itself.  Discovery can take seconds per process on a large node.  The
+topology is the one the job shell already holds, restricted by default
+to the cores allocated to the job on that node, so a client sees the
+job's slice of the node, whatever its CPU binding.  The topology is
+marked as describing the local system, so CPU binding works against
+it.
+
+MPI implementations vary in how they handle a topology shared through
+PMIx.  :option:`pmix.topo` set to **none** disables sharing, and
+**hwloc.xmlfile** in :core:man7:`flux-shell-options` is another way
+to spare tasks the discovery.
+
+WIRE CAPTURE EXAMPLE
+====================
 
 Capture a four task Open MPI job on two nodes.  Each node writes a
 file, and ``mergecap`` combines them into one::

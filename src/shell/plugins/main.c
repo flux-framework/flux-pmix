@@ -47,6 +47,7 @@
 #include "dmodex.h"
 #include "capture.h"
 #include "log.h"
+#include "topo.h"
 
 struct px {
     flux_shell_t *shell;
@@ -66,6 +67,7 @@ struct px {
     const char *wire;       // pmix.wire option, or NULL
     struct capture *capture;
     struct log *log;
+    struct topo *topo;      // topology shared with clients, or NULL
 };
 
 static pmix_server_module_t server_callbacks;
@@ -86,6 +88,7 @@ static void px_destroy (struct px *px)
         log_destroy (px->log);
         capture_destroy (px->capture);
         interthread_destroy (px->it);
+        topo_destroy (px->topo); // after finalize: the server borrows it
         free (px);
         errno = saved_errno;
     }
@@ -474,6 +477,53 @@ static bool member_of_csv (const char *list, const char *name)
     return false;
 }
 
+/* The plugin is built against one openpmix and may load another, since
+ * every version since 2.x has the same soname.  Say so when the two
+ * differ.  A difference is not an error, so this is a warning, and
+ * -o pmix.version-check=off quiets it.
+ *
+ * PMIx_Get_version() returns "3.2.5a1" on 3.2 and "OpenPMIx 5.0.7a1
+ * (...)" on later versions; the numbers follow the optional name.
+ */
+static int version_check (flux_shell_t *shell, int shell_rank)
+{
+    const char *opt = NULL;
+    const char *s = PMIx_Get_version ();
+    unsigned major, minor, release;
+
+    if (flux_shell_getopt_unpack (shell,
+                                  "pmix",
+                                  "{s?s}",
+                                  "version-check", &opt) < 0
+        || (opt && strcmp (opt, "on") != 0 && strcmp (opt, "off") != 0)) {
+        shell_log_error ("pmix.version-check must be \"on\" or \"off\"");
+        return -1;
+    }
+    if (opt && !strcmp (opt, "off"))
+        return 0;
+    if (!strncmp (s, "OpenPMIx ", 9))
+        s += 9;
+    if (sscanf (s, "%u.%u.%u", &major, &minor, &release) != 3) {
+        if (shell_rank == 0)
+            shell_warn ("cannot parse openpmix version \"%s\"", s);
+        return 0;
+    }
+    if (major != PMIX_VERSION_MAJOR
+        || minor != PMIX_VERSION_MINOR
+        || release != PMIX_VERSION_RELEASE) {
+        if (shell_rank == 0)
+            shell_warn ("built against openpmix %ld.%ld.%ld but running"
+                        " %u.%u.%u (-o pmix.version-check=off to silence)",
+                        (long)PMIX_VERSION_MAJOR,
+                        (long)PMIX_VERSION_MINOR,
+                        (long)PMIX_VERSION_RELEASE,
+                        major,
+                        minor,
+                        release);
+    }
+    return 0;
+}
+
 static int px_init (flux_plugin_t *p,
                     const char *topic,
                     flux_plugin_arg_t *arg,
@@ -483,7 +533,8 @@ static int px_init (flux_plugin_t *p,
     const char *pmi_opt = NULL;
     struct px *px;
     int rc;
-    pmix_info_t info[3];
+    pmix_info_t info[5];
+    int ninfo = 0;
     struct infovec *iv;
     char **nodenames;
     int nnodes;
@@ -498,20 +549,45 @@ static int px_init (flux_plugin_t *p,
 
     shell_debug ("server is enabled");
 
-    /* flux-pmix does not yet share hwloc with MPI, which forces MPI to
-     * go looking for it, sometimes at great cost to performance.
-     * Until we can address flux-framework/flux-pmix#31 properly,
-     * tell flux-core to share a hwloc xml file instead.
-     */
-    if (flux_shell_setopt_pack (shell, "hwloc", "{s:i}", "xmlfile", 1) < 0)
-        shell_warn ("unable to set Flux hwloc.xmlfile shell option");
-
     if (!(px = calloc (1, sizeof (*px)))
         || flux_plugin_aux_set (p, "px", px, (flux_free_f)px_destroy) < 0) {
         px_destroy (px);
         return -1;
     }
     px->shell = shell;
+
+    /* -o pmix.topo=restrict|node|none selects what the server shares
+     * with clients as the node topology (flux-shell-pmix(7)):
+     *
+     *   restrict  the shell's cached hwloc XML, cut down to the
+     *             cores R allocates to this shell (default)
+     *   node      the same, uncut
+     *   none      nothing; clients discover the node themselves
+     *
+     * Like the shell's affinity builtin, this plugin builds its own
+     * topology from the shell's cached XML and shapes it for its own
+     * consumer.  The hwloc.* shell options belong to the hwloc builtin
+     * and control the task environment; they have no bearing on what
+     * the server shares.
+     *
+     */
+    const char *topo_opt = "restrict";
+    if (flux_shell_getopt_unpack (shell, "pmix", "{s?s}", "topo", &topo_opt) < 0) {
+        shell_log_error ("pmix.topo must be a string");
+        return -1;
+    }
+    if (!strcmp (topo_opt, "restrict") || !strcmp (topo_opt, "node")) {
+        bool do_restrict = !strcmp (topo_opt, "restrict");
+        if (!(px->topo = topo_create (shell, do_restrict))) {
+            shell_log_error ("pmix.topo=%s: %s", topo_opt, strerror (errno));
+            return -1;
+        }
+    }
+    else if (strcmp (topo_opt, "none") != 0) {
+        shell_log_error ("pmix.topo=%s: expected restrict, node, or none",
+                         topo_opt);
+        return -1;
+    }
 
     if (flux_shell_info_unpack (shell,
                                 "{s:I s:i s:i}",
@@ -545,6 +621,8 @@ static int px_init (flux_plugin_t *p,
         int len = cp ? cp - s : strlen (s);
         shell_debug ("server outsourced to %.*s", len, s);
     }
+    if (version_check (shell, px->shell_rank) < 0)
+        return -1;
     if (!(px->it = interthread_create (shell))) {
         shell_log_error ("could not create interthread message channel ");
         return -1;
@@ -652,15 +730,17 @@ static int px_init (flux_plugin_t *p,
         }
     }
 
-    strlcpy (info[0].key, PMIX_SERVER_TMPDIR, sizeof (info[0].key));
-    info[0].value.type = PMIX_STRING;
-    info[0].value.data.string = (char *)px->job_tmpdir;
-    info[0].flags = 0;
+    strlcpy (info[ninfo].key, PMIX_SERVER_TMPDIR, sizeof (info[ninfo].key));
+    info[ninfo].value.type = PMIX_STRING;
+    info[ninfo].value.data.string = (char *)px->job_tmpdir;
+    info[ninfo].flags = 0;
+    ninfo++;
 
-    strlcpy (info[1].key, PMIX_SERVER_RANK, sizeof (info[1].key));
-    info[1].value.type = PMIX_PROC_RANK;
-    info[1].value.data.rank = px->shell_rank;
-    info[1].flags = 0;
+    strlcpy (info[ninfo].key, PMIX_SERVER_RANK, sizeof (info[ninfo].key));
+    info[ninfo].value.type = PMIX_PROC_RANK;
+    info[ninfo].value.data.rank = px->shell_rank;
+    info[ninfo].flags = 0;
+    ninfo++;
 
     /* Ensure pmix sockets are restricted to localhost to restrict the
      * impact of issues with psec authentication, which is not under our
@@ -679,12 +759,24 @@ static int px_init (flux_plugin_t *p,
      * so it still rejects the routable interface in that case and init
      * fails rather than quietly opening up.  Hence both forms.
      */
-    strlcpy (info[2].key, PMIX_TCP_IF_INCLUDE, sizeof (info[2].key));
-    info[2].value.type = PMIX_STRING;
-    info[2].value.data.string = "lo,127.0.0.0/8";
-    info[2].flags = 0;
+    strlcpy (info[ninfo].key, PMIX_TCP_IF_INCLUDE, sizeof (info[ninfo].key));
+    info[ninfo].value.type = PMIX_STRING;
+    info[ninfo].value.data.string = "lo,127.0.0.0/8";
+    info[ninfo].flags = 0;
+    ninfo++;
 
-    if ((rc = PMIx_server_init (&server_callbacks, info, 3)) != PMIX_SUCCESS) {
+    if (px->topo) {
+        int n = topo_server_info (px->topo,
+                                  &info[ninfo],
+                                  sizeof (info) / sizeof (info[0]) - ninfo);
+        if (n < 0) {
+            shell_log_error ("error setting up topology sharing");
+            return -1;
+        }
+        ninfo += n;
+    }
+
+    if ((rc = PMIx_server_init (&server_callbacks, info, ninfo)) != PMIX_SUCCESS) {
         shell_warn ("PMIx_server_init: %s", PMIx_Error_string (rc));
         return -1;
     }

@@ -597,13 +597,19 @@ static int px_init (flux_plugin_t *p,
      * clients that cannot cope with its defaults (flux-shell-pmix(7)):
      *
      *   -o pmix.store=LIST   gds modules offered (default: openpmix's)
-     *   -o pmix.auth=LIST    psec modules offered (default: openpmix's)
+     *   -o pmix.auth=LIST    psec modules offered (default: native)
      *   -o pmix.wire=LIST    encodings offered (default: openpmix's)
      *
      * store and auth pass through to PMIX_MCA_gds and PMIX_MCA_psec
      * before PMIx_server_init(), so they accept whatever this openpmix
      * accepts.  The PMIX_GDS_MODULE info key would not do for store:
      * it names the server's internal store, not what is offered.
+     *
+     * auth defaults to native rather than to what openpmix was built
+     * with.  A client takes the offered list as a requirement and
+     * fails to start if it lacks one, so offering munge beside native
+     * breaks clients built without munge, and since the client picks
+     * from the list, it protects nothing that native alone does not.
      *
      * wire passes through to PMIX_MCA_bfrops the same way, but that
      * alone is not enough.  A client selects its encoding from which
@@ -616,7 +622,7 @@ static int px_init (flux_plugin_t *p,
      * leaving a task with no server to find.
      */
     const char *store = NULL;
-    const char *auth = NULL;
+    const char *auth = "native";
     if (flux_shell_getopt_unpack (shell,
                                   "pmix",
                                   "{s?s s?s s?s}",
@@ -631,7 +637,7 @@ static int px_init (flux_plugin_t *p,
         shell_log_error ("setenv PMIX_MCA_gds: %s", strerror (errno));
         return -1;
     }
-    if (auth && setenv ("PMIX_MCA_psec", auth, 1) < 0) {
+    if (setenv ("PMIX_MCA_psec", auth, 1) < 0) {
         shell_log_error ("setenv PMIX_MCA_psec: %s", strerror (errno));
         return -1;
     }

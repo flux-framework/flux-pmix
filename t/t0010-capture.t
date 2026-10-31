@@ -171,7 +171,7 @@ test_expect_success TSHARK_LUA 'dissector decodes the connect handshake' '
 	run_timeout 30 flux run -N1 -n1 -o pmix.store=hash \
 		-o pmix.wirecapture=hash.pcapng ${BARRIER} &&
 	tshark_pmix -r hash.pcapng >dis.out &&
-	grep "> connect .*security=munge encoding=v41 mode=undescribed" dis.out &&
+	grep "> connect .*security=native encoding=v41 mode=undescribed" dis.out &&
 	grep "< connect-response status=0 pindex=0" dis.out
 '
 

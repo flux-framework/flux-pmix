@@ -49,6 +49,9 @@ SHELL OPTIONS
   **ds21** in 3.x and 4.x, **shmem2** in 5.x and 6.x, **shmem3** in
   7.x, and **hash** in all versions.
 
+  Offering only **hash** may help when the client's OpenPMIx version
+  does not interoperate with the server's.
+
 .. option:: pmix.auth=LIST
 
   Offer the listed authentication methods (see AUTHENTICATION).  LIST
@@ -101,6 +104,13 @@ SHELL OPTIONS
 
   Write a tagged log message every time it is sent, instead of once
   per job (see LOGGING).  The default is **on**.
+
+.. option:: pmix.version-check=off
+
+  Do not warn when the OpenPMIx the plugin loaded is not the one it
+  was built against.  The default is **on**.  The comparison is of
+  :c:macro:`PMIX_VERSION_MAJOR`, ``MINOR``, and ``RELEASE`` at build
+  time with :c:func:`PMIx_Get_version` at run time.
 
 LOGGING
 =======

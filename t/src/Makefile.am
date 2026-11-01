@@ -10,7 +10,7 @@ AM_CPPFLAGS = \
 	$(FLUX_OPTPARSE_CFLAGS) \
 	$(FLUX_IDSET_CFLAGS) \
 	$(OMPI_CFLAGS) \
-	$(PMIX_CFLAGS)
+	$(PMIX_CLIENT_CFLAGS)
 
 check_PROGRAMS = \
 	barrier \
@@ -44,7 +44,7 @@ test_ldadd = \
 	$(FLUX_OPTPARSE_LIBS) \
 	$(FLUX_IDSET_LIBS) \
 	$(OMPI_LIBS) \
-	$(PMIX_LIBS)
+	$(PMIX_CLIENT_LIBS)
 
 barrier_SOURCES = barrier.c
 barrier_LDADD = $(test_ldadd)

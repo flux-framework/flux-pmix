@@ -59,9 +59,8 @@ getkey_cmp() {
 # same one, and PMIx_Get_version() returns "3.2.5a1" or "OpenPMIx
 # 5.0.7a1 (...)".  The server library is what the shell plugin links;
 # PMIx_server_setup_fork() puts its version in each task's environment
-# as PMIX_VERSION.  Today both are the same library, but they are
-# recorded separately so that a run's output says which was which.
-# Each is also emitted as a TAP diagnostic, which the automake TAP
+# as PMIX_VERSION.  The two may differ (--with-pmix-server), so each
+# is recorded, and emitted as a TAP diagnostic, which the automake TAP
 # driver copies into the .log that CI keeps.  Anything the test
 # commands print goes to the .output file instead, which CI does not
 # show.
@@ -72,14 +71,14 @@ test_expect_success 'identify the openpmix client library' '
 	${FLUX_BUILD_DIR}/t/src/version >openpmix-client.version
 '
 diag "openpmix client: $(cat openpmix-client.version)"
-# The version tool and the plugin are built against the same library,
-# so the server version must match it.  If it does not, another
-# flux-pmix (an installed package, loaded by the system initrc) is
-# answering instead of this tree, and nothing below would be testing
-# what it claims to.
+# OPENPMIX_SERVER_VERSION is the version configure found for the plugin,
+# so the server must report it.  If it does not, another flux-pmix
+# (an installed package, loaded by the system initrc) is answering
+# instead of this tree, and nothing below would be testing what it
+# claims to.
 test_expect_success 'identify the openpmix server library' '
 	run_timeout 30 flux run printenv PMIX_VERSION >openpmix-server.version &&
-	grep -q "$(cat openpmix-server.version)" openpmix-client.version
+	test "$(cat openpmix-server.version)" = "$OPENPMIX_SERVER_VERSION"
 '
 diag "openpmix server: $(cat openpmix-server.version)"
 # The server also tells each task which data stores it offers, in
@@ -106,6 +105,11 @@ if test "${OPENPMIX_CLIENT_MAJOR:-0}" -ge 4; then
 fi
 if test "${OPENPMIX_CLIENT_MAJOR:-0}" -ge 5; then
 	test_set_prereq OPENPMIX5_CLIENT
+fi
+OPENPMIX_SERVER_MAJOR=$(echo "$OPENPMIX_SERVER_VERSION" | cut -d. -f1)
+if test "${OPENPMIX_CLIENT_MAJOR:-0}" -ge 4 \
+	|| test "${OPENPMIX_SERVER_MAJOR:-0}" -lt 4; then
+	test_set_prereq APP_REALM_WDIR
 fi
 
 #
@@ -209,6 +213,11 @@ test_expect_success 'job: pmix.nmap and pmix.pmap are not retrievable' '
 # misses on a 4.x client using ds21, and a qualified get naming the
 # caller's own rank makes a 4.x server wait for a commit that never
 # comes; neither is the documented form.)
+#
+# pmix.wdir is skipped for a 3.2 client on a 4.x server, where it is
+# not found: a 4.x server hands a ds21 client its app keys only inside
+# PMIX_APP_INFO_ARRAY (dstore_base.c, _store_job_info), which that
+# client's store does not unpack.  pmix.appnum is still found.
 test_expect_success 'app: pmix.appnum (provided)' '
 	cat >appnum.exp <<-EOT &&
 	0: 0
@@ -217,7 +226,7 @@ test_expect_success 'app: pmix.appnum (provided)' '
 	EOT
 	getkey_cmp pmix.appnum appnum.exp --app --proc=*
 '
-test_expect_success 'app: pmix.wdir (provided) is the job cwd' '
+test_expect_success APP_REALM_WDIR 'app: pmix.wdir (provided) is the job cwd' '
 	run2n3p ${GETKEY} --app --proc=* --rank=0 pmix.wdir >wdir.out &&
 	pwd >wdir.exp &&
 	test_cmp wdir.exp wdir.out

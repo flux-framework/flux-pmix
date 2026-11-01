@@ -2,3 +2,5 @@ if [ -n "@OMPI_PREFIX@" ]; then
   PATH=@OMPI_PREFIX@/bin:$PATH
 fi
 PATH=@FLUX_PREFIX@/bin:$PATH
+# Not PMIX_*: flux-sharness unsets PMI* so jobs inherit no launcher.
+export OPENPMIX_SERVER_VERSION="@PMIX_SERVER_VERSION@"

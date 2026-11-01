@@ -32,23 +32,17 @@ make -j
 make check
 ```
 
-To install flux-pmix with a side-installed flux-core so that the plugins 
-provided by flux-pmix can be found on flux's default search paths, build 
-and install to the same prefix. Here is an example script that uses 
-pkg-config:
+To install flux-pmix with a side-installed flux-core so that the plugins
+provided by flux-pmix can be found on flux's default search paths, build
+and install to the same prefix.  Configure looks for flux-core under the
+prefix first.  To build the server against an OpenPMIx other than the
+one pkg-config finds, name its prefix with `--with-pmix-server`; the
+test clients stay on the default one unless `--with-pmix-client` names
+another:
 
 ```console
-#!/bin/bash
-PMIX_PREFIX=/opt/openpmix-4.2.2
-FLUX_CORE_PREFIX=/home/elvis/flux
-
-PKG_CONFIG_PATH=$(pkg-config --variable pc_path pkg-config)
-PKG_CONFIG_PATH=${PMIX_PREFIX}/lib/pkgconfig:${PKG_CONFIG_PATH}
-PKG_CONFIG_PATH=${FLUX_CORE_PREFIX}/lib/pkgconfig:${PKG_CONFIG_PATH}
-
 ./autogen.sh
-PKG_CONFIG_PATH=${PKG_CONFIG_PATH} \
-     ./configure --prefix=${FLUX_CORE_PREFIX}
+./configure --prefix=/home/elvis/flux --with-pmix-server=/opt/openpmix-6.1.0
 make && make install
 ```
 

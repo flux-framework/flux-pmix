@@ -332,4 +332,23 @@ test_expect_success '1n1p the server offers only native auth by default' '
 	EOT
 '
 
+# The plugin compares the openpmix it loads with the one it was built
+# against.  Whether they match depends on the environment, so only
+# check that the runtime version was understood.
+test_expect_success '1n1p the runtime openpmix version is parsed' '
+	flux run -N1 -n1 -o verbose=1 true 2>version.err &&
+	test_must_fail grep "cannot parse openpmix version" version.err
+'
+test_expect_success '1n1p pmix.version-check=off is accepted' '
+	flux run -N1 -n1 -o pmix.version-check=off true
+'
+test_expect_success '1n1p pmix.version-check=on is accepted' '
+	flux run -N1 -n1 -o pmix.version-check=on true
+'
+test_expect_success '1n1p pmix.version-check rejects other values' '
+	test_must_fail flux run -N1 -n1 -o pmix.version-check=maybe true \
+		2>version-bad.err &&
+	grep "must be \"on\" or \"off\"" version-bad.err
+'
+
 test_done

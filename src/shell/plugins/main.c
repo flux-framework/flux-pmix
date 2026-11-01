@@ -474,6 +474,53 @@ static bool member_of_csv (const char *list, const char *name)
     return false;
 }
 
+/* The plugin is built against one openpmix and may load another, since
+ * every version since 2.x has the same soname.  Say so when the two
+ * differ.  A difference is not an error, so this is a warning, and
+ * -o pmix.version-check=off quiets it.
+ *
+ * PMIx_Get_version() returns "3.2.5a1" on 3.2 and "OpenPMIx 5.0.7a1
+ * (...)" on later versions; the numbers follow the optional name.
+ */
+static int version_check (flux_shell_t *shell, int shell_rank)
+{
+    const char *opt = NULL;
+    const char *s = PMIx_Get_version ();
+    unsigned major, minor, release;
+
+    if (flux_shell_getopt_unpack (shell,
+                                  "pmix",
+                                  "{s?s}",
+                                  "version-check", &opt) < 0
+        || (opt && strcmp (opt, "on") != 0 && strcmp (opt, "off") != 0)) {
+        shell_log_error ("pmix.version-check must be \"on\" or \"off\"");
+        return -1;
+    }
+    if (opt && !strcmp (opt, "off"))
+        return 0;
+    if (!strncmp (s, "OpenPMIx ", 9))
+        s += 9;
+    if (sscanf (s, "%u.%u.%u", &major, &minor, &release) != 3) {
+        if (shell_rank == 0)
+            shell_warn ("cannot parse openpmix version \"%s\"", s);
+        return 0;
+    }
+    if (major != PMIX_VERSION_MAJOR
+        || minor != PMIX_VERSION_MINOR
+        || release != PMIX_VERSION_RELEASE) {
+        if (shell_rank == 0)
+            shell_warn ("built against openpmix %ld.%ld.%ld but running"
+                        " %u.%u.%u (-o pmix.version-check=off to silence)",
+                        (long)PMIX_VERSION_MAJOR,
+                        (long)PMIX_VERSION_MINOR,
+                        (long)PMIX_VERSION_RELEASE,
+                        major,
+                        minor,
+                        release);
+    }
+    return 0;
+}
+
 static int px_init (flux_plugin_t *p,
                     const char *topic,
                     flux_plugin_arg_t *arg,
@@ -545,6 +592,8 @@ static int px_init (flux_plugin_t *p,
         int len = cp ? cp - s : strlen (s);
         shell_debug ("server outsourced to %.*s", len, s);
     }
+    if (version_check (shell, px->shell_rank) < 0)
+        return -1;
     if (!(px->it = interthread_create (shell))) {
         shell_log_error ("could not create interthread message channel ");
         return -1;

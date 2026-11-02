@@ -23,14 +23,27 @@ int main (int argc, char *argv[])
     char version[MPI_MAX_LIBRARY_VERSION_STRING];
     int len;
 
-    /* The library version string has no portable format, so tests that
-     * need to compare versions ask for the major number instead.  A
-     * non-Open MPI library reports 0, which reads as "older than any
-     * version we need to work around".
+    /* The library version string has no portable format, so tests ask
+     * for what they need instead: --flavor names the MPI (ompi, mpich,
+     * or unknown), and --major gives its major version from mpi.h, 0
+     * when unknown, which reads as "older than any version we need to
+     * work around".
      */
+    if (argc == 2 && !strcmp (argv[1], "--flavor")) {
+#if defined(OMPI_MAJOR_VERSION)
+        printf ("ompi\n");
+#elif defined(MPICH_NUMVERSION)
+        printf ("mpich\n");
+#else
+        printf ("unknown\n");
+#endif
+        return 0;
+    }
     if (argc == 2 && !strcmp (argv[1], "--major")) {
-#ifdef OMPI_MAJOR_VERSION
+#if defined(OMPI_MAJOR_VERSION)
         printf ("%d\n", OMPI_MAJOR_VERSION);
+#elif defined(MPICH_NUMVERSION)
+        printf ("%d\n", MPICH_NUMVERSION / 10000000);
 #else
         printf ("0\n");
 #endif

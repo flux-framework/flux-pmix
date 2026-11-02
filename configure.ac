@@ -93,8 +93,9 @@ AC_SUBST(PMIX_SERVER_VERSION)
 PKG_CHECK_MODULES([HWLOC], [hwloc >= 2.0 hwloc < 3.0])
 PKG_CHECK_MODULES([JANSSON], [jansson >= 2.10], [], [])
 
-# The MPI tests build against Open MPI, which may be pinned to a
-# prefix as the openpmix libraries are.
+# The MPI tests build against a PMIx-capable MPI: Open MPI, or an MPICH
+# configured --with-pmi=pmix.  Either may be pinned to a prefix, as the
+# openpmix libraries are.  The tests learn which MPI they got at runtime.
 AC_ARG_WITH([mpi],
   [AS_HELP_STRING([--with-mpi=PREFIX],
     [Build the MPI tests against the MPI installed under PREFIX
@@ -107,8 +108,9 @@ AC_ARG_WITH([openmpi], [], [with_mpi=$with_openmpi])
 have_mpi=no
 AS_IF([test "$with_mpi" != no], [
   X_AC_PKG_PREFIX([MPI], [$with_mpi], [ompi >= 3.0.0], [have_mpi=yes],
-    [AS_IF([test "$with_mpi" != yes],
-      [AC_MSG_ERROR([no Open MPI under $with_mpi])])])
+    [X_AC_PKG_PREFIX([MPI], [$with_mpi], [mpich >= 4.0], [have_mpi=yes],
+      [AS_IF([test "$with_mpi" != yes],
+        [AC_MSG_ERROR([no Open MPI or MPICH under $with_mpi])])])])
 ])
 AS_IF([test "$have_mpi" = yes], [
   AC_MSG_NOTICE([MPI tests use $MPI_MODULE $MPI_VERSION in $MPI_PREFIX])

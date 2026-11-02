@@ -2,7 +2,7 @@
 
 This repo adds basic pmix support to Flux.  It contains two main components
 - a Flux shell plugin that adds pmix service to the flux shell for launching
-  some versions of openmpi
+  some versions of openmpi and mpich
 - a Flux PMI client plugin that enables Flux to be launched by a foreign
   launcher that only supports pmix
 
@@ -50,11 +50,11 @@ make && make install
 
 The pmix specs cover a broad range of topics.  Although the shell plugin is
 based on the openpmix "reference implementation", it only populates callbacks
-and attributes needed to bootstrap some versions of openmpi.  As such, the pmix
-interface offered by this plugin should not be used for advanced use cases
-such as: debugger/tool interfaces, process spawn, resource allocation,
-job control, I/O forwarding, process groups, fabric support, storage support,
-event notification, or mpi sessions.
+and attributes needed to bootstrap some versions of openmpi and mpich.  As
+such, the pmix interface offered by this plugin should not be used for
+advanced use cases such as: debugger/tool interfaces, process spawn, resource
+allocation, job control, I/O forwarding, process groups, fabric support,
+storage support, event notification, or mpi sessions.
 
 Bootstrap scalability with this plugin is likely to be on par with Flux PMI-1,
 since _fence_ is implemented with the same collective algorithm as PMI-1,

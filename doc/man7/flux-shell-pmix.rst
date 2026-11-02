@@ -11,16 +11,16 @@ DESCRIPTION
 ===========
 
 :program:`pmix` is a :core:man1:`flux-shell` plugin.  It runs a PMIx
-server in each job shell, to launch programs built with Open MPI or
-other PMIx clients.
+server in each job shell, to launch programs built with Open MPI,
+MPICH, or other PMIx clients.
 
 The server is the OpenPMIx reference server, linked into the plugin.
 The OpenPMIx version that flux-pmix was built with determines the wire
 encodings, data stores, and authentication methods the server offers.
 A client selects from those when it connects.
 
-The plugin implements only what Open MPI needs to start.  Do not rely
-on it for other PMIx features.
+The plugin implements only what Open MPI and MPICH need to start.  Do
+not rely on it for other PMIx features.
 
 SHELL OPTIONS
 =============

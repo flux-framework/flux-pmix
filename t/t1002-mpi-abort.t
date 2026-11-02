@@ -10,15 +10,21 @@ MPI_ABORT=${FLUX_BUILD_DIR}/t/src/mpi_abort
 export FLUX_SHELL_RC_PATH=${FLUX_BUILD_DIR}/t/etc
 
 if ! ${MPI_VERSION} >/dev/null 2>&1; then
-    skip_all='skipping openmpi abort tests - MPI unavailable'
+    skip_all='skipping MPI abort tests - MPI unavailable'
     test_done
 fi
 
 test_under_flux 2
 
+MPI_FLAVOR=$(${MPI_VERSION} --flavor)
+case $MPI_FLAVOR in
+    ompi) test_set_prereq OMPI ;;
+    mpich) test_set_prereq MPICH ;;
+esac
+
 # See the comment in t1000-mpi-basic.t for why the multi-node cases do
 # not run on ompi v6 and later.
-if test $(${MPI_VERSION} --major) -lt 6; then
+if test $MPI_FLAVOR != ompi -o $(${MPI_VERSION} --major) -lt 6; then
 	test_set_prereq MULTINODE_TCP
 fi
 
@@ -29,12 +35,14 @@ fi
 # no procs.  openpmix hands that to the server's abort callback, which is
 # ours, and the plugin raises a fatal job exception.  v4 arrives by a
 # different road (opal_pmix.abort in the rte/pmix component) but ends in
-# the same callback.
+# the same callback.  MPICH's MPI_Abort() calls PMIx_Abort() directly,
+# with the exit code, a message naming the communicator and rank, and
+# no procs.
 #
 # t0005-abort.t calls PMIx_Abort() directly and can vary its arguments.
 # These tests cover the rest of the path: that a real MPI's MPI_Abort()
-# still reaches the callback at all.  That route is Open MPI's to change,
-# and this is the only place a change in it would be noticed.
+# still reaches the callback at all.  That route is each MPI's to
+# change, and this is the only place a change in it would be noticed.
 
 # The job exit code is not the abort status.  The plugin does not
 # propagate 'status' to the exit code (see src/shell/plugins/abort.c),
@@ -59,6 +67,10 @@ test_expect_success '1n2p MPI_Abort on rank 0 raises a job exception' '
 
 test_expect_success '1n2p exception names the aborting rank and status' '
 	grep "\.0 called PMIx_Abort (status=42)" abort_rank0.err
+'
+
+test_expect_success MPICH '1n2p exception carries the MPICH abort message' '
+	grep "MPI_Abort(MPI_COMM_WORLD, 42)" abort_rank0.err
 '
 
 test_expect_success '1n2p MPI_Abort on rank 1 raises a job exception' '

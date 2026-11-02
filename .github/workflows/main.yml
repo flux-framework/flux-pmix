@@ -40,7 +40,12 @@ jobs:
           coverage: false
           env:
             DISTCHECK: t
-        - name: "el8 - ompi v4.1.4"
+        # TOSS 4, the NNSA el8 based HPC linux distro nearing EOL, ships its
+        # own openpmix 3.2.x RPM.  Open MPI 4.1.x is the most common version
+        # provided there via environment modules, either built against the
+        # system package or using its bundled pmix 3.2.x.
+        # Make sure not to break that combination.
+        - name: "el8 - TOSS 4: pmix 3.2.5 / ompi 4.1.4"
           image: "el8"
           openpmix_server: ""
           openpmix_client: "v3.2.5"

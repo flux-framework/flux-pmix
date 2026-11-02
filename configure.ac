@@ -93,25 +93,28 @@ AC_SUBST(PMIX_SERVER_VERSION)
 PKG_CHECK_MODULES([HWLOC], [hwloc >= 2.0 hwloc < 3.0])
 PKG_CHECK_MODULES([JANSSON], [jansson >= 2.10], [], [])
 
-AC_ARG_WITH([openmpi],
-  [AS_HELP_STRING([--without-openmpi],
-    [Build without Open MPI])],
+# The MPI tests build against Open MPI, which may be pinned to a
+# prefix as the openpmix libraries are.
+AC_ARG_WITH([mpi],
+  [AS_HELP_STRING([--with-mpi=PREFIX],
+    [Build the MPI tests against the MPI installed under PREFIX
+     (default: the one pkg-config finds, or none)])],
   [],
-  [with_openmpi=yes]
+  [with_mpi=yes]
 )
-
-AS_IF([test "x$with_openmpi" != xno],
-  [PKG_CHECK_MODULES([OMPI], [ompi >= 3.0.0], [have_ompi=yes], [have_ompi=no])]
-)
-if test "${have_ompi}" = "yes"; then
-  OMPI_PREFIX=`pkg-config --variable=prefix ompi`
-  if test -z "${OMPI_PREFIX}"; then
-    AC_MSG_ERROR([failed to determine ompi prefix from pkg-config])
-  fi
-  AC_SUBST(OMPI_PREFIX)
+# --without-openmpi predates --with-mpi and may still be in use
+AC_ARG_WITH([openmpi], [], [with_mpi=$with_openmpi])
+have_mpi=no
+AS_IF([test "$with_mpi" != no], [
+  X_AC_PKG_PREFIX([MPI], [$with_mpi], [ompi >= 3.0.0], [have_mpi=yes],
+    [AS_IF([test "$with_mpi" != yes],
+      [AC_MSG_ERROR([no Open MPI under $with_mpi])])])
+])
+AS_IF([test "$have_mpi" = yes], [
+  AC_MSG_NOTICE([MPI tests use $MPI_MODULE $MPI_VERSION in $MPI_PREFIX])
   AC_DEFINE(HAVE_MPI, [1], [whether to build mpi tests])
-fi
-AM_CONDITIONAL([HAVE_MPI], [test "x$have_ompi" = "xyes"])
+])
+AM_CONDITIONAL([HAVE_MPI], [test "$have_mpi" = yes])
 
 X_AC_CHECK_PTHREADS
 

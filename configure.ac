@@ -76,23 +76,14 @@ AC_ARG_WITH([pmix-client],
 AS_IF([test "$with_pmix_server" = no -o "$with_pmix_client" = no],
   [AC_MSG_ERROR([flux-pmix requires openpmix])])
 
-# PMIX_CHECK(side, VARIABLE, prefix-or-yes, min-version)
-AC_DEFUN([PMIX_CHECK], [
-  saved_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
-  AS_IF([test "$3" != yes],
-    [AS_IF([test ! -d "$3"], [AC_MSG_ERROR([$3: not a directory])])
-     PKG_CONFIG_PATH="$3/lib/pkgconfig:$3/lib64/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
-     export PKG_CONFIG_PATH])
-  PKG_CHECK_MODULES([$2], [pmix >= $4], [],
-    [AC_MSG_ERROR([no openpmix >= $4 for the $1; see --with-pmix-$1=PREFIX])])
-  m4_toupper(pmix_$1_version)=$(pkg-config --modversion pmix)
-  AC_SUBST(m4_toupper(pmix_$1_version))
-  AC_MSG_NOTICE([$1 openpmix $(pkg-config --modversion pmix) in $(pkg-config --variable=prefix pmix)])
-  PKG_CONFIG_PATH="$saved_PKG_CONFIG_PATH"
-  export PKG_CONFIG_PATH
-])
-PMIX_CHECK([client], [PMIX_CLIENT], [$with_pmix_client], [$PMIX_CLIENT_MIN])
-PMIX_CHECK([server], [PMIX], [$with_pmix_server], [$PMIX_SERVER_MIN])
+X_AC_PKG_PREFIX([PMIX_CLIENT], [$with_pmix_client], [pmix >= $PMIX_CLIENT_MIN],
+  [AC_MSG_NOTICE([client openpmix $PMIX_CLIENT_VERSION in $PMIX_CLIENT_PREFIX])],
+  [AC_MSG_ERROR([no openpmix >= $PMIX_CLIENT_MIN for the client; see --with-pmix-client=PREFIX])])
+X_AC_PKG_PREFIX([PMIX], [$with_pmix_server], [pmix >= $PMIX_SERVER_MIN],
+  [AC_MSG_NOTICE([server openpmix $PMIX_VERSION in $PMIX_PREFIX])],
+  [AC_MSG_ERROR([no openpmix >= $PMIX_SERVER_MIN for the server; see --with-pmix-server=PREFIX])])
+PMIX_SERVER_VERSION=$PMIX_VERSION
+AC_SUBST(PMIX_SERVER_VERSION)
 
 # The plugin loads a topology that libpmix then walks, and both resolve
 # hwloc through the one copy flux-shell already loaded, so all three must

@@ -524,6 +524,41 @@ static int version_check (flux_shell_t *shell, int shell_rank)
     return 0;
 }
 
+/* Allow each local rank, with our uid/gid, to connect to the server.
+ * SECURITY: By default openpmix uses its "native" authentication method
+ * which we should verify does some something meaningful to prevent other
+ * users from claiming to be this user on connect.
+ */
+static int register_clients (struct px *px)
+{
+    const struct idset *ids;
+    pmix_proc_t proc;
+    unsigned int rank;
+    int rc;
+
+    if (!(ids = taskmap_taskids (px->taskmap, px->shell_rank)))
+        return -1;
+    snprintf (proc.nspace, sizeof (proc.nspace), "%s", px->nspace);
+    rank = idset_first (ids);
+    while (rank != IDSET_INVALID_ID) {
+        proc.rank = rank;
+        if ((rc = PMIx_server_register_client (&proc,
+                                               getuid (),
+                                               getgid (),
+                                               NULL,
+                                               NULL,
+                                               NULL)) != PMIX_OPERATION_SUCCEEDED) {
+            shell_warn ("PMIx_server_register_client %s.%d: %s",
+                        proc.nspace,
+                        proc.rank,
+                        PMIx_Error_string (rc));
+            return -1;
+        }
+        rank = idset_next (ids, rank);
+    }
+    return 0;
+}
+
 static int px_init (flux_plugin_t *p,
                     const char *topic,
                     flux_plugin_arg_t *arg,
@@ -853,6 +888,19 @@ static int px_init (flux_plugin_t *p,
     }
     infovec_destroy (iv);
     nodenames_destroy (nodenames);
+
+    /* Register every local rank now, before any task runs.  openpmix
+     * counts the local participants of a fence over explicit ranks
+     * only once all local clients are registered.  A rank that
+     * reaches such a fence first parks it, and the registration that
+     * completes the count then hands the fence to the host, even when
+     * every participant is local and the fence could complete in the
+     * library.  MPICH fences over the ranks of its node at init, so
+     * registering in task.init, just before each fork, let the first
+     * task race the second's registration.
+     */
+    if (register_clients (px) < 0)
+        goto error;
     return 0;
 error:
     infovec_destroy (iv);
@@ -924,24 +972,6 @@ static int px_task_init (flux_plugin_t *p,
         return -1;
     }
 
-    /* Allow task rank and uid/gid (same as ours) to connect to
-     * the server tcp port.
-     * SECURITY: By default openpmix uses its "native" authentication method
-     * which we should verify does some something meaningful to prevent other
-     * users from claiming to be this user on connect.
-     */
-    if ((rc = PMIx_server_register_client (&proc,
-                                           getuid (),
-                                           getgid (),
-                                           NULL,
-                                           NULL,
-                                           NULL)) != PMIX_OPERATION_SUCCEEDED) {
-        shell_warn ("PMIx_server_register_client %s.%d: %s",
-                    proc.nspace,
-                    proc.rank,
-                    PMIx_Error_string (rc));
-        return -1;
-    }
     return 0;
 }
 

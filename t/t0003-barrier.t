@@ -32,6 +32,33 @@ test_expect_success '1n2p barrier tolerates pmix.collect=false' '
 		${BARRIER} --collect-data=false
 '
 
+# A fence over the ranks of this node, as MPICH issues at init,
+# completes in openpmix without reaching the server, but only if every
+# local rank is registered when the fence arrives.  If the first task
+# fences before the second is registered, openpmix parks the fence and
+# the registration hands it to the server, which rejects a fence over
+# explicit ranks.  Delay the second task's init so the first is well
+# into its fence before the second is registered.  The server
+# registers all local ranks before any task starts, so the delay
+# changes nothing.
+test_expect_success '1n2p barrier over local ranks survives a late task' '
+	mkdir -p late &&
+	cat >late/rc.lua <<-EOT &&
+	plugin.register {
+	  name = "late",
+	  handlers = {
+	    { topic = "task.init",
+	      fn = function ()
+	        if task.info.localid == 1 then os.execute ("sleep 1") end
+	      end }
+	  }
+	}
+	source ("${FLUX_BUILD_DIR}/t/etc/rc.lua")
+	EOT
+	FLUX_SHELL_RC_PATH=$(pwd)/late run_timeout 30 flux run -N1 -n2 \
+		${BARRIER} --procs=0-1
+'
+
 # This works but it shouldn't per spec v5 sec 3.2.10
 test_expect_success XFAIL '1n2p barrier rejects required unknown option' '
 	test_must_fail run_timeout 30 flux run -N1 -n2 \

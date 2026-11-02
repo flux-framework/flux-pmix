@@ -16,7 +16,7 @@ fi
 
 test_under_flux 2
 
-# See the comment in t1000-ompi-basic.t for why the multi-node cases do
+# See the comment in t1000-mpi-basic.t for why the multi-node cases do
 # not run on ompi v6 and later.
 if test $(${MPI_VERSION} --major) -lt 6; then
 	test_set_prereq MULTINODE_TCP

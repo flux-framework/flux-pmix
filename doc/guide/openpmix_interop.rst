@@ -78,46 +78,22 @@ way, such as with Spack, gets the OpenPMIx chosen when its flux-pmix
 was built, which may be newer than the distribution's, and a user
 may deploy their own.
 
+The plugin checks at startup that the OpenPMIx it loaded is the one
+it was built against.  A different minor or release version is a
+warning.  A different major version is an error, since the server
+interface changes between majors; see ``pmix.version-check`` in
+:man7:`flux-shell-pmix`.
+
 The server implements a PMIx feature through a callback that its
 OpenPMIx declares, so a feature is available only if the server's
 OpenPMIx has the callback, whatever the client's version.  flux-pmix
-implements the callbacks that an MPI program needs to start, and can
-add the others from the OpenPMIx version shown:
-
-.. list-table::
-   :header-rows: 1
-   :widths: 36 10 12
-
-   * - Server feature
-     - OpenPMIx
-     - flux-pmix
-
-   * - fence, direct modex, abort
-     - 3.2
-     - yes
-
-   * - spawn, allocation request, job control, process monitor,
-       query, events, publish and lookup
-     - 3.2
-     - no
-
-   * - tool connections
-     - 3.2
-     - no
-
-   * - groups and process sets, which MPI Sessions in Open MPI 5.0
-       and later are built on
-     - 4.2
-     - no
-
-   * - session control, by which a scheduler pauses, resumes, or
-       ends an allocation
-     - 5.0
-     - no
-
-   * - resource blocks
-     - 6.1
-     - no
+implements what an MPI program needs to start, and every server
+version it builds against, 3.2 and later, has those callbacks.
+Groups and process sets, which MPI Sessions in Open MPI 5.0 and later
+are built on, would need a 4.2 server; session control, by which a
+scheduler pauses, resumes, or ends an allocation, 5.0; and resource
+blocks, 6.1.  :doc:`features` lists what flux-pmix implements and the
+server version each feature it does not implement would need.
 
 The client version
 ------------------
@@ -128,7 +104,7 @@ also defines tools, such as debuggers, that connect to a server
 without being launched by it; flux-pmix does not support tool
 connections.  In practice the client is an MPI library, and usually
 Open MPI.  MPICH can also be a PMIx client, but only when built with
-``--with-pmix``; its default bootstrap is PMI, which Flux serves
+``--with-pmi=pmix``; its default bootstrap is PMI, which Flux serves
 without flux-pmix.  The rest of this section is about Open MPI.
 
 Open MPI includes a copy of OpenPMIx and uses it unless ``configure``
@@ -139,15 +115,15 @@ hwloc) that it was built with are installed too, since ``configure``
 finds and uses those the same way.  On a distribution that splits
 packages, that means the ``-devel`` packages of all of them.  When no
 ``--with-pmix`` is given and any condition fails, ``configure``
-silently ignores the external OpenPMIx and uses the copy.  Thus, an
-Open MPI build that does not ask for the external OpenPMIx is likely
-to get the copy.
+silently ignores the external OpenPMIx and uses the copy.  An Open
+MPI build that does not ask for the external OpenPMIx is therefore
+likely to get the copy.
 
 Open MPI builds tend to proliferate outside of the system packages,
 and each that uses the copy installs it as a private shared library
 in its own prefix.  The table gives the last release of each Open MPI
 series, the OpenPMIx it bundles, and the bounds on an external
-OpenPMIx that ``configure`` enforces, which were not tested.
+OpenPMIx that ``configure`` enforces.
 
 .. note::
    An application works only with the MPI it was built against, so a
@@ -240,17 +216,18 @@ select.  Each OpenPMIx version has these:
      - shmem3, hash
      - Release candidate at the time of writing
 
-Optimal pairings
-----------------
+Data store selection
+--------------------
 
 When a client connects, it selects the newest encoding that it and
 the server both have.  Every version from 2.1 on has **v21**, so
 there is always one, and the encoding is not a consideration in
 pairing.
-The client also selects the data store.  The server lists the stores
-it has in the client's environment, and the client takes the one it
-prefers from those it also has.  Only **hash** is in every version.
-Thus, a client and a server that do not share a shared memory store
+
+The data store is.  The server lists the stores it has, in order of
+preference, in each task's environment, and the client takes the
+first on the list that it also has.  Only **hash** is in every
+version, so a client and a server that share no shared memory store
 use **hash**.
 
 **hash** is suboptimal.  It sends a copy of the job information to
@@ -262,142 +239,31 @@ server sends about 4.5 GB.  By contrast, a shared memory store writes
 the job information to a segment one time on each node, and sends
 each client only a description of the segment.
 
-Thus, pair clients with a server that has the same shared memory
-store: **ds21** in 3.x and 4.x, **shmem2** in 5.x and 6.x, or
-**shmem3** in 7.x.
-
-The tables that follow show the store that each client version
-selects with each server version.
-
-OpenPMIx 3.2 server:
+The shared memory stores come in three generations, and a client
+shares the server's store only when both are in the same one:
 
 .. list-table::
    :header-rows: 1
-   :widths: 16 10 10
+   :widths: 12 20
 
-   * - Clients
-     - Store
-     - Optimal
+   * - Store
+     - OpenPMIx
 
-   * - 2.2, 3.2, 4.2
-     - ds21
-     - X
+   * - ds21
+     - 2.2, 3.2, 4.2
 
-   * - 5.0 and later
-     - hash
-     -
+   * - shmem2
+     - 5.0, 6.0, 6.1
 
-OpenPMIx 4.2 server:
+   * - shmem3
+     - 7.0
 
-.. list-table::
-   :header-rows: 1
-   :widths: 16 10 10
-
-   * - Clients
-     - Store
-     - Optimal
-
-   * - 2.2, 3.2
-     - ds21
-     - X
-
-   * - 4.2
-     - ds21
-     - X
-
-   * - 5.0 and later
-     - hash
-     -
-
-OpenPMIx 5.0 server:
-
-.. list-table::
-   :header-rows: 1
-   :widths: 16 10 10
-
-   * - Clients
-     - Store
-     - Optimal
-
-   * - 2.2, 3.2
-     - hash
-     -
-
-   * - 4.2
-     - hash
-     -
-
-   * - 5.0 and later
-     - shmem2
-     - X
-
-OpenPMIx 6.1 server:
-
-.. list-table::
-   :header-rows: 1
-   :widths: 16 10 10
-
-   * - Clients
-     - Store
-     - Optimal
-
-   * - 2.2, 3.2
-     - hash
-     -
-
-   * - 4.2
-     - hash
-     -
-
-   * - 5.0
-     - shmem2
-     - X
-
-   * - 6.0
-     - shmem2
-     - X
-
-   * - 6.1
-     - shmem2
-     - X
-
-   * - 7.0
-     - hash
-     -
-
-OpenPMIx 7.0 server:
-
-.. list-table::
-   :header-rows: 1
-   :widths: 16 10 10
-
-   * - Clients
-     - Store
-     - Optimal
-
-   * - 2.2, 3.2
-     - hash
-     -
-
-   * - 4.2
-     - hash
-     -
-
-   * - 5.0
-     - hash
-     -
-
-   * - 6.0
-     - hash
-     -
-
-   * - 6.1
-     - hash
-     -
-
-   * - 7.0
-     - shmem3
-     - X
+Every other pairing uses **hash**.  A client of 3.2 or 4.0 also
+copies the server's list into its own component selection, so when
+the list names a store it lacks, it logs a component-not-found
+warning for that store, which OpenPMIx suppresses by default, and
+then uses **hash**.  ``pmix.store`` in :man7:`flux-shell-pmix`
+narrows the list the server offers.
 
 Conclusions
 -----------
@@ -413,17 +279,16 @@ Conclusions
    provides fixes only in the current series, and does not notify.
 
 2. Expect the server, not the client, to limit features.  Spawn,
-   allocation requests, and job control can be implemented on any
+   allocation requests, and job control could be implemented on any
    supported server.  MPI Sessions, the MPI 4.0 feature that Open MPI
    5.0 and later provide, are built on PMIx groups and process sets,
    which need a 4.2 or later server; a site with an el9 server cannot
    get them by any choice of client.
 
-3. Every pairing in the tables is expected to work, and the only
-   known cost of a suboptimal one is startup time in proportion to
-   job size.  For a system that runs large jobs, match clients to the
-   server's shared memory store.  Where the site controls how Open
-   MPI is built, build it with ``--with-pmix`` against the system
-   OpenPMIx; then the client is the server's own OpenPMIx and shares
-   its store.  Where it does not, the pairing tables show which
-   clients share the server's store.
+3. Every pairing is expected to work, and the only known cost of a
+   suboptimal one is startup time in proportion to job size.  For a
+   system that runs large jobs, pair clients with a server of the
+   same store generation.  Where the site controls how Open MPI is
+   built, build it with ``--with-pmix`` against the system OpenPMIx;
+   then the client is the server's own OpenPMIx and shares its
+   store.

@@ -76,23 +76,14 @@ AC_ARG_WITH([pmix-client],
 AS_IF([test "$with_pmix_server" = no -o "$with_pmix_client" = no],
   [AC_MSG_ERROR([flux-pmix requires openpmix])])
 
-# PMIX_CHECK(side, VARIABLE, prefix-or-yes, min-version)
-AC_DEFUN([PMIX_CHECK], [
-  saved_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
-  AS_IF([test "$3" != yes],
-    [AS_IF([test ! -d "$3"], [AC_MSG_ERROR([$3: not a directory])])
-     PKG_CONFIG_PATH="$3/lib/pkgconfig:$3/lib64/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
-     export PKG_CONFIG_PATH])
-  PKG_CHECK_MODULES([$2], [pmix >= $4], [],
-    [AC_MSG_ERROR([no openpmix >= $4 for the $1; see --with-pmix-$1=PREFIX])])
-  m4_toupper(pmix_$1_version)=$(pkg-config --modversion pmix)
-  AC_SUBST(m4_toupper(pmix_$1_version))
-  AC_MSG_NOTICE([$1 openpmix $(pkg-config --modversion pmix) in $(pkg-config --variable=prefix pmix)])
-  PKG_CONFIG_PATH="$saved_PKG_CONFIG_PATH"
-  export PKG_CONFIG_PATH
-])
-PMIX_CHECK([client], [PMIX_CLIENT], [$with_pmix_client], [$PMIX_CLIENT_MIN])
-PMIX_CHECK([server], [PMIX], [$with_pmix_server], [$PMIX_SERVER_MIN])
+X_AC_PKG_PREFIX([PMIX_CLIENT], [$with_pmix_client], [pmix >= $PMIX_CLIENT_MIN],
+  [AC_MSG_NOTICE([client openpmix $PMIX_CLIENT_VERSION in $PMIX_CLIENT_PREFIX])],
+  [AC_MSG_ERROR([no openpmix >= $PMIX_CLIENT_MIN for the client; see --with-pmix-client=PREFIX])])
+X_AC_PKG_PREFIX([PMIX], [$with_pmix_server], [pmix >= $PMIX_SERVER_MIN],
+  [AC_MSG_NOTICE([server openpmix $PMIX_VERSION in $PMIX_PREFIX])],
+  [AC_MSG_ERROR([no openpmix >= $PMIX_SERVER_MIN for the server; see --with-pmix-server=PREFIX])])
+PMIX_SERVER_VERSION=$PMIX_VERSION
+AC_SUBST(PMIX_SERVER_VERSION)
 
 # The plugin loads a topology that libpmix then walks, and both resolve
 # hwloc through the one copy flux-shell already loaded, so all three must
@@ -102,25 +93,30 @@ PMIX_CHECK([server], [PMIX], [$with_pmix_server], [$PMIX_SERVER_MIN])
 PKG_CHECK_MODULES([HWLOC], [hwloc >= 2.0 hwloc < 3.0])
 PKG_CHECK_MODULES([JANSSON], [jansson >= 2.10], [], [])
 
-AC_ARG_WITH([openmpi],
-  [AS_HELP_STRING([--without-openmpi],
-    [Build without Open MPI])],
+# The MPI tests build against a PMIx-capable MPI: Open MPI, or an MPICH
+# configured --with-pmi=pmix.  Either may be pinned to a prefix, as the
+# openpmix libraries are.  The tests learn which MPI they got at runtime.
+AC_ARG_WITH([mpi],
+  [AS_HELP_STRING([--with-mpi=PREFIX],
+    [Build the MPI tests against the MPI installed under PREFIX
+     (default: the one pkg-config finds, or none)])],
   [],
-  [with_openmpi=yes]
+  [with_mpi=yes]
 )
-
-AS_IF([test "x$with_openmpi" != xno],
-  [PKG_CHECK_MODULES([OMPI], [ompi >= 3.0.0], [have_ompi=yes], [have_ompi=no])]
-)
-if test "${have_ompi}" = "yes"; then
-  OMPI_PREFIX=`pkg-config --variable=prefix ompi`
-  if test -z "${OMPI_PREFIX}"; then
-    AC_MSG_ERROR([failed to determine ompi prefix from pkg-config])
-  fi
-  AC_SUBST(OMPI_PREFIX)
+# --without-openmpi predates --with-mpi and may still be in use
+AC_ARG_WITH([openmpi], [], [with_mpi=$with_openmpi])
+have_mpi=no
+AS_IF([test "$with_mpi" != no], [
+  X_AC_PKG_PREFIX([MPI], [$with_mpi], [ompi >= 3.0.0], [have_mpi=yes],
+    [X_AC_PKG_PREFIX([MPI], [$with_mpi], [mpich >= 4.0], [have_mpi=yes],
+      [AS_IF([test "$with_mpi" != yes],
+        [AC_MSG_ERROR([no Open MPI or MPICH under $with_mpi])])])])
+])
+AS_IF([test "$have_mpi" = yes], [
+  AC_MSG_NOTICE([MPI tests use $MPI_MODULE $MPI_VERSION in $MPI_PREFIX])
   AC_DEFINE(HAVE_MPI, [1], [whether to build mpi tests])
-fi
-AM_CONDITIONAL([HAVE_MPI], [test "x$have_ompi" = "xyes"])
+])
+AM_CONDITIONAL([HAVE_MPI], [test "$have_mpi" = yes])
 
 X_AC_CHECK_PTHREADS
 

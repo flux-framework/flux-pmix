@@ -36,8 +36,8 @@ TESTSCRIPTS = \
 	t0011-stdkeys.t \
 	t0012-log.t \
 	t0013-topo.t \
-	t1000-ompi-basic.t \
-	t1002-ompi-abort.t
+	t1000-mpi-basic.t \
+	t1002-mpi-abort.t
 
 # make check runs these TAP tests directly (both scripts and programs)
 TESTS = \

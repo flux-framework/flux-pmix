@@ -9,7 +9,7 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir) \
 	$(FLUX_OPTPARSE_CFLAGS) \
 	$(FLUX_IDSET_CFLAGS) \
-	$(OMPI_CFLAGS) \
+	$(MPI_CFLAGS) \
 	$(PMIX_CLIENT_CFLAGS)
 	$(HWLOC_CFLAGS)
 
@@ -45,7 +45,7 @@ test_ldadd = \
 	$(top_builddir)/src/common/libutil/libutil.la \
 	$(FLUX_OPTPARSE_LIBS) \
 	$(FLUX_IDSET_LIBS) \
-	$(OMPI_LIBS) \
+	$(MPI_LIBS) \
 	$(PMIX_CLIENT_LIBS)
 
 barrier_SOURCES = barrier.c

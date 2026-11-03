@@ -11,15 +11,24 @@ ARG UID=1000
 # installs under /opt/openpmix-server, and the matrix row passes
 # --with-pmix-server pointing there.  Neither is built with debug,
 # which would make buffers fully described.
+#
+# MPICH names a release to build in place of Open MPI, against the
+# client openpmix.  No distribution builds MPICH with PMIx, so there
+# is no native MPICH to test.
 ARG OPENPMIX_SERVER=
 ARG OPENPMIX_CLIENT=
 ARG OMPI=
+ARG MPICH=
 
 # A built client openpmix replaces the distribution's, but the
 # distribution's Open MPI depends on the distribution's pmix, so a
-# client ref needs an Open MPI ref too (or none at all).
-RUN if test -n "$OPENPMIX_CLIENT" -a -z "$OMPI"; then \
-      echo "OPENPMIX_CLIENT needs OMPI: distribution Open MPI uses distribution pmix" >&2; \
+# client ref needs an MPI built here too (or none at all).
+RUN if test -n "$OPENPMIX_CLIENT" -a -z "$OMPI$MPICH"; then \
+      echo "OPENPMIX_CLIENT needs OMPI or MPICH: distribution Open MPI uses distribution pmix" >&2; \
+      exit 1; \
+    fi
+RUN if test -n "$MPICH" -a -n "$OMPI"; then \
+      echo "MPICH and OMPI cannot both be built: they share the system prefix" >&2; \
       exit 1; \
     fi
 
@@ -53,7 +62,7 @@ RUN sudo yum -y update \
     libevent-devel \
     zlib-devel \
     $(test -n "$OPENPMIX_CLIENT" || echo pmix-devel) \
-    $(test -n "$OMPI" || echo openmpi-devel) \
+    $(test -n "$OMPI$MPICH" || echo openmpi-devel) \
  && sudo yum -y remove mpich mpich-devel \
  && sudo yum clean all
 ENV PATH=/usr/lib64/openmpi/bin:$PATH \
@@ -99,6 +108,27 @@ RUN if test -n "$OMPI"; then \
    && sudo make install \
    && cd .. \
    && rm -rf ompi; \
+    fi
+
+# build MPICH when a release is given.  The release tarball needs no
+# autogen, and without Fortran no python.  ch3:nemesis is the device
+# that reaches every rank over tcp, as the testsuite's loopback nodes
+# need; hydra is not built since Flux launches the tasks.  The pmix
+# prefix is the client openpmix, built or from the distribution.
+RUN if test -n "$MPICH"; then \
+      cd /tmp \
+   && wget -O - https://github.com/pmodels/mpich/releases/download/v$MPICH/mpich-$MPICH.tar.gz \
+      | tar xz \
+   && cd mpich-$MPICH \
+   && ./configure --prefix=/usr \
+        --with-pmi=pmix --with-pmix=$(pkg-config --variable=prefix pmix) \
+        --with-hwloc=/usr --with-device=ch3:nemesis --with-pm=no \
+        --disable-fortran --disable-cxx --disable-romio \
+        --enable-g=dbg --enable-fast=O1 \
+   && make -j $(nproc) \
+   && sudo make install \
+   && cd .. \
+   && rm -rf mpich-$MPICH; \
     fi
 
 USER $USER

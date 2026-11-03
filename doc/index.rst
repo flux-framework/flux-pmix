@@ -24,6 +24,7 @@ PMI client plugin
    :maxdepth: 2
    :caption: Guides
 
+   guide/build
    guide/features
    guide/openpmix_interop
    guide/tracing

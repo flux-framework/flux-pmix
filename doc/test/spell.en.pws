@@ -221,3 +221,9 @@ taskmap
 TDIR
 WDIR
 const
+aspell
+config
+debbuild
+jansson
+LIBDIR
+plugindir

@@ -53,6 +53,7 @@ html: conf.py $(RST_FILES) $(GUIDE_FILES)
 		$(STDERR_DEVNULL)
 
 GUIDE_FILES = \
+	guide/build.rst \
 	guide/features.rst \
 	guide/openpmix_interop.rst \
 	guide/tracing.rst \

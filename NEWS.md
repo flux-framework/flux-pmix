@@ -1,3 +1,31 @@
+flux-pmix version 0.9.0 - 2026-11-04
+------------------------------------
+
+## New Features
+
+ * plugin: share the node topology with clients (#157)
+ * plugin: avoid deadlock on log upcall error path (#158)
+ * plugin: implement server callback for `PMIx_Log()` (#156)
+ * add a wire protocol capture shim and wireshark dissector (#150)
+
+## Fixes
+
+ * plugin: abort if runtime major version differs from build time (#164)
+ * plugin: fix occasional MPICH `MPI_Init()` failure with "fence over proc
+   subset is not supported" (#161)
+ * plugin: offer only pmix.auth=native by default (#159)
+ * plugin: improve compliance with the PMIx Standard (#154)
+
+## Build/CI/Test/Documentation
+
+ * doc: bring guide pages up to date and cut README (#165)
+ * testsuite: cover MPICH built --with-pmix (#163)
+ * ci: label the el8 row as the TOSS 4 builder (#162)
+ * ci: add coverage for mixed client/server openpmix versions (#160)
+ * testsuite:  improve test resilience, trim extra tests (#155)
+ * doc: cover -o pmix.auth=none (#151)
+ * doc: add notes about pmix version interoperability (#149)
+
 flux-pmix version 0.8.0 - 2026-10-20
 ------------------------------------
 

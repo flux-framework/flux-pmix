@@ -70,7 +70,17 @@ struct px {
     struct topo *topo;      // topology shared with clients, or NULL
 };
 
-static pmix_server_module_t server_callbacks;
+/* PMIx_server_init() copies the module with the library's own sizeof,
+ * and each openpmix major appends members, so a library newer than
+ * the build reads past the module.  The pad makes what it reads NULL,
+ * which every openpmix treats as "not provided", so a load that
+ * version_check() lets through does not hand the library stray
+ * pointers as callbacks.  16 covers 3.2 to 7.0 twice over.
+ */
+static struct {
+    pmix_server_module_t module;
+    void *pad[16];
+} server_callbacks;
 
 static void px_destroy (struct px *px)
 {
@@ -478,9 +488,14 @@ static bool member_of_csv (const char *list, const char *name)
 }
 
 /* The plugin is built against one openpmix and may load another, since
- * every version since 2.x has the same soname.  Say so when the two
- * differ.  A difference is not an error, so this is a warning, and
- * -o pmix.version-check=off quiets it.
+ * every version since 2.x has the same soname.  Within a major series
+ * the interface the plugin uses is unchanged, so a minor or release
+ * difference is only worth a warning, and -o pmix.version-check=off
+ * quiets it.  Across majors it is not: pmix_server_module_t gains
+ * members, and before 4.0 PMIx_Register_event_handler() returned
+ * nothing.  Refuse the combination, since it is untested and may
+ * crash, unless -o pmix.version-check=off accepts it; the pad on
+ * server_callbacks keeps the module copy safe at least.
  *
  * PMIx_Get_version() returns "3.2.5a1" on 3.2 and "OpenPMIx 5.0.7a1
  * (...)" on later versions; the numbers follow the optional name.
@@ -503,14 +518,30 @@ static int version_check (flux_shell_t *shell, int shell_rank)
         return 0;
     if (!strncmp (s, "OpenPMIx ", 9))
         s += 9;
+    /* Every rank fails, so none initializes the server on the wrong
+     * library, but one message is enough.
+     */
     if (sscanf (s, "%u.%u.%u", &major, &minor, &release) != 3) {
         if (shell_rank == 0)
-            shell_warn ("cannot parse openpmix version \"%s\"", s);
-        return 0;
+            shell_log_error ("cannot parse openpmix version \"%s\""
+                             " (-o pmix.version-check=off to skip the check)",
+                             s);
+        return -1;
     }
-    if (major != PMIX_VERSION_MAJOR
-        || minor != PMIX_VERSION_MINOR
-        || release != PMIX_VERSION_RELEASE) {
+    if (major != PMIX_VERSION_MAJOR) {
+        if (shell_rank == 0)
+            shell_log_error ("built against openpmix %ld.%ld.%ld but running"
+                             " %u.%u.%u: the major versions must match"
+                             " (-o pmix.version-check=off to run anyway)",
+                             (long)PMIX_VERSION_MAJOR,
+                             (long)PMIX_VERSION_MINOR,
+                             (long)PMIX_VERSION_RELEASE,
+                             major,
+                             minor,
+                             release);
+        return -1;
+    }
+    if (minor != PMIX_VERSION_MINOR || release != PMIX_VERSION_RELEASE) {
         if (shell_rank == 0)
             shell_warn ("built against openpmix %ld.%ld.%ld but running"
                         " %u.%u.%u (-o pmix.version-check=off to silence)",
@@ -666,22 +697,22 @@ static int px_init (flux_plugin_t *p,
         shell_log_error ("could not create fence handler");
         return -1;
     }
-    server_callbacks.fence_nb = fence_server_cb;
+    server_callbacks.module.fence_nb = fence_server_cb;
     if (!(px->abort = abort_create (shell, px->it))) {
         shell_log_error ("could not create abort handler");
         return -1;
     }
-    server_callbacks.abort = abort_server_cb;
+    server_callbacks.module.abort = abort_server_cb;
     if (!(px->dmodex = dmodex_create (shell, px->it))) {
         shell_log_error ("could not create dmodex handler");
         return -1;
     }
-    server_callbacks.direct_modex = dmodex_server_cb;
+    server_callbacks.module.direct_modex = dmodex_server_cb;
     if (!(px->log = log_create (shell, px->it))) {
         shell_log_error ("could not create log handler");
         return -1;
     }
-    server_callbacks.log = log_server_cb;
+    server_callbacks.module.log = log_server_cb;
     /* openpmix's own syslog plog module claims the syslog channels
      * before the log callback is reached, and writes them to the
      * node's syslog instead of the job.  In 3.x it then marks each
@@ -811,7 +842,7 @@ static int px_init (flux_plugin_t *p,
         ninfo += n;
     }
 
-    if ((rc = PMIx_server_init (&server_callbacks, info, ninfo)) != PMIX_SUCCESS) {
+    if ((rc = PMIx_server_init (&server_callbacks.module, info, ninfo)) != PMIX_SUCCESS) {
         shell_warn ("PMIx_server_init: %s", PMIx_Error_string (rc));
         return -1;
     }

@@ -121,10 +121,13 @@ SHELL OPTIONS
 
 .. option:: pmix.version-check=off
 
-  Do not warn when the OpenPMIx the plugin loaded is not the one it
-  was built against.  The default is **on**.  The comparison is of
+  Do not compare the OpenPMIx the plugin loaded with the one it was
+  built against.  The default is **on**.  The comparison is of
   :c:macro:`PMIX_VERSION_MAJOR`, ``MINOR``, and ``RELEASE`` at build
-  time with :c:func:`PMIx_Get_version` at run time.
+  time with :c:func:`PMIx_Get_version` at run time.  A different
+  minor or release version is a warning.  A different major version
+  is an error, since the server interface changes between majors and
+  the combination may crash; **off** runs it anyway.
 
 LOGGING
 =======

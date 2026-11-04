@@ -1,15 +1,16 @@
 flux-pmix
 =========
 
-The flux-pmix project adds PMIx support to the Flux resource manager
-framework, so that Flux can launch MPI programs that bootstrap with PMIx,
-and can itself be launched by a resource manager that offers only PMIx.
-It contains two components:
+The flux-pmix project adds `PMIx <https://openpmix.github.io>`_
+support to the Flux resource manager framework, so that Flux can
+launch MPI programs that bootstrap with PMIx, and can itself be
+launched by a resource manager that offers only PMIx.  It contains
+two components:
 
 Shell plugin
   A :core:man1:`flux-shell` plugin that runs a PMIx server in each job
-  shell, for programs built with Open MPI or another PMIx client.  It is
-  enabled per job on the submission command line::
+  shell, for programs built with Open MPI, MPICH, or another PMIx
+  client.  It is enabled per job on the submission command line::
 
     $ flux run -o pmi=pmix myprogram
 
@@ -24,6 +25,8 @@ PMI client plugin
    :maxdepth: 2
    :caption: Guides
 
+   guide/build
+   guide/features
    guide/openpmix_interop
    guide/tracing
    guide/wire_protocol
@@ -52,5 +55,8 @@ Related Information
    * - OpenPMIx, the PMIx reference implementation
      - `Docs <https://docs.openpmix.org>`__
 
+   * - The PMIx Standard
+     - `GitHub <https://github.com/pmix/pmix-standard>`__
+
    * - flux-pmix source and issues
-     - `GitHub <https://github.com/flux-framework/flux-pmix>`_
+     - `GitHub <https://github.com/flux-framework/flux-pmix>`__

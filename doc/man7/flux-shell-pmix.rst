@@ -19,8 +19,9 @@ The OpenPMIx version that flux-pmix was built with determines the wire
 encodings, data stores, and authentication methods the server offers.
 A client selects from those when it connects.
 
-The plugin implements only what Open MPI and MPICH need to start.  Do
-not rely on it for other PMIx features.
+The plugin implements what Open MPI and MPICH need to start, and a
+few features beyond that.  :doc:`/guide/features` lists what is
+implemented and what is not.
 
 SHELL OPTIONS
 =============
@@ -244,6 +245,7 @@ Flux: http://flux-framework.org
 
 OpenPMIx: https://openpmix.github.io
 
+:doc:`/guide/features`, :doc:`/guide/openpmix_interop`,
 :doc:`/guide/tracing`
 
 SEE ALSO

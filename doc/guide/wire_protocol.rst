@@ -1835,7 +1835,7 @@ connect response.  It then answers requests on their tags:
 * **register-events**, **job-control**, **notify**, and
   **deregister-events**, with a status, since Open MPI sends them
   at startup and tolerates ``PMIX_ERR_NOT_SUPPORTED``;
-* **abort** and **finalize**, through the host.
+* **abort**, **log**, and **finalize**, through the host.
 
 The server also sends events on tag 0 when the host asks it to,
 and must be prepared for a client to connect more than once and

@@ -37,6 +37,7 @@ TESTSCRIPTS = \
 	t0012-log.t \
 	t0013-topo.t \
 	t0014-version.t \
+	t0015-query.t \
 	t1000-mpi-basic.t \
 	t1002-mpi-abort.t
 

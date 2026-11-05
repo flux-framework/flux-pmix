@@ -22,6 +22,7 @@ check_PROGRAMS = \
 	notify \
 	pmixlog \
 	requests \
+	query \
 	topo \
 	mpi_version
 
@@ -71,6 +72,9 @@ pmixlog_LDADD = $(test_ldadd)
 
 requests_SOURCES = requests.c
 requests_LDADD = $(test_ldadd)
+
+query_SOURCES = query.c
+query_LDADD = $(test_ldadd)
 
 topo_SOURCES = topo.c
 topo_LDADD = $(test_ldadd) $(HWLOC_LIBS)

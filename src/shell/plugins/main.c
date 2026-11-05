@@ -19,6 +19,7 @@
 #include <limits.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/stat.h>
 #include <jansson.h>
 #include <flux/shell.h>
 #include <flux/taskmap.h>
@@ -62,6 +63,7 @@ struct px {
     int total_nprocs;
     const struct taskmap *taskmap;
     const char *job_tmpdir;
+    char *nsdir;            // PMIX_NSDIR, under job_tmpdir
     bool server_initialized;
     struct interthread *it;
     struct fence *fence;
@@ -103,6 +105,7 @@ static void px_destroy (struct px *px)
         capture_destroy (px->capture);
         interthread_destroy (px->it);
         topo_destroy (px->topo); // after finalize: the server borrows it
+        free (px->nsdir);
         free (px);
         errno = saved_errno;
     }
@@ -718,6 +721,20 @@ static int px_init (flux_plugin_t *p,
     shell_debug ("total_nprocs = %d", px->total_nprocs);
     if (!(px->job_tmpdir = flux_shell_getenv (shell, "FLUX_JOB_TMPDIR")))
         return -1;
+    /* PMIX_NSDIR is the job's directory under PMIX_TMPDIR, which is
+     * the job tmpdir here since a shell hosts one job and Flux has no
+     * session.  It gets its own subdirectory rather than the tmpdir
+     * itself: Open MPI takes the key as its job session directory and
+     * unlinks what is in it at finalize, and the server's rendezvous
+     * files live in the tmpdir.  The shell removes the tmpdir, and
+     * this with it, at job exit (PMIX_TDIR_RMCLEAN).
+     */
+    if (asprintf (&px->nsdir, "%s/pmix", px->job_tmpdir) < 0)
+        return -1;
+    if (mkdir (px->nsdir, 0700) < 0 && errno != EEXIST) {
+        shell_log_errno ("mkdir %s", px->nsdir);
+        return -1;
+    }
 
     if (!(px->taskmap = flux_shell_get_taskmap (shell))) {
         shell_log_error ("failed to get taskmap");
@@ -933,6 +950,7 @@ static int px_init (flux_plugin_t *p,
         || infovec_set_bool (iv, PMIX_TDIR_RMCLEAN, true) < 0
         || infovec_set_u32 (iv, PMIX_JOB_NUM_APPS, 1) < 0
         || infovec_set_str (iv, PMIX_TMPDIR, px->job_tmpdir) < 0
+        || infovec_set_str (iv, PMIX_NSDIR, px->nsdir) < 0
         || infovec_set_u32 (iv, PMIX_LOCAL_SIZE, px->local_nprocs) < 0
         /* A PMIx session is a scheduler allocation, which a server
          * hosting several jobs uses to tell them apart; the Standard

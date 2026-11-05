@@ -34,6 +34,8 @@ pmix_la_SOURCES = \
 	notify.c \
 	dmodex.h \
 	dmodex.c \
+	query.h \
+	query.c \
 	capture.h \
 	capture.c \
 	log.h \

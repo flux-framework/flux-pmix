@@ -99,14 +99,14 @@ one the Standard assigns to the key.
      - The Flux job id.
 
    * - Job
-     - yes
      - :const:`PMIX_JOB_SIZE`, :const:`PMIX_JOB_NUM_APPS`, :const:`PMIX_NUM_NODES`,
        :const:`PMIX_NODE_LIST`
+     - yes
      -
 
    * - Job
-     - yes
      - :const:`PMIX_TMPDIR`, :const:`PMIX_TDIR_RMCLEAN`
+     - yes
      -
 
    * - Job

@@ -42,6 +42,12 @@ json_t *codec_info_array_encode (const pmix_info_t *info, size_t ninfo);
 int codec_info_array_decode (json_t *o, pmix_info_t **info, size_t *ninfo);
 void codec_info_array_destroy (pmix_info_t *info, size_t ninfo);
 
+json_t *codec_query_array_encode (const pmix_query_t *queries, size_t nqueries);
+int codec_query_array_decode (json_t *o,
+                              pmix_query_t **queries,
+                              size_t *nqueries);
+void codec_query_array_destroy (pmix_query_t *queries, size_t nqueries);
+
 #endif // _PX_CODEC_H
 
 // vi:tabstop=4 shiftwidth=4 expandtab

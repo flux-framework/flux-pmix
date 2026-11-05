@@ -274,6 +274,60 @@ void check_proc_array (void)
     json_decref (o);
 }
 
+void check_query_array (void)
+{
+    pmix_query_t query[2];
+    char *keys0[] = { "pmix.qry.psetnum", "pmix.qry.psets", NULL };
+    char *keys1[] = { "pmix.qry.ns", NULL };
+    pmix_info_t qual[1];
+    json_t *o;
+    pmix_query_t *query2;
+    size_t nquery2;
+
+    strlcpy (qual[0].key, "pmix.qry.rfsh", sizeof (qual[0].key));
+    qual[0].flags = 0;
+    qual[0].value.type = PMIX_BOOL;
+    qual[0].value.data.flag = true;
+
+    query[0].keys = keys0;
+    query[0].qualifiers = qual;
+    query[0].nqual = 1;
+    query[1].keys = keys1;
+    query[1].qualifiers = NULL;
+    query[1].nqual = 0;
+
+    o = codec_query_array_encode (query, 2);
+    ok (o != NULL,
+        "codec_query_array_encode works on 2 element array");
+    ok (codec_query_array_decode (o, &query2, &nquery2) == 0,
+        "codec_query_array_decode works");
+    ok (nquery2 == 2,
+        "nqueries is correct");
+    ok (query2[0].keys != NULL
+        && query2[0].keys[0] && !strcmp (query2[0].keys[0], keys0[0])
+        && query2[0].keys[1] && !strcmp (query2[0].keys[1], keys0[1])
+        && query2[0].keys[2] == NULL,
+        "query[0] keys are correct");
+    ok (query2[0].nqual == 1
+        && !strcmp (query2[0].qualifiers[0].key, qual[0].key)
+        && query2[0].qualifiers[0].value.type == PMIX_BOOL
+        && query2[0].qualifiers[0].value.data.flag == true,
+        "query[0] qualifiers are correct");
+    ok (query2[1].keys != NULL
+        && query2[1].keys[0] && !strcmp (query2[1].keys[0], keys1[0])
+        && query2[1].keys[1] == NULL,
+        "query[1] keys are correct");
+    ok (query2[1].nqual == 0,
+        "query[1] has no qualifiers");
+    codec_query_array_destroy (query2, nquery2);
+    json_decref (o);
+
+    o = json_pack ("[{s:[i] s:[]}]", "keys", 42, "qualifiers");
+    ok (codec_query_array_decode (o, &query2, &nquery2) < 0,
+        "codec_query_array_decode fails on a non-string key");
+    json_decref (o);
+}
+
 int main (int argc, char **argv)
 {
     plan (NO_PLAN);
@@ -286,6 +340,7 @@ int main (int argc, char **argv)
 
     check_proc_array ();
     check_info_array ();
+    check_query_array ();
 
     done_testing ();
     return 0;

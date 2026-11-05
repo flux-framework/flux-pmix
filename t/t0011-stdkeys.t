@@ -181,6 +181,23 @@ test_expect_success 'job: pmix.tdir.rmclean (provided)' '
 	echo true >rmclean.exp &&
 	test_cmp rmclean.exp rmclean.out
 '
+# Each flux run is a new job with its own tmpdir, so the key and the
+# directory are checked within one job.
+test_expect_success 'job: pmix.nsdir (provided) is a directory under pmix.tmpdir' '
+	cat >nsdir.sh <<-EOT &&
+	#!/bin/sh
+	test "\$(${GETKEY} --proc=* pmix.nsdir)" = "\$FLUX_JOB_TMPDIR/pmix" \\
+	    && test -d \$FLUX_JOB_TMPDIR/pmix && echo ok
+	EOT
+	chmod +x nsdir.sh &&
+	run2n3p ./nsdir.sh >nsdir.out &&
+	cat >nsdir.exp <<-EOT &&
+	ok
+	ok
+	ok
+	EOT
+	test_cmp nsdir.exp nsdir.out
+'
 # The PMI-1 process mapping of RFC 13.  Optional in the Standard;
 # MPICH uses it for its node map when present and resolves the map
 # itself otherwise.  Passed through unchanged by openpmix.  For 2

@@ -171,7 +171,11 @@ node or rank.
 Query Operations
 ----------------
 
-Chapter 7 of the Standard, Query Operations.
+Chapter 7 of the Standard, Query Operations.  A client asks the
+server for a list of keys, and the server answers what it can from
+its own data and hands the rest to its host.  flux-pmix takes the
+rest in its query callback, looks up each key on its own, and
+answers the ones it has.
 
 .. list-table::
    :header-rows: 1
@@ -182,8 +186,101 @@ Chapter 7 of the Standard, Query Operations.
      - Notes
 
    * - :func:`PMIx_Query_info`
+     - yes
+     - The keys it answers are listed below.
+
+The Standard requires no particular key.  Section 7.1.2 says an
+unsupported key is handled like one that cannot be found, and
+section 17.3.18 lists every key the host may answer as optional.
+The keys are those of section 7.1.4.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 40 8 32
+
+   * - Key
+     - Status
+     - Notes
+
+   * - :const:`PMIX_QUERY_STABLE_ABI_VERSION`,
+       :const:`PMIX_QUERY_PROVISIONAL_ABI_VERSION`
+     - yes
+     - Answered in the client.  Needs a 4.2 client.
+
+   * - :const:`PMIX_QUERY_ATTRIBUTE_SUPPORT`
+     - yes
+     - Answered in the server.  Needs a 4.0 client.
+
+   * - :const:`PMIX_QUERY_AVAIL_SERVERS`
      - no
-     - Open MPI sends this at startup and tolerates the error.
+     - The server writes no rendezvous file.
+
+   * - :const:`PMIX_QUERY_NUM_PSETS`, :const:`PMIX_QUERY_PSET_NAMES`
+     - no
+     - Open MPI Sessions queries these.
+
+   * - :const:`PMIX_QUERY_PSET_MEMBERSHIP`
+     - no
+     - The members of a process set.
+
+   * - :const:`PMIX_QUERY_NAMESPACES`,
+       :const:`PMIX_QUERY_NAMESPACE_INFO`,
+       :const:`PMIX_QUERY_JOB_STATUS`
+     - no
+     - The job and its status.
+
+   * - :const:`PMIX_QUERY_PROC_TABLE`,
+       :const:`PMIX_QUERY_LOCAL_PROC_TABLE`
+     - no
+     - The process table.
+
+   * - :const:`PMIX_QUERY_SUPPORTED_KEYS`,
+       :const:`PMIX_QUERY_SUPPORTED_QUALIFIERS`
+     - no
+     - What the callback answers.
+
+   * - :const:`PMIX_QUERY_SPAWN_SUPPORT`,
+       :const:`PMIX_QUERY_DEBUG_SUPPORT`,
+       :const:`PMIX_QUERY_AUTHORIZATIONS`
+     - no
+     - What the host supports.
+
+   * - :const:`PMIX_QUERY_QUEUE_LIST`, :const:`PMIX_QUERY_QUEUE_STATUS`,
+       :const:`PMIX_QUERY_ALLOC_STATUS`, :const:`PMIX_TIME_REMAINING`
+     - no
+     - The scheduler and the allocation.
+
+   * - :const:`PMIX_QUERY_MEMORY_USAGE`,
+       :const:`PMIX_AVAIL_PHYS_MEMORY`, :const:`PMIX_DAEMON_MEMORY`,
+       :const:`PMIX_CLIENT_AVG_MEMORY`
+     - no
+     - Memory use.
+
+A reserved key of chapter 6 may also be queried.  The client
+answers it from its copy of the job data, like :func:`PMIx_Get`,
+when a :const:`PMIX_PROCID` qualifier names the job or a rank.
+Without one the key is looked up under no rank, which matches
+nothing, and it goes to the callback, which does not answer it.
+
+MPI Sessions in Open MPI 5.0 and later queries the process set
+count and names at :func:`MPI_Session_init` and tolerates the error.
+It parses :const:`PMIX_QUERY_PSET_NAMES` as a comma separated
+string, as OpenPMIx documents it, where the Standard says an array
+of strings.  It adds :const:`PMIX_QUERY_REFRESH_CACHE`, which
+OpenPMIx 4.2.5 and later ignores: the client and server each answer
+what they can from their own data before asking further.
+
+The keys marked **no** that describe the job and its processes
+could be answered from the shell's own data; those that describe
+the scheduler and the allocation would need a request to the Flux
+instance.  :const:`PMIX_QUERY_AVAIL_SERVERS` is answered in the
+client from the rendezvous files servers write for tools, which the
+job shell's server does not write, so the answer is empty.
+
+A query names one or more keys.  The client answers what it can and
+sends the rest to the server, so the callback sees only the keys
+marked **no**, and a query that mixes the two fails as a whole: the
+client discards its own answers on an error from the server.
 
 Synchronization
 ---------------

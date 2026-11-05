@@ -19,6 +19,7 @@
 #include <limits.h>
 #include <string.h>
 #include <unistd.h>
+#include <jansson.h>
 #include <flux/shell.h>
 #include <flux/taskmap.h>
 #include <flux/idset.h>
@@ -34,6 +35,9 @@
 #endif
 #ifndef PMIX_NODE_OVERSUBSCRIBED
 #define PMIX_NODE_OVERSUBSCRIBED "pmix.ndosub" // added in pmix 4.0
+#endif
+#ifndef PMIX_APP_ARGV
+#define PMIX_APP_ARGV "pmix.app.argv" // added in pmix 4.0
 #endif
 
 #include "src/common/libutil/strlcpy.h"
@@ -118,6 +122,45 @@ static int set_lpeers (struct infovec *iv,
     shell_debug ("local_peers = %s", s);
     if (infovec_set_str_new (iv, key, s) < 0) { // steals s
         free (s);
+        return -1;
+    }
+    return 0;
+}
+
+/* Join the command of the job's one application with spaces, as
+ * OpenPMIx does for a spawned application (pmix_pfexec.c).  The
+ * Standard requires PMIX_APP_ARGV of every registration (17.2.3.1)
+ * and, with one application, lets it stand as an individual entry.
+ */
+static int set_app_argv (struct infovec *iv,
+                         const char *key,
+                         flux_shell_t *shell)
+{
+    json_t *command;
+    size_t index;
+    json_t *arg;
+    char *argz = NULL;
+    size_t argz_len = 0;
+
+    if (flux_shell_info_unpack (shell,
+                                "{s:{s:[{s:o}]}}",
+                                "jobspec",
+                                "tasks",
+                                "command", &command) < 0)
+        return -1;
+    json_array_foreach (command, index, arg) {
+        const char *s = json_string_value (arg);
+        if (!s || argz_add (&argz, &argz_len, s) != 0) {
+            free (argz);
+            return -1;
+        }
+    }
+    if (!argz)
+        return -1;
+    argz_stringify (argz, argz_len, ' ');
+    shell_debug ("app_argv = %s", argz);
+    if (infovec_set_str_new (iv, key, argz) < 0) { // steals argz
+        free (argz);
         return -1;
     }
     return 0;
@@ -871,6 +914,7 @@ static int px_init (flux_plugin_t *p,
     if (!(iv = infovec_create ())
         || infovec_set_str (iv, PMIX_JOBID, px->nspace) < 0
         || infovec_set_str (iv, PMIX_WDIR, cwd) < 0
+        || set_app_argv (iv, PMIX_APP_ARGV, shell) < 0
         /* N.B. the node info arrays must precede the node-realm keys
          * passed as individual entries (PMIX_LOCAL_PEERS,
          * PMIX_LOCAL_SIZE).  openpmix files such a key under the node

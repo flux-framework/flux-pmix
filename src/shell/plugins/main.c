@@ -19,6 +19,8 @@
 #include <limits.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/stat.h>
+#include <jansson.h>
 #include <flux/shell.h>
 #include <flux/taskmap.h>
 #include <flux/idset.h>
@@ -34,6 +36,9 @@
 #endif
 #ifndef PMIX_NODE_OVERSUBSCRIBED
 #define PMIX_NODE_OVERSUBSCRIBED "pmix.ndosub" // added in pmix 4.0
+#endif
+#ifndef PMIX_APP_ARGV
+#define PMIX_APP_ARGV "pmix.app.argv" // added in pmix 4.0
 #endif
 
 #include "src/common/libutil/strlcpy.h"
@@ -58,6 +63,7 @@ struct px {
     int total_nprocs;
     const struct taskmap *taskmap;
     const char *job_tmpdir;
+    char *nsdir;            // PMIX_NSDIR, under job_tmpdir
     bool server_initialized;
     struct interthread *it;
     struct fence *fence;
@@ -99,6 +105,7 @@ static void px_destroy (struct px *px)
         capture_destroy (px->capture);
         interthread_destroy (px->it);
         topo_destroy (px->topo); // after finalize: the server borrows it
+        free (px->nsdir);
         free (px);
         errno = saved_errno;
     }
@@ -118,6 +125,45 @@ static int set_lpeers (struct infovec *iv,
     shell_debug ("local_peers = %s", s);
     if (infovec_set_str_new (iv, key, s) < 0) { // steals s
         free (s);
+        return -1;
+    }
+    return 0;
+}
+
+/* Join the command of the job's one application with spaces, as
+ * OpenPMIx does for a spawned application (pmix_pfexec.c).  The
+ * Standard requires PMIX_APP_ARGV of every registration (17.2.3.1)
+ * and, with one application, lets it stand as an individual entry.
+ */
+static int set_app_argv (struct infovec *iv,
+                         const char *key,
+                         flux_shell_t *shell)
+{
+    json_t *command;
+    size_t index;
+    json_t *arg;
+    char *argz = NULL;
+    size_t argz_len = 0;
+
+    if (flux_shell_info_unpack (shell,
+                                "{s:{s:[{s:o}]}}",
+                                "jobspec",
+                                "tasks",
+                                "command", &command) < 0)
+        return -1;
+    json_array_foreach (command, index, arg) {
+        const char *s = json_string_value (arg);
+        if (!s || argz_add (&argz, &argz_len, s) != 0) {
+            free (argz);
+            return -1;
+        }
+    }
+    if (!argz)
+        return -1;
+    argz_stringify (argz, argz_len, ' ');
+    shell_debug ("app_argv = %s", argz);
+    if (infovec_set_str_new (iv, key, argz) < 0) { // steals argz
+        free (argz);
         return -1;
     }
     return 0;
@@ -675,6 +721,20 @@ static int px_init (flux_plugin_t *p,
     shell_debug ("total_nprocs = %d", px->total_nprocs);
     if (!(px->job_tmpdir = flux_shell_getenv (shell, "FLUX_JOB_TMPDIR")))
         return -1;
+    /* PMIX_NSDIR is the job's directory under PMIX_TMPDIR, which is
+     * the job tmpdir here since a shell hosts one job and Flux has no
+     * session.  It gets its own subdirectory rather than the tmpdir
+     * itself: Open MPI takes the key as its job session directory and
+     * unlinks what is in it at finalize, and the server's rendezvous
+     * files live in the tmpdir.  The shell removes the tmpdir, and
+     * this with it, at job exit (PMIX_TDIR_RMCLEAN).
+     */
+    if (asprintf (&px->nsdir, "%s/pmix", px->job_tmpdir) < 0)
+        return -1;
+    if (mkdir (px->nsdir, 0700) < 0 && errno != EEXIST) {
+        shell_log_errno ("mkdir %s", px->nsdir);
+        return -1;
+    }
 
     if (!(px->taskmap = flux_shell_get_taskmap (shell))) {
         shell_log_error ("failed to get taskmap");
@@ -871,6 +931,7 @@ static int px_init (flux_plugin_t *p,
     if (!(iv = infovec_create ())
         || infovec_set_str (iv, PMIX_JOBID, px->nspace) < 0
         || infovec_set_str (iv, PMIX_WDIR, cwd) < 0
+        || set_app_argv (iv, PMIX_APP_ARGV, shell) < 0
         /* N.B. the node info arrays must precede the node-realm keys
          * passed as individual entries (PMIX_LOCAL_PEERS,
          * PMIX_LOCAL_SIZE).  openpmix files such a key under the node
@@ -889,6 +950,7 @@ static int px_init (flux_plugin_t *p,
         || infovec_set_bool (iv, PMIX_TDIR_RMCLEAN, true) < 0
         || infovec_set_u32 (iv, PMIX_JOB_NUM_APPS, 1) < 0
         || infovec_set_str (iv, PMIX_TMPDIR, px->job_tmpdir) < 0
+        || infovec_set_str (iv, PMIX_NSDIR, px->nsdir) < 0
         || infovec_set_u32 (iv, PMIX_LOCAL_SIZE, px->local_nprocs) < 0
         /* A PMIx session is a scheduler allocation, which a server
          * hosting several jobs uses to tell them apart; the Standard

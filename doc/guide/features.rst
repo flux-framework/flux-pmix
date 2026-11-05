@@ -74,6 +74,15 @@ keys when the job starts, and a client reads them with
 :func:`PMIx_Get` without a request to the server.  The realm is the
 one the Standard assigns to the key.
 
+The Standard has no minimum set of keys for bootstrap.  The nearest
+thing is section 17.2.3.1, which lists the keys a host "shall"
+register in each realm, and chapter 5, which says a host need not
+provide every documented key but must give those it provides the
+documented meaning.  flux-pmix registers the 17.2.3.1 set except
+the keys marked **no** below.  :const:`PMIX_MAX_PROCS` and
+:const:`PMIX_SERVER_NSPACE` are on the list too, but OpenPMIx fills
+them in when the host does not, so a client finds them.
+
 .. list-table::
    :header-rows: 1
    :widths: 12 40 8 20
@@ -99,15 +108,16 @@ one the Standard assigns to the key.
      - The Flux job id.
 
    * - Job
-     - yes
      - :const:`PMIX_JOB_SIZE`, :const:`PMIX_JOB_NUM_APPS`, :const:`PMIX_NUM_NODES`,
        :const:`PMIX_NODE_LIST`
+     - yes
      -
 
    * - Job
+     - :const:`PMIX_TMPDIR`, :const:`PMIX_NSDIR`, :const:`PMIX_TDIR_RMCLEAN`
      - yes
-     - :const:`PMIX_TMPDIR`, :const:`PMIX_TDIR_RMCLEAN`
-     -
+     - :const:`PMIX_NSDIR` is a directory under :const:`PMIX_TMPDIR`,
+       which the shell removes at job exit.
 
    * - Job
      - :const:`PMIX_ANL_MAP`
@@ -115,9 +125,10 @@ one the Standard assigns to the key.
      - The PMI-1 process map.
 
    * - Application
-     - :const:`PMIX_APPNUM`, :const:`PMIX_WDIR`
+     - :const:`PMIX_APPNUM`, :const:`PMIX_WDIR`, :const:`PMIX_APP_ARGV`
      - yes
-     - :const:`PMIX_WDIR` is not found by a 3.2 client on a 4.x server.
+     - :const:`PMIX_WDIR` and :const:`PMIX_APP_ARGV` are not found by
+       a 3.2 client on a 4.x server.
 
    * - Node
      - :const:`PMIX_HOSTNAME`, :const:`PMIX_NODEID`, :const:`PMIX_LOCAL_SIZE`,

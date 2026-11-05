@@ -227,3 +227,4 @@ debbuild
 jansson
 LIBDIR
 plugindir
+NSDIR

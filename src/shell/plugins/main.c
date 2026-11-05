@@ -50,6 +50,7 @@
 #include "abort.h"
 #include "notify.h"
 #include "dmodex.h"
+#include "query.h"
 #include "capture.h"
 #include "log.h"
 #include "topo.h"
@@ -70,6 +71,7 @@ struct px {
     struct abort *abort;
     struct notify *notify;
     struct dmodex *dmodex;
+    struct query *query;
     const char *wire;       // pmix.wire option, or NULL
     struct capture *capture;
     struct log *log;
@@ -101,6 +103,7 @@ static void px_destroy (struct px *px)
         abort_destroy (px->abort);
         fence_destroy (px->fence);
         dmodex_destroy (px->dmodex);
+        query_destroy (px->query);
         log_destroy (px->log);
         capture_destroy (px->capture);
         interthread_destroy (px->it);
@@ -768,6 +771,11 @@ static int px_init (flux_plugin_t *p,
         return -1;
     }
     server_callbacks.module.direct_modex = dmodex_server_cb;
+    if (!(px->query = query_create (shell, px->it))) {
+        shell_log_error ("could not create query handler");
+        return -1;
+    }
+    server_callbacks.module.query = query_server_cb;
     if (!(px->log = log_create (shell, px->it))) {
         shell_log_error ("could not create log handler");
         return -1;

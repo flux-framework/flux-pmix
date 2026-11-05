@@ -15,12 +15,139 @@
 #endif
 #include <sys/types.h>
 #include <jansson.h>
+#include <string.h>
 #include <pmix_server.h>
 
 #include "src/common/libccan/ccan/base64/base64.h"
 #include "src/common/libutil/strlcpy.h"
 
 #include "codec.h"
+
+/* A query is a NULL-terminated argv of keys and an array of qualifier
+ * infos (standard 7.1.1).
+ */
+static json_t *codec_query_encode (const pmix_query_t *query)
+{
+    json_t *o;
+    json_t *keys;
+    json_t *qualifiers;
+    size_t i;
+
+    if (!(keys = json_array ()))
+        return NULL;
+    for (i = 0; query->keys && query->keys[i]; i++) {
+        json_t *key = json_string (query->keys[i]);
+        if (!key || json_array_append_new (keys, key) < 0) {
+            json_decref (key);
+            json_decref (keys);
+            return NULL;
+        }
+    }
+    if (!(qualifiers = codec_info_array_encode (query->qualifiers,
+                                                query->nqual))) {
+        json_decref (keys);
+        return NULL;
+    }
+    o = json_pack ("{s:O s:O}", "keys", keys, "qualifiers", qualifiers);
+    json_decref (keys);
+    json_decref (qualifiers);
+    return o;
+}
+
+static void codec_query_release (pmix_query_t *query)
+{
+    if (query->keys) {
+        for (size_t i = 0; query->keys[i]; i++)
+            free (query->keys[i]);
+        free (query->keys);
+    }
+    codec_info_array_destroy (query->qualifiers, query->nqual);
+}
+
+static int codec_query_decode (json_t *o, pmix_query_t *query)
+{
+    json_t *xkeys;
+    json_t *xqualifiers;
+    size_t nkeys;
+    size_t index;
+    json_t *value;
+
+    memset (query, 0, sizeof (*query));
+    if (json_unpack (o,
+                     "{s:o s:o}",
+                     "keys", &xkeys,
+                     "qualifiers", &xqualifiers) < 0
+        || !json_is_array (xkeys))
+        return -1;
+    nkeys = json_array_size (xkeys);
+    if (!(query->keys = calloc (nkeys + 1, sizeof (query->keys[0]))))
+        return -1;
+    json_array_foreach (xkeys, index, value) {
+        if (!json_is_string (value)
+            || !(query->keys[index] = strdup (json_string_value (value))))
+            goto error;
+    }
+    if (codec_info_array_decode (xqualifiers,
+                                 &query->qualifiers,
+                                 &query->nqual) < 0)
+        goto error;
+    return 0;
+error:
+    codec_query_release (query);
+    memset (query, 0, sizeof (*query));
+    return -1;
+}
+
+json_t *codec_query_array_encode (const pmix_query_t *queries, size_t nqueries)
+{
+    json_t *o;
+    json_t *entry;
+    size_t i;
+
+    if (!(o = json_array ()))
+        return NULL;
+    for (i = 0; i < nqueries; i++) {
+        if (!(entry = codec_query_encode (&queries[i]))
+            || json_array_append_new (o, entry) < 0) {
+            json_decref (entry);
+            json_decref (o);
+            return NULL;
+        }
+    }
+    return o;
+}
+
+int codec_query_array_decode (json_t *o,
+                              pmix_query_t **queriesp,
+                              size_t *nqueriesp)
+{
+    pmix_query_t *queries;
+    size_t nqueries = json_array_size (o);
+    size_t index;
+    json_t *value;
+
+    if (!json_is_array (o)
+        || !(queries = calloc (nqueries, sizeof (queries[0]))))
+        return -1;
+    json_array_foreach (o, index, value) {
+        if (codec_query_decode (value, &queries[index]) < 0) {
+            codec_query_array_destroy (queries, index);
+            return -1;
+        }
+    }
+    *queriesp = queries;
+    *nqueriesp = nqueries;
+    return 0;
+}
+
+void codec_query_array_destroy (pmix_query_t *queries, size_t nqueries)
+{
+    if (queries) {
+        for (size_t i = 0; i < nqueries; i++)
+            codec_query_release (&queries[i]);
+        free (queries);
+    }
+}
 
 json_t *codec_pointer_encode (void *ptr)
 {

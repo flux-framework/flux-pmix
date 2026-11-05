@@ -203,7 +203,9 @@ test_expect_success 'job: pmix.nmap and pmix.pmap are not retrievable' '
 
 #
 # Application realm ("Application realm attributes"): PMIX_APPNUM
-# identifies the app; PMIX_WDIR is its working directory.  One app.
+# identifies the app; PMIX_WDIR is its working directory; PMIX_APP_ARGV
+# is its command line, "consolidated" into one string, which openpmix
+# does by joining the arguments with spaces.  One app.
 #
 # v4.2 says application realm keys "can only be retrieved by including
 # the PMIX_APP_INFO attribute", with the wildcard rank selecting the
@@ -230,6 +232,11 @@ test_expect_success APP_REALM_WDIR 'app: pmix.wdir (provided) is the job cwd' '
 	run2n3p ${GETKEY} --app --proc=* --rank=0 pmix.wdir >wdir.out &&
 	pwd >wdir.exp &&
 	test_cmp wdir.exp wdir.out
+'
+test_expect_success APP_REALM_WDIR 'app: pmix.app.argv (provided) is the command' '
+	run2n3p ${GETKEY} --app --proc=* --rank=0 pmix.app.argv >argv.out &&
+	echo "${GETKEY} --app --proc=* --rank=0 pmix.app.argv" >argv.exp &&
+	test_cmp argv.exp argv.out
 '
 
 #
@@ -516,13 +523,12 @@ test_expect_success NEED_NODE_SIZE 'node: pmix.node.size (not yet provided)' '
 # Keys that are absent by design.  PMIX_RANK is the identifying first
 # element of each proc info array, which openpmix consumes; a client
 # has its rank from PMIx_Init.  The app realm array, with
-# PMIX_APP_SIZE, PMIX_APPLDR, and PMIX_APP_ARGV, is required only with
-# more than one application ("Application realm attributes"), and this
-# is one.
+# PMIX_APP_SIZE and PMIX_APPLDR, is required only with more than one
+# application ("Application realm attributes"), and this is one.
 #
 test_expect_success 'keys absent by design are absent' '
 	test_must_fail run2n3p ${GETKEY} --rank=0 pmix.rank &&
-	for key in pmix.app.size pmix.aldr pmix.argv; do
+	for key in pmix.app.size pmix.aldr; do
 		test_must_fail run2n3p ${GETKEY} --app --proc=* --rank=0 $key \
 			|| return 1
 	done

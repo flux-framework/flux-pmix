@@ -756,7 +756,7 @@ static int px_init (flux_plugin_t *p,
         shell_log_error ("could not create interthread message channel ");
         return -1;
     }
-    if (!(px->fence = fence_create (shell, px->it))) {
+    if (!(px->fence = fence_create (p, px->it, 0))) {
         shell_log_error ("could not create fence handler");
         return -1;
     }

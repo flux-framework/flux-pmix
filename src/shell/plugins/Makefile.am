@@ -24,8 +24,6 @@ pmix_la_SOURCES = \
 	codec.c \
 	interthread.h \
 	interthread.c \
-	exchange.h \
-	exchange.c \
 	fence.h \
 	fence.c \
 	abort.h \

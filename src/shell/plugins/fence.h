@@ -15,10 +15,12 @@
 #include <pmix_server.h>
 #include "interthread.h"
 
-/* Create context that allows fence_server_cb() to work.
- * N.B. ensure pmix thread is not running when create/destroy are called.
+/* Create the context for fence_server_cb().
+ * This creates a jobdict named "pmix" with exchange tree fanout k.
+ * A k of 0 selects the jobdict default.  Call this at shell.init.
+ * N.B. The pmix thread must not be running during create or destroy.
  */
-struct fence *fence_create (flux_shell_t *shell, struct interthread *it);
+struct fence *fence_create (flux_plugin_t *p, struct interthread *it, int k);
 void fence_destroy (struct fence *dx);
 
 /* Server fence_nb callback registered with PMIx_server_init().

@@ -91,6 +91,12 @@ SHELL OPTIONS
   **none**
     Nothing.  Clients discover the node for themselves.
 
+.. option:: pmix.exchange.k=N
+
+  Set the fanout of the tree that a fence exchange runs over, as
+  :core:man1:`flux-shell` option **pmi-simple.exchange.k** does for
+  PMI-1.  The default is 2.
+
 .. option:: pmix.wirecapture=PATH
 
   Record every message between the tasks and the server in the file

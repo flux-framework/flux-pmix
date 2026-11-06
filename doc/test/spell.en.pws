@@ -230,3 +230,4 @@ plugindir
 NSDIR
 PROCID
 jobdict
+fanout

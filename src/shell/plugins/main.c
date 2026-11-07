@@ -704,6 +704,18 @@ static int px_init (flux_plugin_t *p,
         return -1;
     }
 
+    /* -o pmix.exchange.k=N sets the fanout of the fence exchange tree.
+     * This is the same as pmi-simple.exchange.k for PMI-1.
+     */
+    int exchange_k = 0; // 0 selects the jobdict default
+    if (flux_shell_getopt_unpack (shell,
+                                  "pmix",
+                                  "{s?{s?i}}",
+                                  "exchange", "k", &exchange_k) < 0) {
+        shell_log_error ("pmix.exchange.k must be an integer");
+        return -1;
+    }
+
     if (flux_shell_info_unpack (shell,
                                 "{s:I s:i s:i}",
                                 "jobid", &px->id,
@@ -756,7 +768,7 @@ static int px_init (flux_plugin_t *p,
         shell_log_error ("could not create interthread message channel ");
         return -1;
     }
-    if (!(px->fence = fence_create (shell, px->it))) {
+    if (!(px->fence = fence_create (p, px->it, exchange_k))) {
         shell_log_error ("could not create fence handler");
         return -1;
     }

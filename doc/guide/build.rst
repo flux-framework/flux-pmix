@@ -21,8 +21,9 @@ package of each library.
      - Notes
 
    * - flux-core
-     - 0.49.0
-     - Install flux-pmix to the same prefix.
+     - 0.91.0
+     - Install flux-pmix to the same prefix.  The fence exchange runs
+       on the jobdict shell plugin that 0.91.0 introduced.
 
    * - OpenPMIx
      - 3.2.3

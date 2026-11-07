@@ -45,9 +45,14 @@ AC_DEFUN([X_AC_PKG_PREFIX], [
     AC_SUBST($1[_VERSION])
     AC_SUBST($1[_PREFIX])
     # a pinned package must be the one under the prefix, not one the
-    # rest of the path supplied
+    # rest of the path supplied.  Clear what PKG_CHECK_MODULES set for
+    # it, or a later check of VARIABLE reuses those flags in place of
+    # its own, since PKG_CHECK_MODULES takes VARIABLE_CFLAGS and
+    # VARIABLE_LIBS as the user's answer when they are already set.
     AS_IF([test "$x_ac_pinned" = yes -a "$[$1][_PREFIX]" != "$2"],
-      [x_ac_found=no])
+      [x_ac_found=no
+       AS_UNSET([$1[_CFLAGS]])
+       AS_UNSET([$1[_LIBS]])])
   ], [x_ac_found=no])
   AS_IF([test "$x_ac_pinned" = yes], [
     PKG_CONFIG_PATH="$x_ac_saved_path"

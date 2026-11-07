@@ -122,6 +122,19 @@ test_expect_success '2n2p barrier with procs explictly set fails' '
 		${BARRIER} --procs=0-1
 '
 
+test_expect_success '2n4p barrier works with pmix.exchange.k=1' '
+	run_timeout 30 flux run -N2 -n4 \
+		-overbose=2 -o pmix.exchange.k=1 \
+		${BARRIER} 2>k1.err &&
+	grep "using k=1" k1.err
+'
+
+test_expect_success 'pmix.exchange.k rejects a non-integer' '
+	test_must_fail flux run -N1 -n1 -o pmix.exchange.k=x ${BARRIER} \
+		2>kbad.err &&
+	grep "pmix.exchange.k must be an integer" kbad.err
+'
+
 # Try a larger size for fun
 
 test_expect_success '2n3p barrier works' '

@@ -208,6 +208,13 @@ test_expect_success 'job: pmix.anlmap (provided)' '
 	run2n3p ${GETKEY} --proc=* --rank=0 pmix.anlmap >anlmap.out &&
 	test_cmp anlmap.exp anlmap.out
 '
+test_expect_success 'job: pmix.anlmap is omitted with -o pmix.nomap' '
+	test_must_fail run2n3p -o pmix.nomap \
+		${GETKEY} --proc=* --rank=0 pmix.anlmap
+'
+test_expect_success 'flux run -o pmix.nomap=foo fails' '
+	test_must_fail flux run -o pmix.nomap=foo true
+'
 # The node and proc maps are not in the "Reserved Keys" chapter at
 # all: they are inputs a host hands a server library (chapter
 # "Server-Specific Interfaces", PMIx_server_register_nspace), which

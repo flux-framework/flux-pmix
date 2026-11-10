@@ -79,15 +79,21 @@ test_expect_success '1n2p hello' '
 	grep "There are 2 tasks" hello_1n2p.out
 '
 
-# MPICH builds its node map at init.  Built against its own PMIx client
-# it reads the PMI-1 process mapping the server publishes as pmix.anlmap;
-# built against an external openpmix, as here, it skips every job
-# attribute and asks PMIx_Resolve_peers() for each node instead, which
-# the server's node realm answers.
+# MPICH builds its node map at init from the PMI-1 process mapping
+# the server publishes as pmix.anlmap, when it fetches that key and
+# the server provides it; otherwise it asks PMIx_Resolve_nodes() and
+# PMIx_Resolve_peers() for each node, which the server's node realm
+# answers.  -o pmix.nomap withholds the key so the second path is
+# covered whichever one the MPI takes by default.
 test_expect_success MULTINODE_TCP '2n2p hello' '
 	run_timeout 30 flux run -N2 -n2 \
 		${MPI_HELLO} >hello_2n2p.out &&
 	grep "There are 2 tasks" hello_2n2p.out
+'
+test_expect_success MULTINODE_TCP '2n2p hello without the process mapping' '
+	run_timeout 30 flux run -N2 -n2 -o pmix.nomap \
+		${MPI_HELLO} >hello_2n2p_nomap.out &&
+	grep "There are 2 tasks" hello_2n2p_nomap.out
 '
 
 # Useful debugging runes:

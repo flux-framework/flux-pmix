@@ -51,11 +51,13 @@ fi
 # does not accept 128 + signum as failure.
 
 # Get a pmix server trace into the CI output in case it is needed to
-# debug a failure here.
-test_expect_success '1n1p MPI_Abort with pmix server tracing enabled' '
-	! run_timeout 60 flux run -N1 -n1 -overbose=2 \
-		${MPI_ABORT} 0 2>abort_1n1p.err &&
-	grep "called PMIx_Abort" abort_1n1p.err
+# debug a failure here.  Use two ranks: MPICH's ch4 device aborts a
+# size-1 intracommunicator by exiting the process, and only calls
+# PMIx_Abort() when there is someone else to take down.
+test_expect_success '1n2p MPI_Abort with pmix server tracing enabled' '
+	! run_timeout 60 flux run -N1 -n2 -overbose=2 \
+		${MPI_ABORT} 0 2>abort_1n2p_trace.err &&
+	grep "called PMIx_Abort" abort_1n2p_trace.err
 '
 
 test_expect_success '1n2p MPI_Abort on rank 0 raises a job exception' '

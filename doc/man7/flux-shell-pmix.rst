@@ -91,6 +91,14 @@ SHELL OPTIONS
   **none**
     Nothing.  Clients discover the node for themselves.
 
+.. option:: pmix.nomap
+
+  Do not provide the PMI-1 process mapping (:const:`PMIX_ANL_MAP`),
+  as :core:man1:`flux-shell` option **pmi-simple.nomap** does for
+  PMI-1.  An MPI that builds its node map from the mapping when the
+  server provides it must then resolve the map another way, which
+  this option exists to exercise.
+
 .. option:: pmix.exchange.k=N
 
   Set the fanout of the tree that a fence exchange runs over, as

@@ -60,5 +60,6 @@ EXTRA_DIST= \
 	build-options.sh.in \
 	$(T) \
 	scripts/run_timeout.py \
+	scripts/mpich_shm_cleanup.py \
 	etc/rc.lua.in \
 	shell/initrc.lua

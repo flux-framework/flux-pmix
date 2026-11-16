@@ -16,6 +16,10 @@ fi
 
 test_under_flux 2
 
+# MPICH leaks shared memory when a job aborts.  Once all tests have
+# run, remove leaked segments that no process is using.
+cleanup flux python ${SHARNESS_TEST_SRCDIR}/scripts/mpich_shm_cleanup.py
+
 MPI_FLAVOR=$(${MPI_VERSION} --flavor)
 case $MPI_FLAVOR in
     ompi) test_set_prereq OMPI ;;

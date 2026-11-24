@@ -108,7 +108,9 @@ SHELL OPTIONS
   as :core:man1:`flux-shell` option **pmi-simple.nomap** does for
   PMI-1.  An MPI that builds its node map from the mapping when the
   server provides it must then resolve the map another way, which
-  this option exists to exercise.
+  this option exists to exercise.  OpenPMIx 7.0 and later compute the
+  mapping themselves when it is not provided, so there the option is
+  an error.
 
 .. option:: pmix.exchange.k=N
 

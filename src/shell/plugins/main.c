@@ -550,6 +550,21 @@ static bool member_of_csv (const char *list, const char *name)
  * PMIx_Get_version() returns "3.2.5a1" on 3.2 and "OpenPMIx 5.0.7a1
  * (...)" on later versions; the numbers follow the optional name.
  */
+/* Parse the major version of the openpmix the plugin is running on,
+ * from PMIx_Get_version(), or return -1.
+ */
+static int runtime_major (void)
+{
+    const char *s = PMIx_Get_version ();
+    unsigned major;
+
+    if (!strncmp (s, "OpenPMIx ", 9))
+        s += 9;
+    if (sscanf (s, "%u.", &major) != 1)
+        return -1;
+    return major;
+}
+
 static int version_check (flux_shell_t *shell, int shell_rank)
 {
     const char *opt = NULL;
@@ -715,6 +730,16 @@ static int px_init (flux_plugin_t *p,
         return -1;
     }
     px->nomap = nomap != 0;
+    /* openpmix 7.0 computes PMIX_ANL_MAP itself for a client that asks
+     * and finds it missing, so the option cannot do what it says.  Fail
+     * rather than let the job run with the map it asked to withhold.
+     */
+    if (px->nomap && runtime_major () >= 7) {
+        shell_log_error ("pmix.nomap is not supported with openpmix 7.0"
+                         " or later, which provides the process mapping"
+                         " itself");
+        return -1;
+    }
 
     /* -o pmix.exchange.k=N sets the fanout of the fence exchange tree.
      * This is the same as pmi-simple.exchange.k for PMI-1.

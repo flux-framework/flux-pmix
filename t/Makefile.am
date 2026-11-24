@@ -24,6 +24,7 @@ clean-local:
 # This list is included in both TESTS and dist_check_SCRIPTS.
 TESTSCRIPTS = \
 	t0000-sharness.t \
+	t0001-isolation.t \
 	t0002-basic.t \
 	t0003-barrier.t \
 	t0004-bizcard.t \

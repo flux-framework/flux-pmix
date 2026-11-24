@@ -28,6 +28,36 @@ test_expect_success 'pmix.version-check rejects other values' '
 	grep "must be \"on\" or \"off\"" version-bad.err
 '
 
+# openpmix 7.0 takes clients of earlier releases only when built for
+# them and asked to; pmix.legacy does the asking.  Where the server and
+# client majors straddle 7.0, the default must let the client connect.
+BARRIER=${FLUX_BUILD_DIR}/t/src/barrier
+test_expect_success 'pmix.legacy=on is accepted' '
+	flux run -N1 -n1 -o pmix.legacy=on ${BARRIER}
+'
+test_expect_success 'pmix.legacy=off is accepted' '
+	flux run -N1 -n1 -o pmix.legacy=off true
+'
+test_expect_success 'pmix.legacy rejects other values' '
+	test_must_fail flux run -N1 -n1 -o pmix.legacy=maybe true \
+		2>legacy-bad.err &&
+	grep "pmix.legacy must be \"on\" or \"off\"" legacy-bad.err
+'
+
+# Only a 7.0 server tells a pre-7.0 client apart, so only then does
+# pmix.legacy=off keep it out.  The tests share the client openpmix.
+client_version=$(${FLUX_BUILD_DIR}/t/src/version \
+	| sed -n 's/^\(OpenPMIx \)\{0,1\}\([0-9.]*\).*/\2/p')
+if test "${OPENPMIX_SERVER_VERSION%%.*}" -ge 7 2>/dev/null \
+	&& test "${client_version%%.*}" -lt 7 2>/dev/null; then
+	test_set_prereq LEGACY_CLIENT
+fi
+test_expect_success LEGACY_CLIENT 'pmix.legacy=off refuses a pre-7.0 client' '
+	test_must_fail run_timeout 30 flux run -N1 -n1 -o pmix.legacy=off \
+		${BARRIER} 2>legacy-off.err &&
+	grep "PMIx_Init" legacy-off.err
+'
+
 # Test a major mismatch by running the plugin on the client openpmix,
 # when the build has two majors.  LD_LIBRARY_PATH in the job shell
 # redirects the plugin if its toolchain emitted RUNPATH, not RPATH.

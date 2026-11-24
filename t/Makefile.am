@@ -59,4 +59,5 @@ EXTRA_DIST= \
 	build-options.sh.in \
 	$(T) \
 	scripts/run_timeout.py \
-	etc/rc.lua.in
+	etc/rc.lua.in \
+	shell/initrc.lua

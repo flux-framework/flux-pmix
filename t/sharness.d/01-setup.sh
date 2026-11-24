@@ -33,6 +33,10 @@ fi
 #   made by configure, so it is in the build tree.
 . "${FLUX_BUILD_DIR}/t/build-options.sh"
 
+#  test_under_flux makes this the job shell initrc, so that an installed
+#   flux-pmix is not loaded instead of this tree's (see the file for why).
+export FLUX_TEST_SHELL_INITRC="${FLUX_SOURCE_DIR}/t/shell/initrc.lua"
+
 #  Python's site module won't be able to determine the correct path
 #   for site.USER_SITE because sharness reassigns HOME to a per-test
 #   trash directory. Set up a REAL_HOME here from the passwd database

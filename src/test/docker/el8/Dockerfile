@@ -11,12 +11,17 @@ ARG UID=1000
 # installs under /opt/openpmix-server, and the matrix row passes
 # --with-pmix-server pointing there.  Neither is built with debug,
 # which would make buffers fully described.
+# OPENPMIX_SERVER_CONFIGURE and OPENPMIX_CLIENT_CONFIGURE add options
+# to the configure of each, e.g. --enable-legacy-clients for a 7.0
+# server that must take older clients.
 #
 # MPICH names a release to build in place of Open MPI, against the
 # client openpmix.  No distribution builds MPICH with PMIx, so there
 # is no native MPICH to test.
 ARG OPENPMIX_SERVER=
 ARG OPENPMIX_CLIENT=
+ARG OPENPMIX_SERVER_CONFIGURE=
+ARG OPENPMIX_CLIENT_CONFIGURE=
 ARG OMPI=
 ARG MPICH=
 
@@ -73,6 +78,7 @@ ENV PATH=/usr/lib64/openmpi/bin:$PATH \
 # have left a distribution pmix's components under the prefix.
 RUN for side in client server; do \
       eval ref=\$OPENPMIX_$(echo $side | tr a-z A-Z); \
+      eval args=\$OPENPMIX_$(echo $side | tr a-z A-Z)_CONFIGURE; \
       test -n "$ref" || continue; \
       if test $side = client; then prefix=/usr; \
       else prefix=/opt/openpmix-server; fi; \
@@ -87,7 +93,7 @@ RUN for side in client server; do \
    && cd openpmix \
    && ./autogen.pl \
    && ./configure --prefix=$prefix \
-        --disable-sphinx \
+        --disable-sphinx $args \
    && make -j $(nproc) \
    && sudo make install \
    && cd .. \

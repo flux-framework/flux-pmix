@@ -539,6 +539,12 @@ int codec_info_decode (json_t *o, pmix_info_t *info)
     return 0;
 }
 
+/* openpmix adds info to upcalls as it grows, e.g. 7.0 puts a
+ * PMIX_DATA_ARRAY on every fence.  An entry of a type this codec cannot
+ * encode is left out, as the host could not have acted on it anyway,
+ * unless it is marked required: the call must then fail, as it would if
+ * the host did not recognize the key.
+ */
 json_t *codec_info_array_encode (const pmix_info_t *info, size_t ninfo)
 {
     json_t *o;
@@ -549,7 +555,9 @@ json_t *codec_info_array_encode (const pmix_info_t *info, size_t ninfo)
         return NULL;
     for (i = 0; i < ninfo; i++) {
         if (!(entry = codec_info_encode (&info[i]))
-            || json_array_append_new (o, entry) < 0) {
+            && !(info[i].flags & PMIX_INFO_REQD))
+            continue;
+        if (!entry || json_array_append_new (o, entry) < 0) {
             json_decref (entry);
             json_decref (o);
             return NULL;

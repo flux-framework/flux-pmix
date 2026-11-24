@@ -252,6 +252,28 @@ void check_info_array (void)
         "info[1] is correct");
     codec_info_array_destroy (info2, ninfo2);
     json_decref (o);
+
+    /* An entry of a type the codec cannot encode is left out, unless
+     * it is required.  PMIX_POINTER stands in for any such type.
+     */
+    strlcpy (info[1].key, "pmix.test.ptr", sizeof (info[1].key));
+    info[1].flags = 0;
+    info[1].value.type = PMIX_POINTER;
+    info[1].value.data.ptr = &ninfo2;
+
+    o = codec_info_array_encode (info, 2);
+    ok (o != NULL && json_array_size (o) == 1,
+        "codec_info_array_encode leaves out an optional unencodable entry");
+    ok (codec_info_array_decode (o, &info2, &ninfo2) == 0
+        && ninfo2 == 1
+        && !strcmp (info2[0].key, info[0].key),
+        "the other entry is kept");
+    codec_info_array_destroy (info2, ninfo2);
+    json_decref (o);
+
+    info[1].flags = PMIX_INFO_REQD;
+    ok (codec_info_array_encode (info, 2) == NULL,
+        "codec_info_array_encode fails on a required unencodable entry");
 }
 
 void check_proc_array (void)

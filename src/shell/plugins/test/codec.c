@@ -170,6 +170,49 @@ void check_value ()
         "codec_value_encode/decode works for proc");
     codec_value_release (&val2);
     json_decref (o);
+
+    pmix_proc_t procs[2];
+    pmix_data_array_t darray;
+
+    strlcpy (procs[0].nspace, "xyz", sizeof (procs[0].nspace));
+    procs[0].rank = 0;
+    strlcpy (procs[1].nspace, "xyz", sizeof (procs[1].nspace));
+    procs[1].rank = PMIX_RANK_WILDCARD;
+    darray.type = PMIX_PROC;
+    darray.size = 2;
+    darray.array = procs;
+    val.type = PMIX_DATA_ARRAY;
+    val.data.darray = &darray;
+    o = codec_value_encode (&val);
+    ok (codec_value_decode (o, &val2) == 0
+        && val2.type == PMIX_DATA_ARRAY
+        && val2.data.darray->type == PMIX_PROC
+        && val2.data.darray->size == 2
+        && ((pmix_proc_t *)val2.data.darray->array)[0].rank == 0
+        && ((pmix_proc_t *)val2.data.darray->array)[1].rank
+            == PMIX_RANK_WILDCARD
+        && !strcmp (((pmix_proc_t *)val2.data.darray->array)[1].nspace,
+                    "xyz"),
+        "codec_value_encode/decode works for data array of proc");
+    codec_value_release (&val2);
+    json_decref (o);
+
+    darray.size = 0;
+    darray.array = NULL;
+    o = codec_value_encode (&val);
+    ok (codec_value_decode (o, &val2) == 0
+        && val2.type == PMIX_DATA_ARRAY
+        && val2.data.darray->size == 0,
+        "codec_value_encode/decode works for empty data array of proc");
+    codec_value_release (&val2);
+    json_decref (o);
+
+    uint32_t u32[1] = { 42 };
+    darray.type = PMIX_UINT32;
+    darray.size = 1;
+    darray.array = u32;
+    ok (codec_value_encode (&val) == NULL,
+        "codec_value_encode fails on data array of other types");
 }
 
 void check_info (void)

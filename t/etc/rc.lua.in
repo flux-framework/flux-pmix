@@ -16,3 +16,24 @@ shell.setenv ("OMPI_MCA_btl_tcp_if_include", "lo")
 -- error.
 shell.setenv ("OMPI_MCA_btl", "^ofi")
 shell.setenv ("OMPI_MCA_mtl", "^ofi")
+-- The testsuite's nodes are shells on one host, and ompi names its shared
+-- memory segment from the hostname, uid, jobid and node-local rank, so
+-- two "nodes" share a segment unless each has its own backing directory
+-- (flux-core#3649).  flux-core's openmpi.lua does this, but the testsuite
+-- initrc does not source it.  The btl is vader before ompi 5 and sm after;
+-- setting both is harmless.
+plugin.register {
+    name = "testsuite-ompi-shm",
+    handlers = {
+        {
+            topic = "task.init",
+            fn = function ()
+                local dir = task.getenv ("FLUX_JOB_TMPDIR")
+                if dir then
+                    task.setenv ("OMPI_MCA_btl_vader_backing_directory", dir)
+                    task.setenv ("OMPI_MCA_btl_sm_backing_directory", dir)
+                end
+            end
+        }
+    }
+}

@@ -54,7 +54,9 @@ check-prep:
 EXTRA_DIST= \
 	aggregate-results.sh \
 	sharness.sh \
-	sharness.d \
+	sharness.d/01-setup.sh \
+	sharness.d/flux-sharness.sh \
+	build-options.sh.in \
 	$(T) \
 	scripts/run_timeout.py \
 	etc/rc.lua.in

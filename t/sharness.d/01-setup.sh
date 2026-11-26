@@ -16,7 +16,7 @@ if test -z "$FLUX_BUILD_DIR"; then
     if test -z "${builddir}"; then
         FLUX_BUILD_DIR="$(cd .. && pwd)"
     else
-        FLUX_BUILD_DIR="$(cd ${builddir}/.. && pwd))"
+        FLUX_BUILD_DIR="$(cd ${builddir}/.. && pwd)"
     fi
     export FLUX_BUILD_DIR
 fi

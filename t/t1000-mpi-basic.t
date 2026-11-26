@@ -90,7 +90,12 @@ test_expect_success MULTINODE_TCP '2n2p hello' '
 		${MPI_HELLO} >hello_2n2p.out &&
 	grep "There are 2 tasks" hello_2n2p.out
 '
-test_expect_success MULTINODE_TCP '2n2p hello without the process mapping' '
+# openpmix 7.0 computes the mapping itself, so the plugin refuses
+# pmix.nomap there.
+if test "$(echo "$OPENPMIX_SERVER_VERSION" | cut -d. -f1)" -lt 7 2>/dev/null; then
+	test_set_prereq SERVER_OMITS_ANLMAP
+fi
+test_expect_success MULTINODE_TCP,SERVER_OMITS_ANLMAP '2n2p hello without the process mapping' '
 	run_timeout 30 flux run -N2 -n2 -o pmix.nomap \
 		${MPI_HELLO} >hello_2n2p_nomap.out &&
 	grep "There are 2 tasks" hello_2n2p_nomap.out

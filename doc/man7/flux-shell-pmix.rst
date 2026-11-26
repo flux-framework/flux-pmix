@@ -77,6 +77,17 @@ SHELL OPTIONS
     as they may for a client in a container.  **none** does not change
     what the server listens on; the client must still reach it.
 
+.. option:: pmix.legacy=on|off
+
+  Accept clients and tools of OpenPMIx releases before 7.0, which
+  connect over TCP on the local host.  The default is **on**.
+  The value is passed to OpenPMIx as
+  :envvar:`PMIX_MCA_ptl_base_legacy_peers`.  It takes effect only when
+  the server's OpenPMIx is 7.0 or later and was configured with
+  ``--enable-legacy-clients`` or ``--enable-legacy-peers``.  Otherwise
+  an OpenPMIx 7.0 server accepts only 7.0 clients, and earlier
+  versions accept all clients regardless.
+
 .. option:: pmix.topo=restrict|node|none
 
   Select what the server shares as the node topology (see TOPOLOGY).
@@ -97,7 +108,9 @@ SHELL OPTIONS
   as :core:man1:`flux-shell` option **pmi-simple.nomap** does for
   PMI-1.  An MPI that builds its node map from the mapping when the
   server provides it must then resolve the map another way, which
-  this option exists to exercise.
+  this option exists to exercise.  OpenPMIx 7.0 and later compute the
+  mapping themselves when it is not provided, so there the option is
+  an error.
 
 .. option:: pmix.exchange.k=N
 

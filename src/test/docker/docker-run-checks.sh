@@ -89,7 +89,7 @@ while true; do
       --inception)                 INCEPTION=t;                shift   ;;
       -P|--no-poison)              POISON=0;                   shift   ;;
       -t|--tag)                    TAG="$2";                   shift 2 ;;
-      --build-arg)                 BUILD_ARG="$BUILD_ARG --build-arg $2"
+      --build-arg)                 BUILD_ARG="$BUILD_ARG --build-arg $(printf %q "$2")"
                                                                shift 2 ;;
       --)                          shift; break;                       ;;
       *)                           die "Invalid option '$1'\n$usage"   ;;

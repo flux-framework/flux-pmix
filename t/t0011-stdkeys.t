@@ -111,6 +111,14 @@ if test "${OPENPMIX_CLIENT_MAJOR:-0}" -ge 4 \
 	|| test "${OPENPMIX_SERVER_MAJOR:-0}" -lt 4; then
 	test_set_prereq APP_REALM_WDIR
 fi
+# openpmix 7.0 computes pmix.anlmap itself when the host leaves it
+# out, so pmix.nomap cannot keep it from the client there, and the
+# plugin refuses the option instead.
+if test "${OPENPMIX_SERVER_MAJOR:-0}" -lt 7; then
+	test_set_prereq SERVER_OMITS_ANLMAP
+else
+	test_set_prereq SERVER_COMPUTES_ANLMAP
+fi
 
 #
 # Session realm ("Session realm attributes"): PMIX_UNIV_SIZE and
@@ -208,9 +216,13 @@ test_expect_success 'job: pmix.anlmap (provided)' '
 	run2n3p ${GETKEY} --proc=* --rank=0 pmix.anlmap >anlmap.out &&
 	test_cmp anlmap.exp anlmap.out
 '
-test_expect_success 'job: pmix.anlmap is omitted with -o pmix.nomap' '
+test_expect_success SERVER_OMITS_ANLMAP 'job: pmix.anlmap is omitted with -o pmix.nomap' '
 	test_must_fail run2n3p -o pmix.nomap \
 		${GETKEY} --proc=* --rank=0 pmix.anlmap
+'
+test_expect_success SERVER_COMPUTES_ANLMAP 'pmix.nomap is an error' '
+	test_must_fail flux run -o pmix.nomap true 2>nomap7.err &&
+	grep "pmix.nomap is not supported with openpmix 7.0" nomap7.err
 '
 test_expect_success 'flux run -o pmix.nomap=foo fails' '
 	test_must_fail flux run -o pmix.nomap=foo true

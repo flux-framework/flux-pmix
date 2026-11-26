@@ -550,6 +550,21 @@ static bool member_of_csv (const char *list, const char *name)
  * PMIx_Get_version() returns "3.2.5a1" on 3.2 and "OpenPMIx 5.0.7a1
  * (...)" on later versions; the numbers follow the optional name.
  */
+/* Parse the major version of the openpmix the plugin is running on,
+ * from PMIx_Get_version(), or return -1.
+ */
+static int runtime_major (void)
+{
+    const char *s = PMIx_Get_version ();
+    unsigned major;
+
+    if (!strncmp (s, "OpenPMIx ", 9))
+        s += 9;
+    if (sscanf (s, "%u.", &major) != 1)
+        return -1;
+    return major;
+}
+
 static int version_check (flux_shell_t *shell, int shell_rank)
 {
     const char *opt = NULL;
@@ -715,6 +730,16 @@ static int px_init (flux_plugin_t *p,
         return -1;
     }
     px->nomap = nomap != 0;
+    /* openpmix 7.0 computes PMIX_ANL_MAP itself for a client that asks
+     * and finds it missing, so the option cannot do what it says.  Fail
+     * rather than let the job run with the map it asked to withhold.
+     */
+    if (px->nomap && runtime_major () >= 7) {
+        shell_log_error ("pmix.nomap is not supported with openpmix 7.0"
+                         " or later, which provides the process mapping"
+                         " itself");
+        return -1;
+    }
 
     /* -o pmix.exchange.k=N sets the fanout of the fence exchange tree.
      * This is the same as pmi-simple.exchange.k for PMI-1.
@@ -856,17 +881,41 @@ static int px_init (flux_plugin_t *p,
      * for the encodings not listed.  The names must be known here to
      * do that, so an unknown one fails the job at init rather than
      * leaving a task with no server to find.
+     *
+     *   -o pmix.legacy=on|off  take pre-7.0 clients (default: on)
+     *
+     * openpmix 7.0 takes clients of earlier releases only when built
+     * with --enable-legacy-clients and then asked to at run time.
+     * legacy passes through to PMIX_MCA_ptl_base_legacy_peers rather
+     * than the PMIX_SERVER_LEGACY_PEERS info key: the key fails
+     * PMIx_server_init() on a library built without that support,
+     * which the plugin cannot detect, while the parameter asks only
+     * for what the library was built with.  Before 7.0 the parameter
+     * does not exist and is ignored.
      */
     const char *store = NULL;
     const char *auth = "native";
+    const char *legacy = "on";
     if (flux_shell_getopt_unpack (shell,
                                   "pmix",
-                                  "{s?s s?s s?s}",
+                                  "{s?s s?s s?s s?s}",
                                   "store", &store,
                                   "auth", &auth,
-                                  "wire", &px->wire) < 0) {
-        shell_log_error ("pmix.store, pmix.auth, and pmix.wire"
+                                  "wire", &px->wire,
+                                  "legacy", &legacy) < 0) {
+        shell_log_error ("pmix.store, pmix.auth, pmix.wire, and pmix.legacy"
                          " must be strings");
+        return -1;
+    }
+    if (strcmp (legacy, "on") != 0 && strcmp (legacy, "off") != 0) {
+        shell_log_error ("pmix.legacy must be \"on\" or \"off\"");
+        return -1;
+    }
+    if (setenv ("PMIX_MCA_ptl_base_legacy_peers",
+                !strcmp (legacy, "on") ? "1" : "0",
+                1) < 0) {
+        shell_log_error ("setenv PMIX_MCA_ptl_base_legacy_peers: %s",
+                         strerror (errno));
         return -1;
     }
     if (store && setenv ("PMIX_MCA_gds", store, 1) < 0) {

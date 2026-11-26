@@ -292,6 +292,51 @@ int codec_proc_array_decode (json_t *o, pmix_proc_t **procsp, size_t *nprocsp)
     return 0;
 }
 
+/* A pmix_data_array_t is encoded only when its elements are procs,
+ * which is what openpmix gives a host so far, e.g. 7.0's
+ * PMIX_LOCAL_PARTICIPANTS on fence upcalls.  Other element types fail,
+ * which codec_info_array_encode() treats as unencodable.
+ */
+static json_t *codec_darray_encode (const pmix_data_array_t *darray)
+{
+    json_t *procs;
+    json_t *o;
+
+    if (!darray
+        || darray->type != PMIX_PROC
+        || (darray->size > 0 && !darray->array)
+        || !(procs = codec_proc_array_encode (darray->array, darray->size)))
+        return NULL;
+    o = json_pack ("{s:i s:O}", "type", PMIX_PROC, "array", procs);
+    json_decref (procs);
+    return o;
+}
+
+/* The result and its array are allocated with malloc and freed by
+ * codec_value_release().
+ */
+static pmix_data_array_t *codec_darray_decode (json_t *o)
+{
+    int type;
+    json_t *xarray;
+    pmix_data_array_t *darray;
+    pmix_proc_t *procs = NULL;
+    size_t nprocs = 0;
+
+    if (json_unpack (o, "{s:i s:o}", "type", &type, "array", &xarray) < 0
+        || type != PMIX_PROC
+        || codec_proc_array_decode (xarray, &procs, &nprocs) < 0)
+        return NULL;
+    if (!(darray = calloc (1, sizeof (*darray)))) {
+        free (procs);
+        return NULL;
+    }
+    darray->type = PMIX_PROC;
+    darray->size = nprocs;
+    darray->array = procs;
+    return darray;
+}
+
 json_t *codec_value_encode (const pmix_value_t *value)
 {
     json_t *o = NULL;
@@ -366,6 +411,9 @@ json_t *codec_value_encode (const pmix_value_t *value)
         case PMIX_PROC: // pmix_proc_t *
             data = codec_proc_encode (value->data.proc);
             break;
+        case PMIX_DATA_ARRAY: // pmix_data_array_t *
+            data = codec_darray_encode (value->data.darray);
+            break;
         default:
             break; // leave data NULL for NULL return
     }
@@ -383,6 +431,12 @@ void codec_value_release (pmix_value_t *value)
     switch (value->type) {
         case PMIX_PROC:
             free (value->data.proc);
+            break;
+        case PMIX_DATA_ARRAY:
+            if (value->data.darray) {
+                free (value->data.darray->array);
+                free (value->data.darray);
+            }
             break;
         case PMIX_STRING:
             free (value->data.string);
@@ -492,6 +546,13 @@ int codec_value_decode (json_t *o, pmix_value_t *value)
             value->data.proc = proc;
             break;
         }
+        case PMIX_DATA_ARRAY: {
+            pmix_data_array_t *darray;
+            if (!(darray = codec_darray_decode (data)))
+                return -1;
+            value->data.darray = darray;
+            break;
+        }
         default:
             return -1;
     }
@@ -539,6 +600,12 @@ int codec_info_decode (json_t *o, pmix_info_t *info)
     return 0;
 }
 
+/* openpmix adds info to upcalls as it grows, e.g. 7.0 puts a
+ * PMIX_DATA_ARRAY on every fence.  An entry of a type this codec cannot
+ * encode is left out, as the host could not have acted on it anyway,
+ * unless it is marked required: the call must then fail, as it would if
+ * the host did not recognize the key.
+ */
 json_t *codec_info_array_encode (const pmix_info_t *info, size_t ninfo)
 {
     json_t *o;
@@ -549,7 +616,9 @@ json_t *codec_info_array_encode (const pmix_info_t *info, size_t ninfo)
         return NULL;
     for (i = 0; i < ninfo; i++) {
         if (!(entry = codec_info_encode (&info[i]))
-            || json_array_append_new (o, entry) < 0) {
+            && !(info[i].flags & PMIX_INFO_REQD))
+            continue;
+        if (!entry || json_array_append_new (o, entry) < 0) {
             json_decref (entry);
             json_decref (o);
             return NULL;

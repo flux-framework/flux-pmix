@@ -121,11 +121,17 @@ test_under_flux() {
         ASAN_OPTIONS=${ASAN_OPTIONS}:log_path=${TEST_NAME}.asan
     fi
     logopts="-o -Slog-filename=${log_file},-Slog-forward-level=7"
+    #  Keep an installed flux-pmix out of the job shell: see
+    #   t/shell/initrc.lua.
+    if test -n "$FLUX_TEST_SHELL_INITRC"; then
+        initrcopts="-o -Sconf.shell_initrc=${FLUX_TEST_SHELL_INITRC}"
+    fi
     TEST_UNDER_FLUX_ACTIVE=t \
     TERM=${ORIGINAL_TERM} \
       exec flux start --test-size=${size} \
                       ${RC1_PATH+-o -Sbroker.rc1_path=${RC1_PATH}} \
                       ${RC3_PATH+-o -Sbroker.rc3_path=${RC3_PATH}} \
+                      ${initrcopts} \
                       ${logopts} \
                       ${valgrind} \
                      "sh $0 ${flags}"

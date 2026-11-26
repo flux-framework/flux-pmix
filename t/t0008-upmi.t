@@ -10,7 +10,6 @@ export FLUX_SHELL_RC_PATH=${FLUX_BUILD_DIR}/t/etc
 # N.B. this also affects the test_under_flux broker bootstrap,
 # so be sure 'simple' comes first so the broker finds flux-start's pmi server
 export FLUX_PMI_CLIENT_METHODS="simple pmix libpmi single"
-export FLUX_PMI_CLIENT_SEARCHPATH=${FLUX_BUILD_DIR}/src/upmi/.libs
 
 test_under_flux 2
 

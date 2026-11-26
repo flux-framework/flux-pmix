@@ -166,22 +166,46 @@ tshark_pmix() {
 	tshark -X lua_script:${DISSECTOR} -T fields -e _ws.col.Info "$@" \
 		| grep -v "(continued)" | grep -v "^rank [0-9]* "
 }
+# The dissector must decode whatever a correct server sends, and what
+# that is varies with the server's openpmix.  The encoding, and with it
+# message lengths, depend on what the server offers; a 3.2 server
+# closes the connection without sending the finalize reply; only a 4.0
+# or later server puts the session array in the job-info reply; and
+# servers answer the 5.0 resolve requests with different statuses.  So
+# the checks below look for messages decoded and named, with any value
+# where versions differ, and require of every capture that nothing in
+# it failed to decode, which holds on every version.
+LEN="[0-9]*"
+STATUS="-\{0,1\}[0-9]*"
+tshark_clean() {
+	tshark -X lua_script:${DISSECTOR} -r "$1" -T fields -e frame.number \
+		-Y "pmix.undecoded || pmix.malformed || _ws.malformed || _ws.lua.error" \
+		>"$1.bad" &&
+	test_must_be_empty "$1.bad"
+}
+# A finalize reply need not be sent, but must decode if it is.
+finalize_reply_ok() {
+	if grep -q "finalize-reply" "$1"; then
+		grep "< tag=$LEN len=$LEN finalize-reply status=0" "$1"
+	fi
+}
 
 test_expect_success TSHARK_LUA 'dissector decodes the connect handshake' '
 	run_timeout 30 flux run -N1 -n1 -o pmix.store=hash \
 		-o pmix.wirecapture=hash.pcapng ${BARRIER} &&
 	tshark_pmix -r hash.pcapng >dis.out &&
-	grep "> connect .*security=native encoding=v41 mode=undescribed" dis.out &&
-	grep "< connect-response status=0 pindex=0" dis.out
+	grep "> connect .*security=native encoding=v[0-9]* mode=undescribed" dis.out &&
+	grep "< connect-response status=0 pindex=0" dis.out &&
+	tshark_clean hash.pcapng
 '
 
 test_expect_success TSHARK_LUA 'dissector decodes requests and replies' '
-	grep "> tag=101 len=2 job-info$" dis.out &&
-	grep "< tag=101 len=.* job-info-reply nspace=.* keys$" dis.out &&
-	grep "> tag=102 len=.* fence procs=\[.*\.\*\]" dis.out &&
-	grep "< tag=102 len=2 fence-reply status=0" dis.out &&
-	grep "> tag=103 len=2 finalize$" dis.out &&
-	grep "< tag=103 len=2 finalize-reply status=0" dis.out
+	grep "> tag=101 len=$LEN job-info$" dis.out &&
+	grep "< tag=101 len=$LEN job-info-reply nspace=.* keys$" dis.out &&
+	grep "> tag=102 len=$LEN fence procs=\[.*\.\*\]" dis.out &&
+	grep "< tag=102 len=$LEN fence-reply status=0" dis.out &&
+	grep "> tag=103 len=$LEN finalize$" dis.out &&
+	finalize_reply_ok dis.out
 '
 
 # The label is the namespace and rank from the connect request; the
@@ -195,7 +219,6 @@ test_expect_success TSHARK_LUA 'dissector decodes the job-info reply fields' '
 	tshark -X lua_script:${DISSECTOR} -r hash.pcapng -V \
 		-Y "pmix.reply_to == 0" >jobinfo.out &&
 	grep "pmix.job.size (UINT32): 1" jobinfo.out &&
-	grep "pmix.ssn.arr (DATA_ARRAY): INFO\[" jobinfo.out &&
 	grep "pmix.node.arr (DATA_ARRAY): INFO\[" jobinfo.out &&
 	grep "pmix.pblob (BYTE_OBJECT): rank 0, .* keys" jobinfo.out &&
 	grep "pmix.lrank (UINT16): 0" jobinfo.out
@@ -207,7 +230,9 @@ test_expect_success TSHARK_LUA 'dissector decodes a v3 capture' '
 	tshark_pmix -r v3.pcapng >v3.out &&
 	grep "> connect .*encoding=v3 " v3.out &&
 	grep "job-info-reply nspace=.* keys$" v3.out &&
-	grep "fence-reply status=0" v3.out
+	grep "fence-reply status=0" v3.out &&
+	finalize_reply_ok v3.out &&
+	tshark_clean v3.pcapng
 '
 
 # The requests program sends one of each request the server need not
@@ -229,7 +254,8 @@ test_expect_success TSHARK_LUA 'dissector decodes every request' '
 	grep "> .* allocate directive=new {pmix.alloc.id=" req.out &&
 	grep "> .* job-control targets=\[.*{pmix.jctrl.pause=true}" req.out &&
 	grep "> .* monitor pmix.monitor.mbeat=.* error=" req.out &&
-	! grep "undecoded" req.out
+	! grep "undecoded" req.out &&
+	tshark_clean req.pcapng
 '
 
 sent() {
@@ -255,18 +281,26 @@ test_expect_success TSHARK_LUA 'dissector decodes the 4.0 and later requests' '
 
 # A 5.0 client has PMIx_Session_control() but fails it locally, since
 # the command is 6.0, and the resolve calls are sent only from 5.0,
-# so these are checked only when seen.
+# so these are checked only when seen.  How a server answers a resolve
+# varies with its version (one older than 5.0 does not know the
+# command), so a reply's contents are looked for only on success.
 test_expect_success TSHARK_LUA 'dissector decodes the later requests when sent' '
 	if grep -q "> .* session-control" req.out; then
 		grep "> .* session-control session=0 {pmix.ssn.pause=true}" req.out
 	fi &&
 	if grep -q "> .* resolve-peers" req.out; then
 		grep "> .* resolve-peers node=.* nspace=" req.out &&
-		grep "< .* resolve-peers-reply status=0 procs=\[.*\.0\]" req.out
+		grep "< .* resolve-peers-reply status=$STATUS" req.out &&
+		if grep -q "resolve-peers-reply status=0" req.out; then
+			grep "< .* resolve-peers-reply status=0 procs=\[.*\.0\]" req.out
+		fi
 	fi &&
 	if grep -q "> .* resolve-node" req.out; then
 		grep "> .* resolve-node nspace=" req.out &&
-		grep "< .* resolve-node-reply status=0 nodes=" req.out
+		grep "< .* resolve-node-reply status=$STATUS" req.out &&
+		if grep -q "resolve-node-reply status=0" req.out; then
+			grep "< .* resolve-node-reply status=0 nodes=" req.out
+		fi
 	fi
 '
 
@@ -276,7 +310,27 @@ test_expect_success TSHARK_LUA 'dissector decodes a v21 capture' '
 	tshark_pmix -r v21.pcapng >v21.out &&
 	grep "> connect .*encoding=v21 " v21.out &&
 	grep "job-info-reply nspace=.* keys$" v21.out &&
-	grep "fence-reply status=0" v21.out
+	grep "fence-reply status=0" v21.out &&
+	finalize_reply_ok v21.out &&
+	tshark_clean v21.pcapng
+'
+
+# The newest encoding the dissector knows, when the server offers it.
+# The server URI variables in a task's environment say which it does.
+if test_have_prereq TSHARK_LUA \
+	&& run_timeout 30 flux run -N1 -n1 printenv PMIX_SERVER_URI41 \
+		>/dev/null 2>&1; then
+	test_set_prereq SERVER_V41
+fi
+test_expect_success TSHARK_LUA,SERVER_V41 'dissector decodes a v41 capture' '
+	run_timeout 30 flux run -N1 -n1 -o pmix.wire=v41 -o pmix.store=hash \
+		-o pmix.wirecapture=v41.pcapng ${BARRIER} &&
+	tshark_pmix -r v41.pcapng >v41.out &&
+	grep "> connect .*encoding=v41 " v41.out &&
+	grep "job-info-reply nspace=.* keys$" v41.out &&
+	grep "fence-reply status=0" v41.out &&
+	finalize_reply_ok v41.out &&
+	tshark_clean v41.pcapng
 '
 
 test_expect_success TSHARK_LUA 'dissector display filters select messages' '
@@ -305,8 +359,9 @@ test_expect_success TSHARK_LUA 'capture reassembles split records' '
 	tshark_pmix -r split.pcapng >splitdis.out &&
 	grep "> connect .*storage=hash" splitdis.out &&
 	grep "job-info-reply nspace=.* keys$" splitdis.out &&
-	grep "> tag=103 len=2 finalize$" splitdis.out &&
-	grep "finalize-reply status=0" splitdis.out
+	grep "> tag=103 len=$LEN finalize$" splitdis.out &&
+	finalize_reply_ok splitdis.out &&
+	tshark_clean split.pcapng
 '
 # The dissector reassembles too: a message split across TCP segments
 # is more than one packet in the capture, shown as continued.

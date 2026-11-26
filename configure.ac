@@ -187,7 +187,7 @@ AC_CONFIG_FILES( \
   src/shell/plugins/Makefile \
   src/upmi/Makefile \
   t/Makefile \
-  t/sharness.d/00-setup.sh \
+  t/build-options.sh \
   t/src/Makefile \
   t/etc/rc.lua \
   doc/Makefile \

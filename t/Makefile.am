@@ -24,6 +24,7 @@ clean-local:
 # This list is included in both TESTS and dist_check_SCRIPTS.
 TESTSCRIPTS = \
 	t0000-sharness.t \
+	t0001-isolation.t \
 	t0002-basic.t \
 	t0003-barrier.t \
 	t0004-bizcard.t \
@@ -54,7 +55,11 @@ check-prep:
 EXTRA_DIST= \
 	aggregate-results.sh \
 	sharness.sh \
-	sharness.d \
+	sharness.d/01-setup.sh \
+	sharness.d/flux-sharness.sh \
+	build-options.sh.in \
 	$(T) \
 	scripts/run_timeout.py \
-	etc/rc.lua.in
+	scripts/mpich_shm_cleanup.py \
+	etc/rc.lua.in \
+	shell/initrc.lua
